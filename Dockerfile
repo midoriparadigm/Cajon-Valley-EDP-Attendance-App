@@ -18,14 +18,22 @@ RUN npm run build
 FROM nginx:alpine AS production
 WORKDIR /usr/share/nginx/html
 
+# Create a non-root user and setup permissions for Nginx
+RUN touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/run /etc/nginx/conf.d /var/run/nginx.pid
+
 # Copy built assets from builder
 COPY --from=builder /app/dist .
+RUN chown -R nginx:nginx /usr/share/nginx/html
 
 # Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 80
-EXPOSE 80
+# Switch to non-root user
+USER nginx
+
+# Expose port 8080 (Google Cloud Run standard)
+EXPOSE 8080
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

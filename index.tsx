@@ -902,7 +902,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                     </button>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
                         {(['green', 'yellow', 'red'] as BehaviorStatus[]).map(lvl => (
                           <button key={lvl} onClick={() => setBehavior(lvl)} style={{ padding: '16px', borderRadius: '12px', border: editedStudent.behavior === lvl ? '3px solid var(--text-main)' : 'none', backgroundColor: lvl === 'green' ? 'var(--color-success)' : lvl === 'yellow' ? 'var(--color-warning)' : 'var(--color-danger)', color: 'white', fontWeight: '800', fontSize: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: 'var(--shadow-md)', cursor: 'pointer', transition: 'all 0.2s' }}>
                             Level {lvl === 'green' ? '1' : lvl === 'yellow' ? '2' : '3'}
@@ -1141,11 +1141,11 @@ const RosterManager = ({ onImport, onAdd }: { onImport: (s: Student[]) => void, 
         </div>
         <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '600' }}>Add Single Student</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px', marginBottom: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginBottom: '8px' }}>
             <input placeholder="First" value={manualStudent.firstName} onChange={e => setManualStudent({ ...manualStudent, firstName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
             <input placeholder="Last" value={manualStudent.lastName} onChange={e => setManualStudent({ ...manualStudent, lastName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
             <input placeholder="ID" value={manualStudent.elopId} onChange={e => setManualStudent({ ...manualStudent, elopId: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
             <select value={manualStudent.grade} onChange={e => setManualStudent({ ...manualStudent, grade: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
               {GRADES.filter(g => g !== 'All').map(g => <option key={g} value={g}>{g}</option>)}
@@ -1378,7 +1378,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ height: '140px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border-subtle)', marginBottom: '8px' }}>
                           <img src={log.yearbookPhoto} alt="Yearbook" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -1944,7 +1944,7 @@ EDP Team - Cajon Valley School District`;
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px' }}>
             <button onClick={() => setSelectedGrade('All')} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedGrade === 'All' ? 'var(--text-main)' : 'var(--bg-card)', color: selectedGrade === 'All' ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedGrade === 'All' ? 'scale(1.05)' : 'scale(1)' }}>
               All
             </button>
