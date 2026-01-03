@@ -83,6 +83,7 @@ interface Staff {
   email?: string;
   assignedGrades?: string[]; // e.g., ['TK', 'K']
   canCheckIn?: boolean;
+  canAdminTasks?: boolean;
 }
 
 interface Student {
@@ -213,6 +214,7 @@ const MOCK_LEAD_USER: Staff = {
   organization: 'EDP',
   email: 'thomasv@cajonvalley.net',
   canCheckIn: true,
+  canAdminTasks: true,
   assignedGrades: ['TK', 'K', '1', '2', '3', '4', '5']
 };
 
@@ -223,6 +225,7 @@ const MOCK_COACH_USER: Staff = {
   organization: '549 Sports',
   email: 'mike@549sports.com',
   canCheckIn: true,
+  canAdminTasks: false,
   assignedGrades: ['1', '2', '3', '4', '5'] // Limited grades example
 };
 
@@ -350,7 +353,7 @@ const CollapsedHeadInjuryView = ({ timeLeft }: { timeLeft: number }) => (
   </div>
 );
 
-const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName }: { student: Student, onUpdate: (updates: Partial<Student>, logs?: HeadInjuryLog[]) => void, currentStaffName: string }) => {
+const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead }: { student: Student, onUpdate: (updates: Partial<Student>, logs?: HeadInjuryLog[]) => void, currentStaffName: string, isLead: boolean }) => {
   const [activeTab, setActiveTab] = useState<'0min' | '15min' | '30min'>('0min');
   const [currentSymptoms, setCurrentSymptoms] = useState<Record<string, boolean>>({});
   const [notes, setNotes] = useState('');
@@ -472,19 +475,21 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName }: { student:
 
       {witnessDone && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'flex', backgroundColor: 'var(--color-danger-bg)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-            {(['0min', '15min', '30min'] as const).map(stage => {
-              const isDone = student.headInjuryLogs.some(l => l.stage === stage);
-              return (
-                <button key={stage} onClick={() => isDone && setActiveTab(stage)} disabled={!isDone && activeTab !== stage} style={{ flex: 1, padding: '12px 0', border: 'none', background: activeTab === stage ? 'white' : 'transparent', color: activeTab === stage ? 'var(--color-danger)' : isDone ? 'var(--color-success)' : 'var(--text-muted)', fontWeight: '700', cursor: 'pointer', borderBottom: activeTab === stage ? '2px solid var(--color-danger)' : 'none', fontSize: '13px' }}>
-                  {stage} {isDone && '✓'}
-                </button>
-              );
-            })}
-          </div>
+          {isLead && (
+            <div style={{ display: 'flex', backgroundColor: 'var(--color-danger-bg)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+              {(['0min', '15min', '30min'] as const).map(stage => {
+                const isDone = student.headInjuryLogs.some(l => l.stage === stage);
+                return (
+                  <button key={stage} onClick={() => isDone && setActiveTab(stage)} disabled={!isDone && activeTab !== stage} style={{ flex: 1, padding: '12px 0', border: 'none', background: activeTab === stage ? 'white' : 'transparent', color: activeTab === stage ? 'var(--color-danger)' : isDone ? 'var(--color-success)' : 'var(--text-muted)', fontWeight: '700', cursor: 'pointer', borderBottom: activeTab === stage ? '2px solid var(--color-danger)' : 'none', fontSize: '13px' }}>
+                    {stage} {isDone && '✓'}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div style={{ maxHeight: '400px', overflowY: 'auto', opacity: surveyCompleted && !isReadOnly ? 0.6 : 1, pointerEvents: surveyCompleted && !isReadOnly ? 'none' : 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {Object.entries(HEAD_INJURY_SYMPTOMS).map(([category, symptoms]) => (
+            {isLead && Object.entries(HEAD_INJURY_SYMPTOMS).map(([category, symptoms]) => (
               <div key={category} style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   {category} Symptoms
@@ -524,7 +529,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName }: { student:
             ))}
           </div>
 
-          {!isReadOnly && (
+          {isLead && !isReadOnly && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {!surveyCompleted ? (
                 <>
@@ -661,15 +666,15 @@ const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showP
         {step === 'camera' && (
           <>
             <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>Capture Photo</h3>
-            <div style={{ width: '100%', height: '240px', backgroundColor: '#000', borderRadius: '16px', marginBottom: '16px', overflow: 'hidden', position: 'relative' }}>
+            <div style={{ width: '100%', aspectRatio: '4/3', backgroundColor: '#000', borderRadius: '16px', marginBottom: '16px', overflow: 'hidden', position: 'relative' }}>
               <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              <div style={{ position: 'absolute', bottom: '16px', left: '0', right: '0', display: 'flex', justifyContent: 'center' }}>
-                <button onClick={capturePhoto} style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'white', border: '4px solid rgba(0,0,0,0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ width: '54px', height: '54px', borderRadius: '50%', backgroundColor: 'white', border: '2px solid black' }}></div>
+              <div style={{ position: 'absolute', bottom: '16px', left: '0', right: '0', display: 'flex', gap: '12px', padding: '0 16px' }}>
+                <button onClick={onCancel} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer', backdropFilter: 'blur(10px)' }}>Cancel</button>
+                <button onClick={capturePhoto} style={{ flex: 2, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
+                  <span className="material-icons-round">camera_alt</span> Take Photo
                 </button>
               </div>
             </div>
-            <button onClick={onCancel} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
           </>
         )}
 
@@ -720,7 +725,7 @@ const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showP
   );
 };
 
-const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff, program }: { student: Student, onClose: () => void, onSave: (s: Student) => void, onCheckOut: (id: string, smsTime: string) => void, currentStaff: Staff, program: ProgramType }) => {
+const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff, program, isLeadMode }: { student: Student, onClose: () => void, onSave: (s: Student) => void, onCheckOut: (id: string, smsTime: string) => void, currentStaff: Staff, program: ProgramType, isLeadMode: boolean }) => {
   const [editedStudent, setEditedStudent] = useState({ ...student });
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [behaviorCollapsed, setBehaviorCollapsed] = useState(student.behavior !== 'none');
@@ -746,7 +751,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
   };
   const [showCheckOutConfirm, setShowCheckOutConfirm] = useState(false);
   const alarmPlayedRef = useRef(false);
-  const isLead = currentStaff.role === 'Lead';
+  const isLead = (currentStaff.role === 'Lead' || currentStaff.canAdminTasks) && isLeadMode;
 
   useEffect(() => {
     setEditedStudent({ ...student });
@@ -845,7 +850,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
               <span style={{ fontWeight: '800', color: 'var(--text-main)', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Attendance Record</span>
             </div>
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {isPresent && !showCheckOutConfirm && (
+              {isPresent && !showCheckOutConfirm && isLead && (
                 <button onClick={() => setShowCheckOutConfirm(true)} style={{ width: '100%', backgroundColor: 'var(--color-sunset)', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '16px' }}>
                   <span className="material-icons-round">logout</span> CHECK OUT
                 </button>
@@ -970,6 +975,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                 <HeadInjuryChecklist
                   student={editedStudent}
                   currentStaffName={currentStaff.name}
+                  isLead={isLead}
                   onUpdate={(updates, logs) => {
                     const merged = { ...editedStudent, ...updates };
                     if (logs) merged.headInjuryLogs = logs;
@@ -1117,7 +1123,8 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode }: { onLogin: (user: Sta
 
 
 const RosterManager = ({ onImport, onAdd }: { onImport: (s: Student[]) => void, onAdd: (s: Student) => void }) => {
-  const [manualStudent, setManualStudent] = useState({ firstName: '', lastName: '', grade: 'K', elopId: '' });
+  const [manualStudent, setManualStudent] = useState({ firstName: '', lastName: '', grade: 'Grade', elopId: '', asesId: '' });
+  const [selectedProgram, setSelectedProgram] = useState<'ELOP' | 'ASES' | ''>('');
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const newStudents: Student[] = [
@@ -1146,18 +1153,36 @@ const RosterManager = ({ onImport, onAdd }: { onImport: (s: Student[]) => void, 
             <input placeholder="Last" value={manualStudent.lastName} onChange={e => setManualStudent({ ...manualStudent, lastName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
-            <input placeholder="ID" value={manualStudent.elopId} onChange={e => setManualStudent({ ...manualStudent, elopId: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
-            <select value={manualStudent.grade} onChange={e => setManualStudent({ ...manualStudent, grade: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
+            <select title="Select Program" value={selectedProgram} onChange={e => setSelectedProgram(e.target.value as any)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
+              <option value="">Program</option>
+              <option value="ELOP">ELOP</option>
+              <option value="ASES">ASES</option>
+            </select>
+            {selectedProgram && (
+              <input
+                placeholder={`${selectedProgram} ID`}
+                value={selectedProgram === 'ELOP' ? manualStudent.elopId : manualStudent.asesId}
+                onChange={e => setManualStudent({ ...manualStudent, [selectedProgram === 'ELOP' ? 'elopId' : 'asesId']: e.target.value })}
+                style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}
+              />
+            )}
+            <select title="Select Grade" value={manualStudent.grade} onChange={e => setManualStudent({ ...manualStudent, grade: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
+              <option value="Grade">Grade</option>
               {GRADES.filter(g => g !== 'All').map(g => <option key={g} value={g}>{g}</option>)}
             </select>
             <button onClick={() => {
-              if (!manualStudent.firstName || !manualStudent.lastName) return;
+              if (!manualStudent.firstName || !manualStudent.lastName || manualStudent.grade === 'Grade') return;
+              const programId = selectedProgram === 'ELOP' ? manualStudent.elopId : manualStudent.asesId;
               onAdd({
                 id: String(Date.now()),
-                ...manualStudent,
+                firstName: manualStudent.firstName,
+                lastName: manualStudent.lastName,
+                grade: manualStudent.grade,
+                elopId: selectedProgram === 'ELOP' ? programId : '',
+                asesId: selectedProgram === 'ASES' ? programId : '',
                 guardianFirstName: 'Guardian',
                 guardianLastName: 'Name',
-                programs: ['ELOP'],
+                programs: selectedProgram ? [selectedProgram] : [],
                 sunriseStatus: 'absent',
                 sunsetStatus: 'absent',
                 hasSnack: false,
@@ -1166,7 +1191,8 @@ const RosterManager = ({ onImport, onAdd }: { onImport: (s: Student[]) => void, 
                 headInjury: false,
                 headInjuryLogs: []
               });
-              setManualStudent({ firstName: '', lastName: '', grade: 'K', elopId: '' });
+              setManualStudent({ firstName: '', lastName: '', grade: 'Grade', elopId: '', asesId: '' });
+              setSelectedProgram('');
             }} style={{ padding: '8px 16px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>Add</button>
           </div>
         </div>
@@ -1175,11 +1201,38 @@ const RosterManager = ({ onImport, onAdd }: { onImport: (s: Student[]) => void, 
   );
 };
 
-const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateStaff, onUpdateStudent, staffList, parentReports, biometricLogs, isInline, onUpdateReport }: { students: Student[], onClose: () => void, onImport: (students: Student[]) => void, onAddStudent: (s: Student) => void, onUpdateStaff: (staff: Staff[]) => void, onUpdateStudent: (s: Student) => void, staffList: Staff[], parentReports: ParentReport[], biometricLogs: BiometricLog[], isInline?: boolean, onUpdateReport?: (report: ParentReport) => void }) => {
+const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateStaff, onUpdateStudent, staffList, parentReports, biometricLogs, isInline, onUpdateReport, onScheduleBatchCheckout, showToast, isBatchDefaultEnabled, setIsBatchDefaultEnabled, defaultBatchTime, setDefaultBatchTime, scheduledBatchCheckoutTime }: { students: Student[], onClose: () => void, onImport: (students: Student[]) => void, onAddStudent: (s: Student) => void, onUpdateStaff: (staff: Staff[]) => void, onUpdateStudent: (s: Student) => void, staffList: Staff[], parentReports: ParentReport[], biometricLogs: BiometricLog[], isInline?: boolean, onUpdateReport?: (report: ParentReport) => void, onScheduleBatchCheckout: (time: string | null) => void, showToast: (msg: string, type: any) => void, isBatchDefaultEnabled: boolean, setIsBatchDefaultEnabled: (v: boolean) => void, defaultBatchTime: string, setDefaultBatchTime: (v: string) => void, scheduledBatchCheckoutTime: string | null }) => {
   const [activeTab, setActiveTab] = useState<'roster' | 'permissions' | 'batch' | 'blocking' | 'reports' | 'biometric'>('roster');
   const [localStaff, setLocalStaff] = useState<Staff[]>(staffList);
-  const [sunriseBatchTime, setSunriseBatchTime] = useState(new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
+  const [sunriseBatchTime, setSunriseBatchTime] = useState(defaultBatchTime || '08:00');
+  const [showScheduleConfirm, setShowScheduleConfirm] = useState(false);
+  const [countdown, setCountdown] = useState<string>('00:00:00:00');
   const [selectedDraft, setSelectedDraft] = useState<ParentReport | null>(null);
+
+  useEffect(() => {
+    if (!scheduledBatchCheckoutTime) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const [h, m] = scheduledBatchCheckoutTime.split(':').map(Number);
+      const target = new Date();
+      target.setHours(h, m, 0, 0);
+
+      const diff = target.getTime() - now.getTime();
+      if (diff <= 0) {
+        setCountdown('00:00:00:00');
+        clearInterval(interval);
+      } else {
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setCountdown(`${String(d).padStart(2, '0')}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [scheduledBatchCheckoutTime]);
 
   // Filter for blocking
   const [blockSearch, setBlockSearch] = useState('');
@@ -1187,6 +1240,12 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
 
   const toggleStaffCheckIn = (staffId: string) => {
     const updated = localStaff.map(s => s.id === staffId ? { ...s, canCheckIn: !s.canCheckIn } : s);
+    setLocalStaff(updated);
+    onUpdateStaff(updated);
+  };
+
+  const toggleStaffAdminTasks = (staffId: string) => {
+    const updated = localStaff.map(s => s.id === staffId ? { ...s, canAdminTasks: !s.canAdminTasks } : s);
     setLocalStaff(updated);
     onUpdateStaff(updated);
   };
@@ -1205,10 +1264,49 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
   };
 
   const handleSunriseBatchCheckout = () => {
-    const pendingStudents = students.filter(s => s.sunriseStatus === 'pending_parent');
-    pendingStudents.forEach(s => {
-      onUpdateStudent({ ...s, sunriseStatus: 'checked_out', sunriseCheckOutTime: sunriseBatchTime });
+    setShowScheduleConfirm(true);
+  };
+
+  const confirmSchedule = () => {
+    const [h, m] = sunriseBatchTime.split(':').map(Number);
+    let hour24 = h;
+    if (h === 12) hour24 = 0;
+    const time24 = `${String(hour24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+
+    if (isBatchDefaultEnabled) {
+      setDefaultBatchTime(sunriseBatchTime);
+    }
+
+    onScheduleBatchCheckout(time24);
+    setShowScheduleConfirm(false);
+  };
+
+  const isFutureTime = () => {
+    if (!sunriseBatchTime || !sunriseBatchTime.includes(':')) return false;
+    const parts = sunriseBatchTime.split(':');
+    if (parts.length !== 2) return false;
+    const h = parseInt(parts[0]);
+    const m = parseInt(parts[1]);
+    if (isNaN(h) || isNaN(m)) return false;
+    if (h < 1 || h > 12 || m < 0 || m > 59) return false;
+
+    const now = new Date();
+    const sched = new Date();
+    let hour24 = h;
+    if (h === 12) hour24 = 0;
+    sched.setHours(hour24, m, 0, 0);
+    return sched > now;
+  };
+
+  const toggleAllGrades = (staffId: string) => {
+    const updated = localStaff.map(s => {
+      if (s.id !== staffId) return s;
+      const allGrades = GRADES.filter(g => g !== 'All');
+      const isCurrentlyAll = (s.assignedGrades || []).length === allGrades.length;
+      return { ...s, assignedGrades: isCurrentlyAll ? [] : allGrades };
     });
+    setLocalStaff(updated);
+    onUpdateStaff(updated);
   };
 
   const toggleStudentBlock = (student: Student) => {
@@ -1223,13 +1321,13 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
   };
 
   return (
-    <div style={{ position: isInline ? 'relative' : 'fixed', top: isInline ? 0 : 0, left: isInline ? 0 : 0, right: isInline ? 0 : 0, bottom: isInline ? 'auto' : 0, backgroundColor: isInline ? 'transparent' : 'var(--bg-app)', zIndex: isInline ? 1 : 300, display: 'flex', flexDirection: 'column', borderRadius: isInline ? '16px' : 0, border: isInline ? '1px solid var(--border-subtle)' : 'none', marginBottom: isInline ? '16px' : 0 }}>
+    <div style={{ position: isInline ? 'relative' : 'fixed', top: isInline ? 0 : 0, left: isInline ? 0 : 0, right: isInline ? 0 : 0, bottom: isInline ? 'auto' : 0, height: isInline ? 'auto' : '100vh', backgroundColor: isInline ? 'transparent' : 'var(--bg-app)', zIndex: isInline ? 1 : 300, display: 'flex', flexDirection: 'column', borderRadius: isInline ? '16px' : 0, border: isInline ? '1px solid var(--border-subtle)' : 'none', marginBottom: isInline ? '16px' : 0 }}>
       {!isInline && (
         <div style={{ padding: '20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'var(--bg-card)' }}>
           <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span className="material-icons-round">dashboard</span> Leader Dashboard
           </h2>
-          <button onClick={onClose} style={{ padding: '10px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', cursor: 'pointer', fontWeight: '600', color: 'var(--text-main)' }}>Close</button>
+          <button onClick={onClose} style={{ padding: '10px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', cursor: 'pointer', fontWeight: '600', color: 'var(--text-main)' }}>Back</button>
         </div>
       )}
 
@@ -1262,12 +1360,22 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                       <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)' }}>{staff.name}</div>
                       <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{staff.role} • {staff.organization}</div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: staff.id === 's1' ? 0.5 : 1 }}>
-                      <span style={{ fontSize: '13px', fontWeight: '600' }}>Can Check In?</span>
-                      <button disabled={staff.id === 's1'} onClick={() => toggleStaffCheckIn(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckIn ? 'var(--color-success)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: staff.id === 's1' ? 'default' : 'pointer', transition: 'all 0.2s' }}>
-                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckIn ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
-                      </button>
-                    </div>
+                    {staff.id !== 's1' && (
+                      <div style={{ display: 'flex', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '600' }}>Can Check In?</span>
+                          <button title="Toggle Check-In Permission" onClick={() => toggleStaffCheckIn(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckIn ? 'var(--color-success)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckIn ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                          </button>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '600' }}>Admin Tasks?</span>
+                          <button title="Toggle Admin Tasks Permission" onClick={() => toggleStaffAdminTasks(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canAdminTasks ? 'var(--color-primary)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canAdminTasks ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ margin: '12px 0' }}>
@@ -1278,6 +1386,9 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                           {g}
                         </button>
                       ))}
+                      <button onClick={() => toggleAllGrades(staff.id)} style={{ padding: '6px 12px', borderRadius: '8px', border: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? '1px solid var(--text-main)' : '1px solid var(--border-subtle)', backgroundColor: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? 'var(--text-main)' : 'transparent', color: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                        All
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1295,23 +1406,99 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>Sunrise Batch Checkout</h3>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Check out all "Pending Parents" students</div>
                 </div>
               </div>
 
-              <div style={{ margin: '24px 0', padding: '20px', backgroundColor: 'var(--bg-app)', borderRadius: '12px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-secondary)' }}>Checkout Time</label>
-                <input type="time" value={sunriseBatchTime} onChange={(e) => setSunriseBatchTime(e.target.value)} style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '16px', fontWeight: '600', width: '100%', maxWidth: '200px' }} />
+              <div style={{ margin: '24px 0', padding: '20px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>Checkout Time</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)' }}>Set as Default</span>
+                    <button title="Set current time as default" onClick={() => setIsBatchDefaultEnabled(!isBatchDefaultEnabled)} style={{ width: '36px', height: '20px', borderRadius: '10px', backgroundColor: isBatchDefaultEnabled ? 'var(--color-success)' : '#d1d5db', position: 'relative', border: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                      <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '1px', left: isBatchDefaultEnabled ? '18px' : '1px', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '20px', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Hour</div>
+                    <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                        <div key={h} onClick={() => {
+                          const [_, m] = sunriseBatchTime.split(':');
+                          setSunriseBatchTime(`${String(h)}:${m || '00'}`);
+                        }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[0] === String(h) ? '800' : '600', color: sunriseBatchTime.split(':')[0] === String(h) ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
+                          {h}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-muted)', marginTop: '12px' }}>:</div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Min</div>
+                    <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
+                      {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(m => (
+                        <div key={m} onClick={() => {
+                          const [h, _] = sunriseBatchTime.split(':');
+                          setSunriseBatchTime(`${h || '8'}:${m}`);
+                        }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[1] === m ? '800' : '600', color: sunriseBatchTime.split(':')[1] === m ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
+                          {m}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', borderRadius: '12px', backgroundColor: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', marginTop: '12px' }}>
+                    <span className="material-icons-round" style={{ fontSize: '20px' }}>wb_sunny</span>
+                    <span style={{ fontWeight: '800', fontSize: '15px' }}>AM</span>
+                  </div>
+                </div>
+                <style>{`
+                  .hide-scrollbar::-webkit-scrollbar { display: none; }
+                  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+                `}</style>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0', fontSize: '14px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Students Pending Checkout:</span>
-                <span style={{ fontWeight: '800', fontSize: '18px', color: '#8b5cf6' }}>{students.filter(s => s.sunriseStatus === 'pending_parent').length}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Students Eligible:</span>
+                <span style={{ fontWeight: '800', fontSize: '18px', color: '#8b5cf6' }}>{students.filter(s => s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent').length}</span>
               </div>
 
-              <button onClick={handleSunriseBatchCheckout} disabled={students.filter(s => s.sunriseStatus === 'pending_parent').length === 0} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '16px', cursor: 'pointer', opacity: students.filter(s => s.sunriseStatus === 'pending_parent').length === 0 ? 0.5 : 1 }}>
-                Run Batch Checkout
-              </button>
+              {scheduledBatchCheckoutTime ? (
+                <div style={{ textAlign: 'center', padding: '24px', backgroundColor: 'rgba(139,92,246,0.1)', borderRadius: '16px', border: '2px dashed #8b5cf6' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#8b5cf6', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '1px' }}>Executing in</div>
+                  <div style={{ fontSize: '36px', fontWeight: '900', color: 'var(--text-main)', fontFamily: 'monospace' }}>{countdown}</div>
+                  <button onClick={() => onScheduleBatchCheckout(null)} style={{ marginTop: '16px', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Cancel Schedule</button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button onClick={() => setSunriseBatchTime('')} style={{ flex: 1, padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-main)', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={handleSunriseBatchCheckout} disabled={!isFutureTime()} style={{ flex: 2, padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '16px', cursor: 'pointer', opacity: isFutureTime() ? 1 : 0.5 }}>
+                    Run Batch Checkout
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {showScheduleConfirm && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+            <div style={{ backgroundColor: 'var(--bg-card)', padding: '32px', borderRadius: '24px', maxWidth: '400px', width: '100%', textAlign: 'center', boxShadow: 'var(--shadow-lg)' }}>
+              <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'rgba(139,92,246,0.1)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                <span className="material-icons-round" style={{ fontSize: '32px' }}>schedule</span>
+              </div>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '12px' }}>Confirm Batch Schedule</h3>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '15px', lineHeight: '1.5' }}>
+                Schedule automatic check-out for all students at <strong>{sunriseBatchTime} AM</strong>?
+              </p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button onClick={() => setShowScheduleConfirm(false)} style={{ flex: 1, padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-main)', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={confirmSchedule} style={{ flex: 1, padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Confirm</button>
+              </div>
             </div>
           </div>
         )}
@@ -1654,6 +1841,10 @@ const App = () => {
   const [toast, setToast] = useState<{ msg: string, type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
   const [darkMode, setDarkMode] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isLeadMode, setIsLeadMode] = useState(true);
+  const [scheduledBatchCheckoutTime, setScheduledBatchCheckoutTime] = useState<string | null>(null);
+  const [defaultBatchTime, setDefaultBatchTime] = useState<string>('08:00');
+  const [isBatchDefaultEnabled, setIsBatchDefaultEnabled] = useState(false);
   const [reportData, setReportData] = useState<{ student: Student, type: 'injury' | 'behavior' } | null>(null);
   const [parentReports, setParentReports] = useState<ParentReport[]>([]);
   const [biometricLogs, setBiometricLogs] = useState<BiometricLog[]>([]);
@@ -1698,6 +1889,33 @@ const App = () => {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
+
+  useEffect(() => {
+    if (!scheduledBatchCheckoutTime || program !== 'sunrise') return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const currentTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+
+      // Convert scheduled time to 24h for comparison if necessary, but input type="time" is usually 24h
+      if (currentTime === scheduledBatchCheckoutTime) {
+        setStudents(prev => prev.map(s => {
+          if (s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent') {
+            return {
+              ...s,
+              sunriseStatus: 'checked_out',
+              sunriseCheckOutTime: `Sunrise EDP Auto-Check-Out by ${user?.name || 'EDP Lead'} at ${scheduledBatchCheckoutTime}`
+            } as Student;
+          }
+          return s;
+        }));
+        showToast(`EDP Sunrise students have been checked out at ${scheduledBatchCheckoutTime}`, 'success');
+        setScheduledBatchCheckoutTime(null);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [scheduledBatchCheckoutTime, program, user]);
 
   const showToast = (msg: string, type: 'success' | 'info' | 'warning' | 'error') => {
     setToast({ msg, type });
@@ -1916,15 +2134,50 @@ EDP Team - Cajon Valley School District`;
             <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>{new Date().toLocaleDateString()}</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div
+            onClick={() => setIsLeadMode(!isLeadMode)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: '20px',
+              backgroundColor: isLeadMode ? 'rgba(139,92,246,0.1)' : 'var(--bg-hover)',
+              border: `1px solid ${isLeadMode ? '#8b5cf6' : 'var(--border-subtle)'}`,
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            <span className="material-icons-round" style={{ fontSize: '18px', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
+              {isLeadMode ? 'admin_panel_settings' : 'person'}
+            </span>
+            <span style={{ fontSize: '12px', fontWeight: '700', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
+              {isLeadMode ? 'LEAD' : 'STAFF'}
+            </span>
+          </div>
+
           <button onClick={() => setDarkMode(!darkMode)} style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
             <span className="material-icons-round">{darkMode ? 'light_mode' : 'dark_mode'}</span>
           </button>
-          {user.role === 'Lead' && (
-            <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-              <span className="material-icons-round">dashboard</span>
+
+          {isLeadMode && (
+            <>
+              <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <span className="material-icons-round">dashboard</span>
+              </button>
+              <button onClick={() => setUser(null)} style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer' }} title="Logout">
+                <span className="material-icons-round">logout</span>
+              </button>
+            </>
+          )}
+
+          {!isLeadMode && (
+            <button onClick={() => setUser(null)} style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer' }} title="Logout">
+              <span className="material-icons-round">logout</span>
             </button>
           )}
+
           <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#374151', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700' }}>
             {user.name.charAt(0)}
           </div>
@@ -1955,41 +2208,6 @@ EDP Team - Cajon Valley School District`;
             ))}
           </div>
 
-          {/* Inline Leader Dashboard for Lead users */}
-          {user.role === 'Lead' && (
-            <div style={{ marginTop: '16px' }}>
-              <button
-                onClick={() => setInlineDashboardExpanded(!inlineDashboardExpanded)}
-                style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: inlineDashboardExpanded ? '12px' : 0 }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span className="material-icons-round" style={{ color: '#8b5cf6' }}>dashboard</span>
-                  <span style={{ fontWeight: '700', color: 'var(--text-main)' }}>Lead Dashboard</span>
-                  {parentReports.filter(r => r.status === 'draft').length > 0 && (
-                    <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: '700', backgroundColor: '#fef3c7', color: '#d97706' }}>
-                      {parentReports.filter(r => r.status === 'draft').length} draft{parentReports.filter(r => r.status === 'draft').length > 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
-                <span className="material-icons-round" style={{ color: 'var(--text-muted)', transform: inlineDashboardExpanded ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>expand_more</span>
-              </button>
-              {inlineDashboardExpanded && (
-                <LeaderDashboard
-                  students={students}
-                  staffList={staffList}
-                  parentReports={parentReports}
-                  biometricLogs={biometricLogs}
-                  isInline={true}
-                  onClose={() => setInlineDashboardExpanded(false)}
-                  onImport={(newStudents) => setStudents([...students, ...newStudents])}
-                  onAddStudent={(newStudent) => setStudents([...students, newStudent])}
-                  onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)}
-                  onUpdateStudent={handleSaveStudent}
-                  onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))}
-                />
-              )}
-            </div>
-          )}
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 80px 16px' }}>
@@ -2005,8 +2223,10 @@ EDP Team - Cajon Valley School District`;
               const isPresent = status === 'present';
               const isCheckedOut = status === 'checked_out' || status === 'pending_parent';
 
+              const opacity = (student.isCheckInBlocked || status === 'checked_out') ? 0.5 : 1;
+
               return (
-                <div key={student.id} onClick={() => !isPresent && !isCheckedOut ? handleStudentAction(student) : null} style={{ backgroundColor: 'var(--bg-card)', padding: '16px', borderRadius: '16px', marginBottom: '12px', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: `4px solid ${isPresent || isCheckedOut ? (status === 'checked_out' ? '#9ca3af' : (status === 'pending_parent' ? '#8b5cf6' : '#10b981')) : 'transparent'}`, cursor: isPresent || isCheckedOut ? 'default' : 'pointer', transition: 'transform 0.2s ease, box-shadow 0.2s ease', opacity: student.isCheckInBlocked ? 0.5 : 1 }}
+                <div key={student.id} onClick={() => !isPresent && !isCheckedOut ? handleStudentAction(student) : null} style={{ backgroundColor: 'var(--bg-card)', padding: '16px', borderRadius: '16px', marginBottom: '12px', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: `4px solid ${isPresent || isCheckedOut ? (status === 'checked_out' ? '#9ca3af' : (status === 'pending_parent' ? '#8b5cf6' : '#10b981')) : 'transparent'}`, cursor: isPresent || isCheckedOut ? 'default' : 'pointer', transition: 'transform 0.2s ease, box-shadow 0.2s ease', opacity }}
                   onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                 >
@@ -2083,22 +2303,32 @@ EDP Team - Cajon Valley School District`;
           onCheckOut={handleCheckOut}
           currentStaff={user}
           program={program}
+          isLeadMode={isLeadMode}
         />
       )}
 
       {showLeaderDashboard && (
-        <LeaderDashboard
-          students={students}
-          staffList={staffList}
-          parentReports={parentReports}
-          biometricLogs={biometricLogs}
-          onClose={() => setShowLeaderDashboard(false)}
-          onImport={(newStudents) => setStudents([...students, ...newStudents])}
-          onAddStudent={(newStudent) => setStudents([...students, newStudent])}
-          onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)}
-          onUpdateStudent={handleSaveStudent}
-          onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))}
-        />
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 300 }}>
+          <LeaderDashboard
+            students={students}
+            staffList={staffList}
+            parentReports={parentReports}
+            biometricLogs={biometricLogs}
+            onClose={() => setShowLeaderDashboard(false)}
+            onImport={(newStudents) => setStudents([...students, ...newStudents])}
+            onAddStudent={(newStudent) => setStudents([...students, newStudent])}
+            onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)}
+            onUpdateStudent={handleSaveStudent}
+            onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))}
+            onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)}
+            showToast={showToast}
+            isBatchDefaultEnabled={isBatchDefaultEnabled}
+            setIsBatchDefaultEnabled={setIsBatchDefaultEnabled}
+            defaultBatchTime={defaultBatchTime}
+            setDefaultBatchTime={setDefaultBatchTime}
+            scheduledBatchCheckoutTime={scheduledBatchCheckoutTime}
+          />
+        </div>
       )}
 
 
