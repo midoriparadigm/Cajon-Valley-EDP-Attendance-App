@@ -1,0 +1,111 @@
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Light Mode Defaults */
+  --bg-app: #f3f4f6;
+  --bg-card: #ffffff;
+  --bg-header: #ffffff;
+  --bg-input: #f9fafb;
+  --bg-hover: #f3f4f6;
+
+  --text-main: #1f2937;
+  --text-secondary: #4b5563;
+  /* Darkened from #6b7280 for better contrast */
+  --text-muted: #9ca3af;
+  --text-inverse: #ffffff;
+
+  --border-subtle: #e5e7eb;
+  --border-focus: #2563eb;
+
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+
+  --color-success: #10b981;
+  --color-success-bg: #d1fae5;
+  --color-warning: #f59e0b;
+  --color-warning-bg: #fef3c7;
+  --color-danger: #ef4444;
+  --color-danger-bg: #fee2e2;
+
+  --color-sunrise: #f59e0b;
+  --color-sunrise-bg: #fffbeb;
+  --color-sunset: #6366f1;
+  --color-sunset-bg: #eef2ff;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  --modal-overlay: rgba(0, 0, 0, 0.6);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] {
+  --bg-app: #111827;
+  --bg-card: #1f2937;
+  --bg-header: #1f2937;
+  --bg-input: #374151;
+  --bg-hover: #374151;
+
+  --text-main: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+
+  --border-subtle: #374151;
+  --border-focus: #60a5fa;
+
+  --color-sunrise: #fbbf24;
+  --color-sunrise-bg: #451a03;
+  --color-sunset: #818cf8;
+  --color-sunset-bg: #1e1b4b;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --modal-overlay: rgba(0, 0, 0, 0.8);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  height: 100vh;
+  overflow: hidden;
+  /* App-like feel */
+  line-height: 1.5;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Scrollbar hiding for clean mobile look */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+}
