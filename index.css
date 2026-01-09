@@ -25,7 +25,11 @@
   --color-warning: #f59e0b;
   --color-warning-bg: #fef3c7;
   --color-danger: #ef4444;
+  --color-danger: #ef4444;
   --color-danger-bg: #fee2e2;
+
+  --color-toggle-active: var(--color-success);
+  /* Green in Light Mode */
 
   --color-sunrise: #f59e0b;
   --color-sunrise-bg: #fffbeb;
@@ -61,6 +65,8 @@
 
   --color-sunrise: #fbbf24;
   --color-sunrise-bg: #451a03;
+  --color-toggle-active: var(--color-primary);
+  /* Blue in Dark Mode */
   --color-sunset: #818cf8;
   --color-sunset-bg: #1e1b4b;
 

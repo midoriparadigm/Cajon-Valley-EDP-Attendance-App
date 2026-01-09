@@ -84,6 +84,8 @@ interface Staff {
   assignedGrades?: string[]; // e.g., ['TK', 'K']
   canCheckIn?: boolean;
   canAdminTasks?: boolean;
+  canCheckOut?: boolean;
+  canHir?: boolean;
 }
 
 interface Student {
@@ -151,11 +153,15 @@ interface BiometricLog {
  * Stores pre-assigned photos for students to simulate matching and anomaly detection.
  */
 class MockDatabase {
-  static getPhotosForStudent(studentId: string) {
+  static getPhotosForStudent(student: Student) {
     // Demo photos using DiceBear for consistent visuals
+    // Ensure "same base subject" by using the same seed for both
+    const baseSeed = student.firstName;
+    const genderParam = (['William', 'Liam', 'Noah'].includes(student.firstName)) ? '&gender=male' : '';
+
     return {
-      yearbook: `https://api.dicebear.com/7.x/avataaars/svg?seed=student_${studentId}_yb`,
-      previous: `https://api.dicebear.com/7.x/avataaars/svg?seed=student_${studentId}_prev`,
+      yearbook: `https://api.dicebear.com/7.x/avataaars/svg?seed=${baseSeed}${genderParam}`,
+      previous: `https://api.dicebear.com/7.x/avataaars/svg?seed=${baseSeed}${genderParam}`, // Same base subject
     };
   }
 }
@@ -215,6 +221,8 @@ const MOCK_LEAD_USER: Staff = {
   email: 'thomasv@cajonvalley.net',
   canCheckIn: true,
   canAdminTasks: true,
+  canCheckOut: true,
+  canHir: true,
   assignedGrades: ['TK', 'K', '1', '2', '3', '4', '5']
 };
 
@@ -226,6 +234,8 @@ const MOCK_COACH_USER: Staff = {
   email: 'mike@549sports.com',
   canCheckIn: true,
   canAdminTasks: false,
+  canCheckOut: false,
+  canHir: false,
   assignedGrades: ['1', '2', '3', '4', '5'] // Limited grades example
 };
 
@@ -237,7 +247,7 @@ const INITIAL_STUDENTS: Student[] = [
   { id: '3', elopId: '1003', asesId: 'A1003', firstName: 'Olivia', lastName: 'Chen', grade: '1', guardianFirstName: 'Jenny', guardianLastName: 'Chen', parentPhone: '555-0103', programs: ['ELOP', 'ASES'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [], yearbookPhotoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Olivia', isCheckInBlocked: true }, // Blocked example
   { id: '4', elopId: '1004', firstName: 'Noah', lastName: 'Smith', grade: '4', guardianFirstName: 'Mike', guardianLastName: 'Smith', programs: ['ELOP'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [], yearbookPhotoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Noah' },
   { id: '5', elopId: '1005', asesId: 'A1005', firstName: 'Ava', lastName: 'Johnson', grade: '3', guardianFirstName: 'Emily', guardianLastName: 'Johnson', parentPhone: '555-0105', programs: ['ELOP', 'ASES'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [], yearbookPhotoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ava' },
-  { id: '6', elopId: '1006', firstName: 'William', lastName: 'Brown', grade: 'K', guardianFirstName: 'David', guardianLastName: 'Brown', parentPhone: '555-0106', programs: ['ELOP'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: true, headInjuryWitness: 'Veronica Thomas', headInjuryWitnessDesc: 'Bumped head on desk', headInjuryTimestamp: '10:30 AM', headInjuryStartTime: Number(Date.now()) - 1000 * 60 * 16, headInjuryLogs: [{ stage: '0min', completedAt: new Date().toISOString(), staffName: 'Veronica Thomas', symptoms: { 'Headache or pressure': true } }], yearbookPhotoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=William' },
+  { id: '6', elopId: '1006', firstName: 'William', lastName: 'Brown', grade: 'K', guardianFirstName: 'David', guardianLastName: 'Brown', parentPhone: '555-0106', programs: ['ELOP'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [], yearbookPhotoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=William&gender=male' },
   { id: '11', elopId: '1011', firstName: 'Mia', lastName: 'Anderson', grade: 'TK', guardianFirstName: 'Lisa', guardianLastName: 'Anderson', programs: ['ELOP'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [], yearbookPhotoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mia' },
 ];
 
@@ -817,9 +827,18 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
     }
   };
 
+  // TODO: Replace with real SMS API integration (Twilio/Nexmo) when API keys are available
+  const sendSmsMock = (phone: string, studentName: string) => {
+    console.log(`Sending SMS mock draft to: support@midoriparadigm.com (Original target: ${phone}). Body: "Confirm check out for ${studentName}? Reply YES to confirm."`);
+  };
+
   const handleLocalCheckOut = () => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+    // Send SMS mock notification
+    const guardianPhone = student.parentPhone || '619-549-0572';
+    sendSmsMock(guardianPhone, `${student.firstName} ${student.lastName}`);
 
     const pendingUpdate = program === 'sunrise'
       ? { sunriseStatus: 'pending_parent' as AttendanceStatus }
@@ -1122,7 +1141,7 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode }: { onLogin: (user: Sta
 };
 
 
-const RosterManager = ({ onImport, onAdd }: { onImport: (s: Student[]) => void, onAdd: (s: Student) => void }) => {
+const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]) => void, onAdd: (s: Student) => void, showToast: (msg: string, type: any) => void }) => {
   const [manualStudent, setManualStudent] = useState({ firstName: '', lastName: '', grade: 'Grade', elopId: '', asesId: '' });
   const [selectedProgram, setSelectedProgram] = useState<'ELOP' | 'ASES' | ''>('');
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1141,60 +1160,61 @@ const RosterManager = ({ onImport, onAdd }: { onImport: (s: Student[]) => void, 
       <div style={{ display: 'grid', gap: '16px' }}>
         <div>
           <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '600' }}>Bulk Import CSV</label>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input type="file" accept=".csv" onChange={handleFileUpload} style={{ flex: 1 }} />
-            <button onClick={() => alert('Downloading Template...')} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-hover)', cursor: 'pointer' }}>Template</button>
-          </div>
+          <input type="file" accept=".csv" onChange={handleFileUpload} style={{ flex: 1 }} />
         </div>
-        <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '600' }}>Add Single Student</label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginBottom: '8px' }}>
-            <input placeholder="First" value={manualStudent.firstName} onChange={e => setManualStudent({ ...manualStudent, firstName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
-            <input placeholder="Last" value={manualStudent.lastName} onChange={e => setManualStudent({ ...manualStudent, lastName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
-            <select title="Select Program" value={selectedProgram} onChange={e => setSelectedProgram(e.target.value as any)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
-              <option value="">Program</option>
-              <option value="ELOP">ELOP</option>
-              <option value="ASES">ASES</option>
-            </select>
-            {selectedProgram && (
-              <input
-                placeholder={`${selectedProgram} ID`}
-                value={selectedProgram === 'ELOP' ? manualStudent.elopId : manualStudent.asesId}
-                onChange={e => setManualStudent({ ...manualStudent, [selectedProgram === 'ELOP' ? 'elopId' : 'asesId']: e.target.value })}
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}
-              />
-            )}
-            <select title="Select Grade" value={manualStudent.grade} onChange={e => setManualStudent({ ...manualStudent, grade: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
-              <option value="Grade">Grade</option>
-              {GRADES.filter(g => g !== 'All').map(g => <option key={g} value={g}>{g}</option>)}
-            </select>
-            <button onClick={() => {
-              if (!manualStudent.firstName || !manualStudent.lastName || manualStudent.grade === 'Grade') return;
-              const programId = selectedProgram === 'ELOP' ? manualStudent.elopId : manualStudent.asesId;
-              onAdd({
-                id: String(Date.now()),
-                firstName: manualStudent.firstName,
-                lastName: manualStudent.lastName,
-                grade: manualStudent.grade,
-                elopId: selectedProgram === 'ELOP' ? programId : '',
-                asesId: selectedProgram === 'ASES' ? programId : '',
-                guardianFirstName: 'Guardian',
-                guardianLastName: 'Name',
-                programs: selectedProgram ? [selectedProgram] : [],
-                sunriseStatus: 'absent',
-                sunsetStatus: 'absent',
-                hasSnack: false,
-                behavior: 'none',
-                behaviorIssues: [],
-                headInjury: false,
-                headInjuryLogs: []
-              });
-              setManualStudent({ firstName: '', lastName: '', grade: 'Grade', elopId: '', asesId: '' });
-              setSelectedProgram('');
-            }} style={{ padding: '8px 16px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>Add</button>
-          </div>
+      </div>
+      <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '600' }}>Add Student</label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginBottom: '8px' }}>
+          <input placeholder="First" value={manualStudent.firstName} onChange={e => setManualStudent({ ...manualStudent, firstName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
+          <input placeholder="Last" value={manualStudent.lastName} onChange={e => setManualStudent({ ...manualStudent, lastName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
+          <input
+            placeholder="ELOP ID"
+            value={manualStudent.elopId}
+            onChange={e => setManualStudent({ ...manualStudent, elopId: e.target.value })}
+            style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}
+          />
+          <input
+            placeholder="ASES ID"
+            value={manualStudent.asesId}
+            onChange={e => setManualStudent({ ...manualStudent, asesId: e.target.value })}
+            style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}
+          />
+          <select title="Select Grade" value={manualStudent.grade} onChange={e => setManualStudent({ ...manualStudent, grade: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
+            <option value="Grade">Grade</option>
+            {GRADES.filter(g => g !== 'All').map(g => <option key={g} value={g}>{g}</option>)}
+          </select>
+          <button onClick={() => {
+            if (!manualStudent.firstName || !manualStudent.lastName || manualStudent.grade === 'Grade') return;
+            const newPrograms: SubProgram[] = [];
+            if (manualStudent.elopId) newPrograms.push('ELOP');
+            if (manualStudent.asesId) newPrograms.push('ASES');
+
+            const programId = manualStudent.elopId || manualStudent.asesId; // Fallback for display
+            onAdd({
+              id: String(Date.now()),
+              firstName: manualStudent.firstName,
+              lastName: manualStudent.lastName,
+              grade: manualStudent.grade,
+              elopId: manualStudent.elopId,
+              asesId: manualStudent.asesId,
+              guardianFirstName: 'Guardian',
+              guardianLastName: 'Name',
+              programs: newPrograms,
+              yearbookPhotoUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${manualStudent.firstName}${['William', 'Liam', 'Noah', 'James', 'Lucas', 'Oliver'].includes(manualStudent.firstName) ? '&gender=male' : ''}`,
+              sunriseStatus: 'absent',
+              sunsetStatus: 'absent',
+              hasSnack: false,
+              behavior: 'none',
+              behaviorIssues: [],
+              headInjury: false,
+              headInjuryLogs: []
+            });
+            setManualStudent({ firstName: '', lastName: '', grade: 'Grade', elopId: '', asesId: '' });
+            showToast('Student successfully added!', 'success');
+          }} style={{ padding: '8px 16px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>Add</button>
         </div>
       </div>
     </div>
@@ -1208,6 +1228,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
   const [showScheduleConfirm, setShowScheduleConfirm] = useState(false);
   const [countdown, setCountdown] = useState<string>('00:00:00:00');
   const [selectedDraft, setSelectedDraft] = useState<ParentReport | null>(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   useEffect(() => {
     if (!scheduledBatchCheckoutTime) return;
@@ -1246,6 +1267,18 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
 
   const toggleStaffAdminTasks = (staffId: string) => {
     const updated = localStaff.map(s => s.id === staffId ? { ...s, canAdminTasks: !s.canAdminTasks } : s);
+    setLocalStaff(updated);
+    onUpdateStaff(updated);
+  };
+
+  const toggleStaffCheckOut = (staffId: string) => {
+    const updated = localStaff.map(s => s.id === staffId ? { ...s, canCheckOut: !s.canCheckOut } : s);
+    setLocalStaff(updated);
+    onUpdateStaff(updated);
+  };
+
+  const toggleStaffHir = (staffId: string) => {
+    const updated = localStaff.map(s => s.id === staffId ? { ...s, canHir: !s.canHir } : s);
     setLocalStaff(updated);
     onUpdateStaff(updated);
   };
@@ -1346,7 +1379,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
 
       <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
         {activeTab === 'roster' && (
-          <RosterManager onImport={onImport} onAdd={onAddStudent} />
+          <RosterManager onImport={onImport} onAdd={onAddStudent} showToast={showToast} />
         )}
 
         {activeTab === 'permissions' && (
@@ -1361,18 +1394,36 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                       <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{staff.role} • {staff.organization}</div>
                     </div>
                     {staff.id !== 's1' && (
-                      <div style={{ display: 'flex', gap: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '600' }}>Can Check In?</span>
-                          <button title="Toggle Check-In Permission" onClick={() => toggleStaffCheckIn(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckIn ? 'var(--color-success)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '180px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '600' }}>Can Check In</span>
+                          <button title="Toggle Check-In Permission" onClick={() => toggleStaffCheckIn(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckIn ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
                             <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckIn ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
                           </button>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '600' }}>Admin Tasks?</span>
-                          <button title="Toggle Admin Tasks Permission" onClick={() => toggleStaffAdminTasks(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canAdminTasks ? 'var(--color-primary)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
-                            <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canAdminTasks ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
-                          </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '180px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: '600' }}>Admin Tasks</span>
+                            <button title="Toggle Admin Tasks Permission" onClick={() => toggleStaffAdminTasks(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canAdminTasks ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                              <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canAdminTasks ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                            </button>
+                          </div>
+                          {staff.canAdminTasks && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingLeft: '16px', borderLeft: '2px solid var(--border-subtle)', marginLeft: '8px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '160px' }}>
+                                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Check Out</span>
+                                <button title="Toggle Check-Out Permission" onClick={() => toggleStaffCheckOut(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckOut ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckOut ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                                </button>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '160px' }}>
+                                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>HIR Quest.</span>
+                                <button title="Toggle HIR Permission" onClick={() => toggleStaffHir(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canHir ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canHir ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1686,13 +1737,91 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                 {selectedDraft.type === 'injury' ? 'Head Injury Report' : 'Behavior Report'} • via {selectedDraft.method === 'both' ? 'Email + SMS' : selectedDraft.method === 'email' ? 'Email' : 'SMS'}
               </div>
             </div>
-            <div style={{ backgroundColor: 'var(--bg-input)', padding: '16px', borderRadius: '12px', marginBottom: '16px', whiteSpace: 'pre-wrap', fontSize: '14px', lineHeight: '1.6', color: 'var(--text-main)', maxHeight: '300px', overflowY: 'auto' }}>
-              {selectedDraft.message}
+            <div style={{ backgroundColor: 'var(--bg-input)', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>Edit Report Message</label>
+              <textarea
+                title="Edit report message"
+                value={selectedDraft.message}
+                onChange={(e) => setSelectedDraft({ ...selectedDraft, message: e.target.value })}
+                disabled={selectedDraft.status === 'sent'}
+                style={{ width: '100%', height: '200px', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '14px', lineHeight: '1.6', resize: 'vertical', fontFamily: 'inherit' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '600' }}>📧 Email</span>
+                <button
+                  title="Toggle Email"
+                  onClick={() => {
+                    const current = selectedDraft.method;
+                    let next: 'email' | 'sms' | 'both' = 'email';
+                    if (current === 'email') next = 'email'; // Can't turn off if it's the only one? Or logic: toggle off -> error? Let's allow toggle logic:
+                    // Logic: If Email is ON (email/both), turn OFF. If OFF (sms), turn ON.
+                    const isEmailOn = current === 'email' || current === 'both';
+
+                    if (isEmailOn) {
+                      // Turn off -> if was both, become sms. If was email, become... none? Let's prevent none.
+                      if (current === 'both') next = 'sms';
+                      else return; // Prevent turning off the only method
+                    } else {
+                      // Turn on -> if was sms, become both.
+                      if (current === 'sms') next = 'both';
+                      else next = 'email';
+                    }
+                    setSelectedDraft({ ...selectedDraft, method: next });
+                  }}
+                  disabled={selectedDraft.status === 'sent'}
+                  style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: (selectedDraft.method === 'email' || selectedDraft.method === 'both') ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: selectedDraft.status === 'sent' ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: selectedDraft.status === 'sent' ? 0.5 : 1 }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: (selectedDraft.method === 'email' || selectedDraft.method === 'both') ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                </button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '600' }}>💬 SMS</span>
+                <button
+                  title="Toggle SMS"
+                  onClick={() => {
+                    const current = selectedDraft.method;
+                    let next: 'email' | 'sms' | 'both' = 'sms';
+                    // Logic: If SMS is ON (sms/both), turn OFF. If OFF (email), turn ON.
+                    const isSmsOn = current === 'sms' || current === 'both';
+
+                    if (isSmsOn) {
+                      if (current === 'both') next = 'email';
+                      else return; // Prevent turning off only method
+                    } else {
+                      if (current === 'email') next = 'both';
+                      else next = 'sms';
+                    }
+                    setSelectedDraft({ ...selectedDraft, method: next });
+                  }}
+                  disabled={selectedDraft.status === 'sent'}
+                  style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: (selectedDraft.method === 'sms' || selectedDraft.method === 'both') ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: selectedDraft.status === 'sent' ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: selectedDraft.status === 'sent' ? 0.5 : 1 }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: (selectedDraft.method === 'sms' || selectedDraft.method === 'both') ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                </button>
+              </div>
+              {selectedDraft.status !== 'sent' && (
+                <button
+                  onClick={() => {
+                    setIsRegenerating(true);
+                    setTimeout(() => {
+                      setSelectedDraft({ ...selectedDraft, message: `[Regenerated by Gemini]\nBased on the incident with ${selectedDraft.studentName}, here is a revised report:\n\n${selectedDraft.message}` });
+                      setIsRegenerating(false);
+                    }, 1500);
+                  }}
+                  disabled={isRegenerating}
+                  style={{ marginLeft: 'auto', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-hover)', fontWeight: '600', cursor: isRegenerating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)' }}>
+                  <span className={`material-icons-round ${isRegenerating ? 'spin' : ''}`} style={{ fontSize: '16px' }}>autorenew</span>
+                  {isRegenerating ? 'Regenerating...' : 'Regenerate'}
+                </button>
+              )}
             </div>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
               <button onClick={() => setSelectedDraft(null)} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'var(--bg-hover)', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>Close</button>
               {selectedDraft.status === 'draft' && (
-                <button onClick={() => { if (onUpdateReport) onUpdateReport({ ...selectedDraft, status: 'sent' }); setSelectedDraft(null); }} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Send</button>
+                <>
+                  <button onClick={() => { if (onUpdateReport) onUpdateReport(selectedDraft); setSelectedDraft(null); showToast('Draft saved!', 'success'); }} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '700', cursor: 'pointer' }}>Save Draft</button>
+                  <button onClick={() => { if (onUpdateReport) onUpdateReport({ ...selectedDraft, status: 'sent' }); setSelectedDraft(null); showToast('Report sent!', 'success'); }} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Send</button>
+                </>
               )}
             </div>
           </div>
@@ -2007,7 +2136,7 @@ const App = () => {
 
       // Create Biometric Log
       if (biometricData) {
-        const mockPhotos = MockDatabase.getPhotosForStudent(studentId);
+        const mockPhotos = MockDatabase.getPhotosForStudent(student);
         const newLog: BiometricLog = {
           id: Date.now().toString(),
           studentId: studentId,
