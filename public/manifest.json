@@ -2,6 +2,7 @@
     "name": "EDP Attendance",
     "short_name": "EDP Attendance",
     "description": "Cajon Valley School District EDP Attendance Tracking",
+    "scope": "/",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0f172a",

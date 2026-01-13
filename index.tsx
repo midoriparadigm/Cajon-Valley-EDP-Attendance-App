@@ -93,14 +93,11 @@ interface Student {
   firstName: string;
   lastName: string;
   grade: string;
-  guardianFirstName: string;
-  guardianLastName: string;
+  guardians: GuardianContact[];
   contactLastUpdated?: string;
-  yearbookPhotoUrl?: string; // New field for yearbook photo
-  isCheckInBlocked?: boolean; // New field for blocking check-in
+  yearbookPhotoUrl?: string;
+  isCheckInBlocked?: boolean;
   programs: SubProgram[];
-  parentPhone?: string;
-  parentEmail?: string;
   elopId: string;
   asesId?: string;
   sunriseStatus: AttendanceStatus;
@@ -131,6 +128,19 @@ interface Student {
   headInjuryLogs: HeadInjuryLog[];
   headInjuryStartTime?: number;
   smsSentTime?: string;
+}
+
+interface GuardianContact {
+  type: 'Primary' | 'Secondary' | 'Additional';
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email?: string;
+  relationship?: string;
+  authorizedBy?: string;
+  authDate?: string;
+  notifySms?: boolean;
+  notifyEmail?: boolean;
 }
 
 interface BiometricLog {
@@ -193,7 +203,7 @@ class BiometricService {
     const matchScore = 0.85 + (Math.random() * 0.1); // Always a high match for demo
     const anomalyScore = Math.random();
 
-    // A score > 0.8 triggers the VISUAL_ANOMALY_DETECTED state
+    // A score > 0.8 triggers the Visual Anomaly Detected state
     const anomalyDetected = anomalyScore > 0.8;
 
     return {
@@ -241,15 +251,87 @@ const MOCK_COACH_USER: Staff = {
 
 const INITIAL_STAFF: Staff[] = [MOCK_LEAD_USER, MOCK_COACH_USER];
 
-const INITIAL_STUDENTS: Student[] = [
-  { id: '1', elopId: '1001', asesId: 'A1001', firstName: 'Emma', lastName: 'Thompson', grade: 'K', guardianFirstName: 'Sarah', guardianLastName: 'Thompson', parentPhone: '555-0101', programs: ['ELOP', 'ASES'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [], yearbookPhotoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma' },
-  { id: '2', elopId: '1002', firstName: 'Liam', lastName: 'Rodriguez', grade: '2', guardianFirstName: 'Carlos', guardianLastName: 'Rodriguez', parentPhone: '555-0102', programs: ['ELOP'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [], yearbookPhotoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Liam', isCheckInBlocked: false },
-  { id: '3', elopId: '1003', asesId: 'A1003', firstName: 'Olivia', lastName: 'Chen', grade: '1', guardianFirstName: 'Jenny', guardianLastName: 'Chen', parentPhone: '555-0103', programs: ['ELOP', 'ASES'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [], yearbookPhotoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Olivia', isCheckInBlocked: true }, // Blocked example
-  { id: '4', elopId: '1004', firstName: 'Noah', lastName: 'Smith', grade: '4', guardianFirstName: 'Mike', guardianLastName: 'Smith', programs: ['ELOP'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [], yearbookPhotoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Noah' },
-  { id: '5', elopId: '1005', asesId: 'A1005', firstName: 'Ava', lastName: 'Johnson', grade: '3', guardianFirstName: 'Emily', guardianLastName: 'Johnson', parentPhone: '555-0105', programs: ['ELOP', 'ASES'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [], yearbookPhotoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ava' },
-  { id: '6', elopId: '1006', firstName: 'William', lastName: 'Brown', grade: 'K', guardianFirstName: 'David', guardianLastName: 'Brown', parentPhone: '555-0106', programs: ['ELOP'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [], yearbookPhotoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=William&gender=male' },
-  { id: '11', elopId: '1011', firstName: 'Mia', lastName: 'Anderson', grade: 'TK', guardianFirstName: 'Lisa', guardianLastName: 'Anderson', programs: ['ELOP'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [], yearbookPhotoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mia' },
-];
+const GENERATE_MOCK_STUDENTS = () => {
+  const NAMES_MALE = {
+    American: ['Liam', 'Noah', 'James', 'William', 'Logan', 'Mason', 'Elijah', 'Oliver', 'Jacob', 'Lucas'],
+    Hispanic: ['Mateo', 'Santiago', 'Sebastian', 'Leonardo', 'Diego', 'Daniel', 'Julian', 'Alexander', 'Angel', 'David'],
+    Arabic: ['Muhammad', 'Ahmed', 'Ali', 'Omar', 'Youssef', 'Ibrahim', 'Adam', 'Amir', 'Hamza', 'Khalid'],
+    Chaldean: ['Yousif', 'Fadi', 'Rami', 'George', 'Dani', 'Michael', 'Joseph', 'Thomas', 'Peter', 'Simon']
+  };
+  const NAMES_FEMALE = {
+    American: ['Emma', 'Olivia', 'Ava', 'Isabella', 'Mia', 'Sophia', 'Charlotte', 'Amelia', 'Harper', 'Evelyn'],
+    Hispanic: ['Sofia', 'Camila', 'Valentina', 'Isabella', 'Victoria', 'Gabriela', 'Mariana', 'Lucia', 'Elena', 'Natalia'],
+    Arabic: ['Maryam', 'Fatima', 'Aisha', 'Zainab', 'Layla', 'Noor', 'Hana', 'Salma', 'Jana', 'Sarah'],
+    Chaldean: ['Rita', 'Noura', 'Lina', 'Sarah', 'Dalia', 'Mary', 'Anne', 'Monica', 'Rachel', 'Jessica']
+  };
+
+  const PARENT_NAMES_MALE = {
+    American: ['Robert', 'John', 'Michael', 'David', 'Richard', 'Joseph', 'Charles', 'Thomas'],
+    Hispanic: ['Carlos', 'Juan', 'Luis', 'Jose', 'Miguel', 'Francisco', 'Antonio', 'Jorge'],
+    Arabic: ['Hassan', 'Hussein', 'Mahmoud', 'Mustafa', 'Abdullah', 'Saleh', 'Tarek', 'Samir'],
+    Chaldean: ['Nabil', 'Sam', 'Aziz', 'Salam', 'Waleed', 'Raad', 'Sabah', 'Hikmat']
+  };
+
+  const PARENT_NAMES_FEMALE = {
+    American: ['Jennifer', 'Maria', 'Susan', 'Lisa', 'Karen', 'Nancy', 'Linda', 'Betty'],
+    Hispanic: ['Maria', 'Ana', 'Rosa', 'Carmen', 'Teresa', 'Juana', 'Martha', 'Patricia'],
+    Arabic: ['Amal', 'Samira', 'Nadia', 'Mona', 'Laila', 'Huda', 'Rania', 'Sherin'],
+    Chaldean: ['Suham', 'Amira', 'Nidal', 'Basma', 'Wafa', 'Janan', 'Hanaa', 'Nawal']
+  };
+
+  const LAST_NAMES = ['Smith', 'Johnson', 'Garcia', 'Martinez', 'Ali', 'Khan', 'Yako', 'Hannosh', 'Rodriguez', 'Wilson'];
+
+  const grades = ['TK', 'K', '1', '2', '3', '4', '5'];
+  let students: Student[] = [];
+  let idCounter = 1;
+
+  grades.forEach(grade => {
+    const count = 15 + Math.floor(Math.random() * 6); // 15-20 students
+    for (let i = 0; i < count; i++) {
+      const ethnicities = ['American', 'Hispanic', 'Arabic', 'Chaldean'] as const;
+      const ethnicity = ethnicities[Math.floor(Math.random() * ethnicities.length)];
+
+      const gender = Math.random() > 0.5 ? 'male' : 'female';
+      const firstNameList = gender === 'male' ? NAMES_MALE[ethnicity] : NAMES_FEMALE[ethnicity];
+      const firstName = firstNameList[Math.floor(Math.random() * firstNameList.length)];
+      const lastName = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+
+      const parentGender = Math.random() > 0.5 ? 'male' : 'female';
+      const parentNameList = parentGender === 'male' ? PARENT_NAMES_MALE[ethnicity] : PARENT_NAMES_FEMALE[ethnicity];
+      const guardianFirstName = parentNameList[Math.floor(Math.random() * parentNameList.length)];
+
+      const hasAses = Math.random() > 0.5;
+      students.push({
+        id: String(idCounter),
+        elopId: String(1000 + idCounter),
+        asesId: hasAses ? `A${1000 + idCounter}` : undefined,
+        firstName,
+        lastName,
+        grade: grade as any,
+        guardians: [{
+          type: 'Primary',
+          firstName: guardianFirstName,
+          lastName,
+          phone: `619-555-${String(Math.floor(Math.random() * 9000) + 1000)}`,
+          relationship: parentGender === 'male' ? 'Father' : 'Mother'
+        }],
+        programs: hasAses ? ['ELOP', 'ASES'] : ['ELOP'],
+        sunriseStatus: 'absent',
+        sunsetStatus: 'absent',
+        hasSnack: false,
+        behavior: 'none',
+        behaviorIssues: [],
+        headInjury: false,
+        headInjuryLogs: [],
+        yearbookPhotoUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${firstName}&gender=${gender}`
+      });
+      idCounter++;
+    }
+  });
+  return students;
+};
+
+const INITIAL_STUDENTS: Student[] = GENERATE_MOCK_STUDENTS();
 
 const formatTimeWithMs = (ms: number) => {
   if (ms <= 0) return "00:00:00";
@@ -477,7 +559,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead }: { 
         />
         {!witnessDone && (
           <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-            <button onClick={handleCancelReport} style={{ flex: 1, padding: '10px', borderRadius: 'var(--radius-md)', border: 'none', backgroundColor: 'var(--color-danger-bg)', color: 'var(--color-danger)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+            <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
             <button onClick={handleWitnessDone} disabled={!witnessText.trim()} style={{ flex: 1, padding: '10px', borderRadius: 'var(--radius-md)', border: 'none', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: '600', cursor: 'pointer', opacity: witnessText.trim() ? 1 : 0.5 }}>Done</button>
           </div>
         )}
@@ -547,13 +629,13 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead }: { 
                     <button onClick={handleYesDone} style={{ width: '100%', padding: '14px', backgroundColor: 'var(--color-success)', border: 'none', color: 'white', borderRadius: 'var(--radius-md)', fontWeight: '700', fontSize: '14px' }}>Done (Issues Found)</button>
                   )}
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={handleCancelReport} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--bg-hover)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', borderRadius: 'var(--radius-md)', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                    <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                     <button onClick={handleNoToAll} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: 'var(--radius-md)', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>"No" to All</button>
                   </div>
                 </>
               ) : (
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <button onClick={handleCancelReport} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--bg-hover)', border: 'none', color: 'var(--text-secondary)', borderRadius: 'var(--radius-md)', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                   <button onClick={handleSaveLog} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Assessment</button>
                 </div>
               )}
@@ -665,7 +747,7 @@ const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showP
             )}
 
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={onCancel} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: 'var(--bg-hover)', color: 'var(--text-main)', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={onCancel} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
               <button onClick={() => showPhotoOption ? startCamera() : onConfirm()} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>
                 {showPhotoOption ? 'Verify & Check In' : 'Confirm'}
               </button>
@@ -679,7 +761,7 @@ const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showP
             <div style={{ width: '100%', aspectRatio: '4/3', backgroundColor: '#000', borderRadius: '16px', marginBottom: '16px', overflow: 'hidden', position: 'relative' }}>
               <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               <div style={{ position: 'absolute', bottom: '16px', left: '0', right: '0', display: 'flex', gap: '12px', padding: '0 16px' }}>
-                <button onClick={onCancel} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer', backdropFilter: 'blur(10px)' }}>Cancel</button>
+                <button onClick={onCancel} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                 <button onClick={capturePhoto} style={{ flex: 2, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
                   <span className="material-icons-round">camera_alt</span> Take Photo
                 </button>
@@ -735,29 +817,159 @@ const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showP
   );
 };
 
-const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff, program, isLeadMode }: { student: Student, onClose: () => void, onSave: (s: Student) => void, onCheckOut: (id: string, smsTime: string) => void, currentStaff: Staff, program: ProgramType, isLeadMode: boolean }) => {
+const GuardianAddForm = ({ onSave, onCancel, onDelete, initialContact, unavailableTypes = [] }: { onSave: (g: GuardianContact) => void, onCancel: () => void, onDelete?: () => void, initialContact?: GuardianContact, unavailableTypes?: string[], key?: any }) => {
+  const [type, setType] = useState<'Primary' | 'Secondary' | 'Additional'>((initialContact?.type as any) || 'Secondary');
+  const [first, setFirst] = useState(initialContact?.firstName || '');
+  const [last, setLast] = useState(initialContact?.lastName || '');
+  const [phone, setPhone] = useState(initialContact?.phone || '');
+  const [email, setEmail] = useState(initialContact?.email || '');
+  const [notifySms, setNotifySms] = useState(initialContact?.notifySms || false);
+  const [notifyEmail, setNotifyEmail] = useState(initialContact?.notifyEmail || false);
+
+  // Available types: The current type (if editing) OR types not in unavailableTypes
+  const availableTypes = ['Primary', 'Secondary', 'Additional'].filter(t => t === initialContact?.type || !unavailableTypes.includes(t));
+
+  // If the current 'type' state is no longer valid (e.g. switching from new to edit context?), ensure it selects a valid one.
+  // Ideally, when opening 'New', type defaults to the first available.
+  useEffect(() => {
+    if (!initialContact && availableTypes.length > 0 && !availableTypes.includes(type)) {
+      setType(availableTypes[0] as any);
+    }
+  }, [availableTypes, type, initialContact]);
+
+  const handleSubmit = () => {
+    if (!first || !last || !phone) return;
+    onSave({ type, firstName: first, lastName: last, phone, email, notifySms, notifyEmail });
+  };
+
+  return (
+    <div style={{ backgroundColor: 'var(--bg-card)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px', boxShadow: 'var(--shadow-sm)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h4 style={{ margin: 0, fontSize: '15px', color: 'var(--text-main)', fontWeight: '700' }}>{initialContact ? 'Edit Guardian' : 'New Guardian'}</h4>
+        <select
+          value={type}
+          onChange={e => setType(e.target.value as any)}
+          // If editing, can we change type? Yes, to another open slot. 
+          // But user requirement says "drop-down menu should reflect that, limiting options".
+          // So we should allow changing to available types.
+          style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '13px', fontWeight: '600' }}
+        >
+          {availableTypes.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <input placeholder="First Name" value={first} onChange={e => setFirst(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px' }} />
+        <input placeholder="Last Name" value={last} onChange={e => setLast(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px' }} />
+      </div>
+      <input placeholder="Phone Number" value={phone} onChange={e => setPhone(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', width: '100%' }} />
+      <input placeholder="Email Address (Optional)" value={email} onChange={e => setEmail(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', width: '100%' }} />
+
+      {/* Notifications Toggles */}
+      <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: 'var(--bg-input)', borderRadius: '8px', border: '1px solid var(--border-subtle)', opacity: phone ? 1 : 0.6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-icons-round" style={{ fontSize: '18px', color: 'var(--text-secondary)' }}>sms</span>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-main)' }}>SMS Alerts</span>
+          </div>
+          <button
+            onClick={() => phone && setNotifySms(!notifySms)}
+            disabled={!phone}
+            style={{ width: '40px', height: '24px', borderRadius: '12px', backgroundColor: notifySms ? 'var(--color-toggle-active)' : '#d1d5db', position: 'relative', border: 'none', cursor: phone ? 'pointer' : 'not-allowed', transition: 'all 0.2s', padding: 0, flexShrink: 0 }}
+          >
+            <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: notifySms ? '18px' : '2px', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }} />
+          </button>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: 'var(--bg-input)', borderRadius: '8px', border: '1px solid var(--border-subtle)', opacity: email ? 1 : 0.6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-icons-round" style={{ fontSize: '18px', color: 'var(--text-secondary)' }}>email</span>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-main)' }}>Email Alerts</span>
+          </div>
+          <button
+            onClick={() => email && setNotifyEmail(!notifyEmail)}
+            disabled={!email}
+            style={{ width: '40px', height: '24px', borderRadius: '12px', backgroundColor: notifyEmail ? 'var(--color-toggle-active)' : '#d1d5db', position: 'relative', border: 'none', cursor: email ? 'pointer' : 'not-allowed', transition: 'all 0.2s', padding: 0, flexShrink: 0 }}
+          >
+            <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: notifyEmail ? '18px' : '2px', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }} />
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+        <button onClick={onCancel} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+        {initialContact && onDelete && (
+          <button onClick={onDelete} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--color-danger)', backgroundColor: 'var(--bg-card)', color: 'var(--color-danger)', cursor: 'pointer', fontWeight: '600' }}>Delete</button>
+        )}
+        <button onClick={handleSubmit} style={{ flex: 2, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--color-primary)', color: 'white', cursor: 'pointer', fontWeight: '700' }}>{initialContact ? 'Save Changes' : 'Add Guardian'}</button>
+      </div>
+    </div>
+  );
+};
+
+const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff, program, isLeadMode }: { student: Student, onClose: () => void, onSave: (s: Student) => void, onCheckOut: (id: string, smsTime: string, checkOutBy?: string) => void, currentStaff: Staff, program: ProgramType, isLeadMode: boolean }) => {
   const [editedStudent, setEditedStudent] = useState({ ...student });
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [behaviorCollapsed, setBehaviorCollapsed] = useState(student.behavior !== 'none');
   const [showTicketOptions, setShowTicketOptions] = useState(false);
+  const [checkoutBy, setCheckoutBy] = useState<'Primary' | 'Secondary' | 'Additional'>('Primary');
 
-  const [editedParentFirst, setEditedParentFirst] = useState(student.guardianFirstName);
-  const [editedParentLast, setEditedParentLast] = useState(student.guardianLastName);
-  const [editedPhone, setEditedPhone] = useState(student.parentPhone || '');
-  const [editedEmail, setEditedEmail] = useState(student.parentEmail || '');
-  const [isEditingContact, setIsEditingContact] = useState(false);
+  // Guardian Management V2 State
+  const [editingGuardianIndex, setEditingGuardianIndex] = useState<number | null>(null);
+  const [isAddingGuardian, setIsAddingGuardian] = useState(false);
 
-  const handleSaveContact = () => {
-    onSave({ ...editedStudent, guardianFirstName: editedParentFirst, guardianLastName: editedParentLast, parentPhone: editedPhone, parentEmail: editedEmail, contactLastUpdated: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
-    setIsEditingContact(false);
+  const handleSaveGuardian = (contact: GuardianContact) => {
+    const updatedGuardians = [...(editedStudent.guardians || [])];
+
+    if (editingGuardianIndex !== null) {
+      // Update existing
+      updatedGuardians[editingGuardianIndex] = {
+        ...updatedGuardians[editingGuardianIndex], // preserve other fields if any
+        ...contact,
+        // Ensure metadata is preserved or updated if needed
+      };
+      setEditingGuardianIndex(null);
+    } else {
+      // Add new
+      // Add Authorization Metadata if Secondary/Additional
+      if (contact.type !== 'Primary') {
+        const primary = updatedGuardians.find(g => g.type === 'Primary');
+        if (primary) {
+          contact.authorizedBy = `${primary.firstName} ${primary.lastName}`;
+          contact.authDate = new Date().toLocaleDateString();
+          // Mock SMS
+          sendSmsMock(primary.phone, 'auth_request', {
+            guardian_name: `${contact.firstName} ${contact.lastName}`,
+            role_type: contact.type,
+            student_names: `${editedStudent.firstName}`
+          });
+        }
+      }
+      updatedGuardians.push(contact);
+      setIsAddingGuardian(false);
+    }
+
+    const updatedStudent = {
+      ...editedStudent,
+      guardians: updatedGuardians,
+      contactLastUpdated: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setEditedStudent(updatedStudent);
+    onSave(updatedStudent);
   };
 
-  const cancelEditContact = () => {
-    setEditedParentFirst(student.guardianFirstName);
-    setEditedParentLast(student.guardianLastName);
-    setEditedPhone(student.parentPhone || '');
-    setEditedEmail(student.parentEmail || '');
-    setIsEditingContact(false);
+  const handleDeleteGuardian = () => {
+    if (editingGuardianIndex === null) return;
+    const updatedGuardians = [...(editedStudent.guardians || [])];
+    updatedGuardians.splice(editingGuardianIndex, 1);
+    const updatedStudent = {
+      ...editedStudent,
+      guardians: updatedGuardians,
+      contactLastUpdated: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setEditedStudent(updatedStudent);
+    setEditingGuardianIndex(null);
+    onSave(updatedStudent);
   };
   const [showCheckOutConfirm, setShowCheckOutConfirm] = useState(false);
   const alarmPlayedRef = useRef(false);
@@ -765,10 +977,8 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
 
   useEffect(() => {
     setEditedStudent({ ...student });
-    setEditedParentFirst(student.guardianFirstName);
-    setEditedParentLast(student.guardianLastName);
-    setEditedPhone(student.parentPhone || '');
-    setEditedEmail(student.parentEmail || '');
+    setEditingGuardianIndex(null);
+    setIsAddingGuardian(false);
   }, [student]);
 
   useEffect(() => {
@@ -827,18 +1037,52 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
     }
   };
 
-  // TODO: Replace with real SMS API integration (Twilio/Nexmo) when API keys are available
-  const sendSmsMock = (phone: string, studentName: string) => {
-    console.log(`Sending SMS mock draft to: support@midoriparadigm.com (Original target: ${phone}). Body: "Confirm check out for ${studentName}? Reply YES to confirm."`);
+  // --- Notification Logic ---
+  const sendSmsMock = (phone: string, templateType: 'pickup_notification' | 'auth_request', data: any) => {
+    let message = "";
+    if (templateType === 'pickup_notification') {
+      const { guardian_name, school_name, time, date, student_names } = data;
+      message = `The following student(s) has/have been picked up by ${guardian_name} from ${school_name} at ${time} on ${date}: ${student_names}`;
+    } else if (templateType === 'auth_request') {
+      const { guardian_name, role_type, student_names } = data;
+      message = `Do you authorize ${guardian_name} to be the ${role_type} Guardian who is allowed to pickup ${student_names}?`;
+    }
+    console.log(`[MOCK SMS] To: ${phone} | Body: "${message}"`);
   };
 
   const handleLocalCheckOut = () => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
-    // Send SMS mock notification
-    const guardianPhone = student.parentPhone || '619-549-0572';
-    sendSmsMock(guardianPhone, `${student.firstName} ${student.lastName}`);
+    // Determine Notification Logic
+    // 1. Notify the person checking out (Confirmation)
+    const activeGuardian = student.guardians?.find(g => g.type === checkoutBy) || student.guardians?.[0];
+    const activePhone = activeGuardian?.phone || '619-549-0572';
+    const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+    // Always trigger confirmation SMS to the person present
+    sendSmsMock(activePhone, 'pickup_notification', {
+      guardian_name: activeGuardian ? `${activeGuardian.firstName} ${activeGuardian.lastName}` : 'Guardian',
+      school_name: 'Cajon Valley EDP',
+      time: timeStr,
+      date: dateStr,
+      student_names: `${student.firstName} ${student.lastName}`
+    });
+
+    // 2. Cascade Alert if Non-Primary
+    if (checkoutBy !== 'Primary') {
+      const primary = student.guardians?.find(g => g.type === 'Primary');
+      if (primary && primary.phone && primary.phone !== activePhone) {
+        console.log(`[Cascade Alert] Sending SMS to Primary ${primary.firstName} because checkout was by ${checkoutBy}`);
+        sendSmsMock(primary.phone, 'pickup_notification', {
+          guardian_name: activeGuardian ? `${activeGuardian.firstName} ${activeGuardian.lastName}` : 'Secondary Guardian',
+          school_name: 'Cajon Valley EDP',
+          time: timeStr,
+          date: dateStr,
+          student_names: `${student.firstName} ${student.lastName}`
+        });
+      }
+    }
 
     const pendingUpdate = program === 'sunrise'
       ? { sunriseStatus: 'pending_parent' as AttendanceStatus }
@@ -846,7 +1090,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
 
     setEditedStudent(prev => ({ ...prev, ...pendingUpdate, smsSentTime: timeStr }));
     setShowCheckOutConfirm(false);
-    onCheckOut(student.id, timeStr);
+    onCheckOut(student.id, timeStr, checkoutBy);
   };
 
   const currentStatus = program === 'sunrise' ? editedStudent.sunriseStatus : editedStudent.sunsetStatus;
@@ -878,8 +1122,24 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
               {showCheckOutConfirm && (
                 <div style={{ backgroundColor: 'var(--bg-card)', padding: '16px', borderRadius: '12px', textAlign: 'center', border: '1px solid var(--border-subtle)', animation: 'slideUp 0.2s' }}>
                   <div style={{ marginBottom: '12px', fontWeight: '700', color: 'var(--text-main)' }}>Confirm Check out?</div>
+
+                  <div style={{ marginBottom: '16px', textAlign: 'left' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px' }}>Checkout By:</label>
+                    <select
+                      title="Select Guardian"
+                      value={checkoutBy}
+                      onChange={(e) => setCheckoutBy(e.target.value as any)}
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}
+                    >
+                      {student.guardians?.map(g => (
+                        <option key={g.type} value={g.type}>{g.type}: {g.firstName} {g.lastName}</option>
+                      ))}
+                      {(!student.guardians || student.guardians.length === 0) && <option value="Primary">Primary (Unknown)</option>}
+                    </select>
+                  </div>
+
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={() => setShowCheckOutConfirm(false)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--color-danger-bg)', color: 'var(--color-danger)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                    <button onClick={() => setShowCheckOutConfirm(false)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                     <button onClick={handleLocalCheckOut} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--color-sunset)', color: 'white', fontWeight: '600', cursor: 'pointer' }}>Yes</button>
                   </div>
                 </div>
@@ -964,7 +1224,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                           />
 
                           <div style={{ display: 'flex', gap: '12px' }}>
-                            <button onClick={cancelTicket} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--color-danger-bg)', color: 'var(--color-danger)', border: 'none', borderRadius: '12px', fontWeight: '700' }}>Cancel</button>
+                            <button onClick={cancelTicket} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                             <button onClick={saveBehavior} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '12px', fontWeight: '700' }}>Save Ticket</button>
                           </div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>Stamped: {editedStudent.behaviorTimestamp} by {editedStudent.behaviorStaff}</div>
@@ -972,7 +1232,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                       )}
 
                       {editedStudent.behavior === 'none' && showTicketOptions && (
-                        <button onClick={() => setShowTicketOptions(false)} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', backgroundColor: 'var(--color-danger-bg)', color: 'var(--color-danger)', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                        <button onClick={() => setShowTicketOptions(false)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                       )}
                     </div>
                   )}
@@ -1004,73 +1264,91 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
               )}
             </div>
           </section>
-          {/* 4. Guardian Contact Info (Restored) */}
+          {/* 4. Guardian Contact Info & Management */}
+          {/* 4. Guardian Contact Info & Management */}
           {isLead && (
             <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
               <div style={{ padding: '16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span className="material-icons-round" style={{ color: 'var(--text-main)', fontSize: '20px' }}>contact_phone</span>
-                  <span style={{ fontWeight: '800', color: 'var(--text-main)', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Guardian Contact</span>
+                  <span style={{ fontWeight: '800', color: 'var(--text-main)', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Guardian Contacts</span>
                 </div>
-                {!isEditingContact && (
-                  <button onClick={() => setIsEditingContact(true)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>Edit</button>
-                )}
               </div>
-              <div style={{ padding: '16px' }}>
-                {isEditingContact ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px' }}>First Name</label>
-                        <input value={editedParentFirst} onChange={(e) => setEditedParentFirst(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-app)', color: 'var(--text-main)', fontSize: '14px' }} placeholder="First Name" />
+
+              {/* Guardian List V2 */}
+              <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {(editedStudent.guardians || []).map((guardian, idx) => {
+                  if (editingGuardianIndex === idx) {
+                    const unavailableTypes = (editedStudent.guardians || [])
+                      .filter((_, i) => i !== idx) // Exclude self
+                      .map(g => g.type);
+                    return (
+                      <GuardianAddForm
+                        key={idx}
+                        initialContact={guardian}
+                        unavailableTypes={unavailableTypes}
+                        onSave={handleSaveGuardian}
+                        onCancel={() => setEditingGuardianIndex(null)}
+                        onDelete={handleDeleteGuardian}
+                      />
+                    );
+                  }
+
+                  return (
+                    <div key={idx} style={{ padding: '16px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: '800', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{guardian.type} Contact</span>
+                            {guardian.type === 'Primary' && <span className="material-icons-round" style={{ fontSize: '14px', color: '#6b7280' }}>star</span>}
+                          </div>
+                          <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)', marginTop: '4px' }}>
+                            {guardian.firstName} {guardian.lastName}
+                          </div>
+                        </div>
+                        {isLead && (
+                          <button onClick={() => setEditingGuardianIndex(idx)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex' }}>
+                            <span className="material-icons-round" style={{ fontSize: '18px' }}>edit</span>
+                          </button>
+                        )}
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px' }}>Last Name</label>
-                        <input value={editedParentLast} onChange={(e) => setEditedParentLast(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-app)', color: 'var(--text-main)', fontSize: '14px' }} placeholder="Last Name" />
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className="material-icons-round" style={{ fontSize: '16px' }}>phone</span> {guardian.phone}
+                          {guardian.notifySms && <span className="material-icons-round" style={{ fontSize: '14px', color: 'var(--color-success)', title: 'SMS Enabled' } as any}>sms</span>}
+                        </div>
+                        {guardian.email && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className="material-icons-round" style={{ fontSize: '16px' }}>email</span> {guardian.email}
+                            {guardian.notifyEmail && <span className="material-icons-round" style={{ fontSize: '14px', color: '#8b5cf6', title: 'Email Enabled' } as any}>check_circle</span>}
+                          </div>
+                        )}
                       </div>
+
+                      {guardian.authorizedBy && (
+                        <div style={{ marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 8px', backgroundColor: '#ecfdf5', borderRadius: '4px', border: '1px solid #10b981', color: '#047857', fontSize: '11px', fontWeight: '700' }}>
+                          <span className="material-icons-round" style={{ fontSize: '14px' }}>verified_user</span>
+                          Authorized by {guardian.authorizedBy} ({guardian.authDate})
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px' }}>Phone</label>
-                      <input value={editedPhone} onChange={(e) => setEditedPhone(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-app)', color: 'var(--text-main)', fontSize: '14px' }} placeholder="Phone Number" />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px' }}>Email</label>
-                      <input value={editedEmail} onChange={(e) => setEditedEmail(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-app)', color: 'var(--text-main)', fontSize: '14px' }} placeholder="Email" />
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                      <button onClick={cancelEditContact} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
-                      <button onClick={handleSaveContact} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', fontWeight: '700', cursor: 'pointer' }}>Save</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                        <span className="material-icons-round">person</span>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-main)' }}>{student.guardianFirstName} {student.guardianLastName}</div>
-                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Guardian</div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                        <span className="material-icons-round">phone</span>
-                      </div>
-                      <div style={{ fontSize: '15px', fontWeight: '500', color: 'var(--text-main)' }}>{student.parentPhone || 'No phone number'}</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                        <span className="material-icons-round">email</span>
-                      </div>
-                      <div style={{ fontSize: '15px', fontWeight: '500', color: 'var(--text-main)' }}>{student.parentEmail || 'No email listed'}</div>
-                    </div>
-                    {student.contactLastUpdated && (
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', fontStyle: 'italic', textAlign: 'right' }}>
-                        Updated: {student.contactLastUpdated}
-                      </div>
-                    )}
-                  </div>
+                  );
+                })}
+
+                {/* Add Button or Form */}
+                {isLead && !isAddingGuardian && (editedStudent.guardians || []).length < 3 && (
+                  <button onClick={() => setIsAddingGuardian(true)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px dashed var(--border-subtle)', backgroundColor: 'var(--bg-app)', color: 'var(--text-secondary)', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <span className="material-icons-round">add</span> Add Guardian Contact
+                  </button>
+                )}
+
+                {isAddingGuardian && (
+                  <GuardianAddForm
+                    onSave={handleSaveGuardian}
+                    onCancel={() => setIsAddingGuardian(false)}
+                    unavailableTypes={(editedStudent.guardians || []).map(g => g.type)}
+                  />
                 )}
               </div>
             </section>
@@ -1142,16 +1420,41 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode }: { onLogin: (user: Sta
 
 
 const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]) => void, onAdd: (s: Student) => void, showToast: (msg: string, type: any) => void }) => {
-  const [manualStudent, setManualStudent] = useState({ firstName: '', lastName: '', grade: 'Grade', elopId: '', asesId: '' });
-  const [selectedProgram, setSelectedProgram] = useState<'ELOP' | 'ASES' | ''>('');
+  const [manualStudent, setManualStudent] = useState<{
+    firstName: string;
+    lastName: string;
+    grade: string;
+    elopId: string;
+    asesId: string;
+    guardians: GuardianContact[];
+  }>({
+    firstName: '',
+    lastName: '',
+    grade: 'Grade',
+    elopId: '',
+    asesId: '',
+    guardians: [
+      { type: 'Primary', firstName: '', lastName: '', phone: '', email: '', relationship: 'Parent' },
+      { type: 'Secondary', firstName: '', lastName: '', phone: '', email: '', relationship: '' },
+      { type: 'Additional', firstName: '', lastName: '', phone: '', email: '', relationship: '' }
+    ]
+  });
+  const [activeGuardianTab, setActiveGuardianTab] = useState<number>(0);
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const newStudents: Student[] = [
-        { id: 'new1', elopId: '9001', firstName: 'New', lastName: 'Student', grade: '1', guardianFirstName: 'Guardian', guardianLastName: 'Parent', programs: ['ELOP'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [] }
+        { id: 'new1', elopId: '9001', firstName: 'New', lastName: 'Student', grade: '1', guardians: [{ type: 'Primary', firstName: 'Guardian', lastName: 'Name', phone: '', email: '' }], programs: ['ELOP'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [] }
       ];
       onImport(newStudents);
       alert('Roster Imported Successfully');
     }
+  };
+
+  const handleGuardianChange = (field: keyof GuardianContact, value: string) => {
+    const newGuardians = [...manualStudent.guardians];
+    newGuardians[activeGuardianTab] = { ...newGuardians[activeGuardianTab], [field]: value };
+    setManualStudent({ ...manualStudent, guardians: newGuardians });
   };
 
   return (
@@ -1165,11 +1468,13 @@ const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]
       </div>
       <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
         <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '600' }}>Add Student</label>
+
+        {/* Student Check-in Info */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginBottom: '8px' }}>
-          <input placeholder="First" value={manualStudent.firstName} onChange={e => setManualStudent({ ...manualStudent, firstName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
-          <input placeholder="Last" value={manualStudent.lastName} onChange={e => setManualStudent({ ...manualStudent, lastName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
+          <input placeholder="First Name" value={manualStudent.firstName} onChange={e => setManualStudent({ ...manualStudent, firstName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
+          <input placeholder="Last Name" value={manualStudent.lastName} onChange={e => setManualStudent({ ...manualStudent, lastName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginBottom: '16px' }}>
           <input
             placeholder="ELOP ID"
             value={manualStudent.elopId}
@@ -1186,13 +1491,58 @@ const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]
             <option value="Grade">Grade</option>
             {GRADES.filter(g => g !== 'All').map(g => <option key={g} value={g}>{g}</option>)}
           </select>
+        </div>
+
+        {/* Guardian Tabs */}
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '600' }}>Guardian Information</label>
+          <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', borderBottom: '1px solid var(--border-subtle)' }}>
+            {['Primary', 'Secondary', 'Additional'].map((t, i) => (
+              <button
+                key={t}
+                onClick={() => setActiveGuardianTab(i)}
+                style={{
+                  padding: '6px 12px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: activeGuardianTab === i ? '2px solid var(--color-primary)' : '2px solid transparent',
+                  color: activeGuardianTab === i ? 'var(--color-primary)' : 'var(--text-secondary)',
+                  fontWeight: activeGuardianTab === i ? '700' : '500',
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'grid', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <input placeholder="First Name" value={manualStudent.guardians[activeGuardianTab].firstName} onChange={(e) => handleGuardianChange('firstName', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
+              <input placeholder="Last Name" value={manualStudent.guardians[activeGuardianTab].lastName} onChange={(e) => handleGuardianChange('lastName', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <input placeholder="Phone" value={manualStudent.guardians[activeGuardianTab].phone} onChange={(e) => handleGuardianChange('phone', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
+              <input placeholder="Email" value={manualStudent.guardians[activeGuardianTab].email} onChange={(e) => handleGuardianChange('email', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
+            </div>
+            <input placeholder="Relationship (e.g. Parent, Aunt)" value={manualStudent.guardians[activeGuardianTab].relationship || ''} onChange={(e) => handleGuardianChange('relationship', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'right' }}>
           <button onClick={() => {
-            if (!manualStudent.firstName || !manualStudent.lastName || manualStudent.grade === 'Grade') return;
+            if (!manualStudent.firstName || !manualStudent.lastName || manualStudent.grade === 'Grade') {
+              showToast('Please fill Name and Grade', 'error');
+              return;
+            }
+            if (!manualStudent.guardians[0].firstName) {
+              showToast('Primary Guardian is required', 'error');
+              return;
+            }
             const newPrograms: SubProgram[] = [];
             if (manualStudent.elopId) newPrograms.push('ELOP');
             if (manualStudent.asesId) newPrograms.push('ASES');
 
-            const programId = manualStudent.elopId || manualStudent.asesId; // Fallback for display
             onAdd({
               id: String(Date.now()),
               firstName: manualStudent.firstName,
@@ -1200,8 +1550,7 @@ const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]
               grade: manualStudent.grade,
               elopId: manualStudent.elopId,
               asesId: manualStudent.asesId,
-              guardianFirstName: 'Guardian',
-              guardianLastName: 'Name',
+              guardians: manualStudent.guardians.filter(g => g.firstName.trim() !== ''),
               programs: newPrograms,
               yearbookPhotoUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${manualStudent.firstName}${['William', 'Liam', 'Noah', 'James', 'Lucas', 'Oliver'].includes(manualStudent.firstName) ? '&gender=male' : ''}`,
               sunriseStatus: 'absent',
@@ -1212,9 +1561,17 @@ const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]
               headInjury: false,
               headInjuryLogs: []
             });
-            setManualStudent({ firstName: '', lastName: '', grade: 'Grade', elopId: '', asesId: '' });
+            setManualStudent({
+              firstName: '', lastName: '', grade: 'Grade', elopId: '', asesId: '',
+              guardians: [
+                { type: 'Primary', firstName: '', lastName: '', phone: '', email: '', relationship: 'Parent' },
+                { type: 'Secondary', firstName: '', lastName: '', phone: '', email: '', relationship: '' },
+                { type: 'Additional', firstName: '', lastName: '', phone: '', email: '', relationship: '' }
+              ]
+            });
+            setActiveGuardianTab(0);
             showToast('Student successfully added!', 'success');
-          }} style={{ padding: '8px 16px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>Add</button>
+          }} style={{ padding: '10px 24px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>Add Student</button>
         </div>
       </div>
     </div>
@@ -1229,6 +1586,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
   const [countdown, setCountdown] = useState<string>('00:00:00:00');
   const [selectedDraft, setSelectedDraft] = useState<ParentReport | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [selectedAccessGrade, setSelectedAccessGrade] = useState<string | null>(null);
 
   useEffect(() => {
     if (!scheduledBatchCheckoutTime) return;
@@ -1526,7 +1884,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                 </div>
               ) : (
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <button onClick={() => setSunriseBatchTime('')} style={{ flex: 1, padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-main)', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={() => setSunriseBatchTime('')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                   <button onClick={handleSunriseBatchCheckout} disabled={!isFutureTime()} style={{ flex: 2, padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '16px', cursor: 'pointer', opacity: isFutureTime() ? 1 : 0.5 }}>
                     Run Batch Checkout
                   </button>
@@ -1547,7 +1905,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                 Schedule automatic check-out for all students at <strong>{sunriseBatchTime} AM</strong>?
               </p>
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button onClick={() => setShowScheduleConfirm(false)} style={{ flex: 1, padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-main)', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={() => setShowScheduleConfirm(false)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                 <button onClick={confirmSchedule} style={{ flex: 1, padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Confirm</button>
               </div>
             </div>
@@ -1561,21 +1919,38 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
               <input value={blockSearch} onChange={(e) => setBlockSearch(e.target.value)} placeholder="Search student to manage access..." style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-subtle)', fontSize: '15px' }} />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {students.filter(s => (s.firstName.toLowerCase() + ' ' + s.lastName.toLowerCase()).includes(blockSearch.toLowerCase())).map(student => (
-                <div key={student.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', opacity: student.isCheckInBlocked ? 0.8 : 1, borderLeft: student.isCheckInBlocked ? '4px solid var(--color-danger)' : '1px solid var(--border-subtle)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>{student.grade}</div>
-                    <div>
-                      <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>{student.firstName} {student.lastName}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{student.guardianFirstName} {student.guardianLastName}</div>
-                    </div>
-                  </div>
-                  <button onClick={() => toggleStudentBlock(student)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: student.isCheckInBlocked ? 'var(--color-danger-bg)' : 'var(--bg-hover)', color: student.isCheckInBlocked ? 'var(--color-danger)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-                    {student.isCheckInBlocked ? 'No Check-In' : 'Active'}
-                  </button>
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px', marginBottom: '16px' }}>
+              <button onClick={() => setSelectedAccessGrade(prev => prev === 'All' ? null : 'All')} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedAccessGrade === 'All' ? 'var(--text-main)' : 'var(--bg-card)', color: selectedAccessGrade === 'All' ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedAccessGrade === 'All' ? 'scale(1.05)' : 'scale(1)' }}>
+                All
+              </button>
+              {GRADES.map(g => (
+                <button key={g} onClick={() => setSelectedAccessGrade(prev => prev === g ? null : g)} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedAccessGrade === g ? 'var(--text-main)' : 'var(--bg-card)', color: selectedAccessGrade === g ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedAccessGrade === g ? 'scale(1.05)' : 'scale(1)' }}>
+                  {g}
+                </button>
               ))}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {students
+                .filter(s => (s.firstName.toLowerCase() + ' ' + s.lastName.toLowerCase()).includes(blockSearch.toLowerCase()))
+                .filter(s => !selectedAccessGrade || selectedAccessGrade === 'All' || s.grade === selectedAccessGrade)
+                .map(student => (
+                  <div key={student.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', opacity: student.isCheckInBlocked ? 0.8 : 1, borderLeft: student.isCheckInBlocked ? '4px solid var(--color-danger)' : '1px solid var(--border-subtle)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>{student.grade}</div>
+                      <div>
+                        <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>{student.firstName} {student.lastName}</div>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                          {student.programs.includes('ELOP') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: '700' }}>ELOP</span>}
+                          {student.programs.includes('ASES') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8', fontWeight: '700' }}>ASES</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <button onClick={() => toggleStudentBlock(student)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: student.isCheckInBlocked ? 'var(--color-danger-bg)' : 'var(--bg-hover)', color: student.isCheckInBlocked ? 'var(--color-danger)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                      {student.isCheckInBlocked ? 'No Check-In' : 'Active'}
+                    </button>
+                  </div>
+                ))}
             </div>
           </div>
         )}
@@ -1602,7 +1977,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                           {log.studentName}
                           {log.anomalyDetected && (
                             <span style={{ padding: '4px 12px', borderRadius: '20px', backgroundColor: '#fff7ed', color: '#ea580c', fontSize: '11px', fontWeight: '800', border: '1px solid #ffedd5', textTransform: 'uppercase' }}>
-                              VISUAL_ANOMALY_DETECTED
+                              Visual Anomaly Detected
                             </span>
                           )}
                         </div>
@@ -1715,7 +2090,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
               }
             </p>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => setConfirmBlockStudent(null)} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: 'var(--bg-hover)', color: 'var(--text-main)', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => setConfirmBlockStudent(null)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
               <button onClick={handleConfirmBlock} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>
                 {confirmBlockStudent.isCheckInBlocked ? 'Restore Access' : 'Confirm No Check-In'}
               </button>
@@ -1859,7 +2234,7 @@ const ParentReportModal = ({ student, type, onClose, onSend, onSaveDraft }: { st
           .join(', ')
         : 'None reported';
 
-      return `Dear ${student.guardianFirstName} ${student.guardianLastName},
+      return `Dear ${(student.guardians?.[0]?.firstName || 'Unknown')} ${(student.guardians?.[0]?.lastName || '')},
 
 This is to inform you that your child, ${student.firstName} ${student.lastName}, experienced a head injury incident today (${date}) at approximately ${student.headInjuryTimestamp || time}.
 
@@ -1880,7 +2255,7 @@ EDP Team - Cajon Valley School District`;
         ? student.behaviorIssues.map(b => `• ${b}`).join('\n')
         : '• General behavior concern';
 
-      return `Dear ${student.guardianFirstName} ${student.guardianLastName},
+      return `Dear ${(student.guardians?.[0]?.firstName || 'Unknown')} ${(student.guardians?.[0]?.lastName || '')},
 
 This is to inform you that your child, ${student.firstName} ${student.lastName}, received a behavior ticket today (${date}).
 
@@ -1977,6 +2352,7 @@ const App = () => {
   const [reportData, setReportData] = useState<{ student: Student, type: 'injury' | 'behavior' } | null>(null);
   const [parentReports, setParentReports] = useState<ParentReport[]>([]);
   const [biometricLogs, setBiometricLogs] = useState<BiometricLog[]>([]);
+  const [rosterStatusFilter, setRosterStatusFilter] = useState<'all' | 'checked_in' | 'checked_out'>('all');
 
   useEffect(() => {
     const checkTime = () => {
@@ -2053,6 +2429,26 @@ const App = () => {
 
   const filteredStudents = useMemo(() => {
     let result = students;
+
+    // 1. Grade Permission Logic
+    if (user && user.role !== 'Lead' && user.assignedGrades && user.assignedGrades.length > 0) {
+      result = result.filter(s => user.assignedGrades?.includes(s.grade));
+    }
+
+    // 2. Status/Tab Filter
+    if (rosterStatusFilter === 'checked_in') {
+      result = result.filter(s => {
+        const status = program === 'sunrise' ? s.sunriseStatus : s.sunsetStatus;
+        return status === 'present';
+      });
+    } else if (rosterStatusFilter === 'checked_out') {
+      result = result.filter(s => {
+        const status = program === 'sunrise' ? s.sunriseStatus : s.sunsetStatus;
+        return status === 'checked_out';
+      });
+    } else { // 'all' - Show ALL Students (matching Leader Dashboard)
+      // Logic adjusted: 'all' now returns everything.
+    }
     if (selectedGrade && selectedGrade !== 'All') {
       result = result.filter(s => s.grade === selectedGrade);
     }
@@ -2066,15 +2462,18 @@ const App = () => {
       );
     }
     return result.sort((a, b) => {
-      const statusA = program === 'sunrise' ? a.sunriseStatus : a.sunsetStatus;
-      const statusB = program === 'sunrise' ? b.sunriseStatus : b.sunsetStatus;
       // 1. Sort by Grade (TK -> K -> 1 -> 2 -> 3 -> 4 -> 5)
       const gradeOrder = ['TK', 'K', '1', '2', '3', '4', '5'];
       const gradeIndexA = gradeOrder.indexOf(a.grade);
       const gradeIndexB = gradeOrder.indexOf(b.grade);
 
-      if (gradeIndexA !== gradeIndexB) {
-        return gradeIndexA - gradeIndexB;
+      // If one has a valid grade and other doesn't (checking for -1)
+      if (gradeIndexA !== -1 && gradeIndexB !== -1) {
+        if (gradeIndexA !== gradeIndexB) return gradeIndexA - gradeIndexB;
+      } else if (gradeIndexA !== -1) {
+        return -1; // A comes first
+      } else if (gradeIndexB !== -1) {
+        return 1; // B comes first
       }
 
       // 2. Sort by Name (First, Last)
@@ -2082,7 +2481,7 @@ const App = () => {
       if (nameCompare !== 0) return nameCompare;
       return a.lastName.localeCompare(b.lastName);
     });
-  }, [students, selectedGrade, searchQuery, program]);
+  }, [students, selectedGrade, searchQuery, program, user, rosterStatusFilter]);
 
   const handleStudentAction = (student: Student) => {
     // 1. Permission Check
@@ -2152,7 +2551,7 @@ const App = () => {
         setBiometricLogs(prev => [newLog, ...prev]);
 
         if (biometricData.visualAnomalyDetected) {
-          showToast('VISUAL_ANOMALY_DETECTED - Review flagging in dashboard', 'warning');
+          showToast('Visual Anomaly Detected - Review flagging in dashboard', 'warning');
         }
 
         BiometricService.uploadToDrive(photo || '', studentId);
@@ -2162,13 +2561,13 @@ const App = () => {
     setSearchQuery('');
   };
 
-  const handleCheckOut = (studentId: string, smsTime: string) => {
+  const handleCheckOut = (studentId: string, smsTime: string, checkOutBy?: string) => {
     setStudents(prev => prev.map(s => {
       if (s.id === studentId) {
         const update = program === 'sunrise'
           ? { sunriseStatus: 'pending_parent' as AttendanceStatus }
           : { sunsetStatus: 'pending_parent' as AttendanceStatus };
-        return { ...s, ...update, smsSentTime: smsTime };
+        return { ...s, ...update, smsSentTime: smsTime, lastCheckOutBy: checkOutBy };
       }
       return s;
     }));
@@ -2226,7 +2625,7 @@ const App = () => {
       ? student.behaviorIssues.map(b => `• ${b}`).join('\n')
       : '• General behavior concern';
 
-    return `Dear ${student.guardianFirstName} ${student.guardianLastName},
+    return `Dear ${(student.guardians?.[0]?.firstName || 'Unknown')} ${(student.guardians?.[0]?.lastName || '')},
 
 This is to inform you that your child, ${student.firstName} ${student.lastName}, received a behavior ticket today (${date}).
 
@@ -2315,6 +2714,33 @@ EDP Team - Cajon Valley School District`;
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ padding: '16px', backgroundColor: 'var(--bg-app)', zIndex: 90 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
+            {['all', 'checked_in', 'checked_out'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setRosterStatusFilter(tab as any)}
+                style={{
+                  padding: '10px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  backgroundColor: rosterStatusFilter === tab ? 'var(--text-main)' : 'var(--bg-card)',
+                  color: rosterStatusFilter === tab ? 'var(--bg-card)' : 'var(--text-main)',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  boxShadow: 'var(--shadow-sm)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {tab === 'all'
+                  ? (user && user.role !== 'Lead' && user.assignedGrades
+                    ? `All ${user.assignedGrades.join(', ')}`
+                    : 'All Students')
+                  : tab === 'checked_in' ? 'Checked In' : 'Checked Out'}
+              </button>
+            ))}
+          </div>
+
           <div style={{ position: 'relative', marginBottom: '16px' }}>
             <span className="material-icons-round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>search</span>
             <input
@@ -2327,24 +2753,27 @@ EDP Team - Cajon Valley School District`;
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px' }}>
-            <button onClick={() => setSelectedGrade('All')} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedGrade === 'All' ? 'var(--text-main)' : 'var(--bg-card)', color: selectedGrade === 'All' ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedGrade === 'All' ? 'scale(1.05)' : 'scale(1)' }}>
-              All
-            </button>
-            {GRADES.map(g => (
-              <button key={g} onClick={() => setSelectedGrade(g)} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedGrade === g ? 'var(--text-main)' : 'var(--bg-card)', color: selectedGrade === g ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedGrade === g ? 'scale(1.05)' : 'scale(1)' }}>
-                {g}
-              </button>
-            ))}
+            {/* 1. Permission-Aware Navigation: Hide 'All' if restricted */}
+            {/* 1. Permission-Aware Navigation: Hide 'All' button (redundant) */}
+
+            {/* Render Buttons for Allowed Grades Only */}
+            {GRADES
+              .filter(g => (user.role === 'Lead' || !user.assignedGrades || user.assignedGrades.includes(g)))
+              .map(g => (
+                <button key={g} onClick={() => setSelectedGrade(prev => prev === g ? 'All' : g)} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedGrade === g ? 'var(--text-main)' : 'var(--bg-card)', color: selectedGrade === g ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedGrade === g ? 'scale(1.05)' : 'scale(1)' }}>
+                  {g}
+                </button>
+              ))}
           </div>
 
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 80px 16px' }}>
-          {(!searchQuery && selectedGrade === null) ? (
-            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', textAlign: 'center', opacity: 0.7 }}>
+          {filteredStudents.length === 0 ? (
+            <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
               <span className="material-icons-round" style={{ fontSize: '64px', marginBottom: '16px' }}>school</span>
-              <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Ready to Attendance</div>
-              <div style={{ fontSize: '14px' }}>Select a grade or search for a student above</div>
+              <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>No Students Found</div>
+              <div style={{ fontSize: '14px' }}>Try adjusting your search or filters</div>
             </div>
           ) : (
             filteredStudents.map(student => {
@@ -2410,7 +2839,7 @@ EDP Team - Cajon Valley School District`;
             }))
           }
         </div>
-      </main>
+      </main >
 
       {showConfirmId && confirmStudent && (
         <ConfirmationModal
@@ -2422,62 +2851,69 @@ EDP Team - Cajon Valley School District`;
           showPhotoOption={true}
           isDemoMode={isDemoMode}
         />
-      )}
+      )
+      }
 
-      {activeStudentId && activeStudent && (
-        <StudentDetailModal
-          student={activeStudent}
-          onClose={() => setActiveStudentId(null)}
-          onSave={handleSaveStudent}
-          onCheckOut={handleCheckOut}
-          currentStaff={user}
-          program={program}
-          isLeadMode={isLeadMode}
-        />
-      )}
-
-      {showLeaderDashboard && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 300 }}>
-          <LeaderDashboard
-            students={students}
-            staffList={staffList}
-            parentReports={parentReports}
-            biometricLogs={biometricLogs}
-            onClose={() => setShowLeaderDashboard(false)}
-            onImport={(newStudents) => setStudents([...students, ...newStudents])}
-            onAddStudent={(newStudent) => setStudents([...students, newStudent])}
-            onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)}
-            onUpdateStudent={handleSaveStudent}
-            onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))}
-            onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)}
-            showToast={showToast}
-            isBatchDefaultEnabled={isBatchDefaultEnabled}
-            setIsBatchDefaultEnabled={setIsBatchDefaultEnabled}
-            defaultBatchTime={defaultBatchTime}
-            setDefaultBatchTime={setDefaultBatchTime}
-            scheduledBatchCheckoutTime={scheduledBatchCheckoutTime}
+      {
+        activeStudentId && activeStudent && (
+          <StudentDetailModal
+            student={activeStudent}
+            onClose={() => setActiveStudentId(null)}
+            onSave={handleSaveStudent}
+            onCheckOut={handleCheckOut}
+            currentStaff={user}
+            program={program}
+            isLeadMode={isLeadMode}
           />
-        </div>
-      )}
+        )
+      }
+
+      {
+        showLeaderDashboard && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 300 }}>
+            <LeaderDashboard
+              students={students}
+              staffList={staffList}
+              parentReports={parentReports}
+              biometricLogs={biometricLogs}
+              onClose={() => setShowLeaderDashboard(false)}
+              onImport={(newStudents) => setStudents([...students, ...newStudents])}
+              onAddStudent={(newStudent) => setStudents([...students, newStudent])}
+              onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)}
+              onUpdateStudent={handleSaveStudent}
+              onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))}
+              onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)}
+              showToast={showToast}
+              isBatchDefaultEnabled={isBatchDefaultEnabled}
+              setIsBatchDefaultEnabled={setIsBatchDefaultEnabled}
+              defaultBatchTime={defaultBatchTime}
+              setDefaultBatchTime={setDefaultBatchTime}
+              scheduledBatchCheckoutTime={scheduledBatchCheckoutTime}
+            />
+          </div>
+        )
+      }
 
 
-      {reportData && (
-        <ParentReportModal
-          student={reportData.student}
-          type={reportData.type}
-          onClose={() => setReportData(null)}
-          onSend={(report) => {
-            setParentReports(prev => [...prev, report]);
-            showToast('Report sent to guardian!', 'success');
-            setReportData(null);
-          }}
-          onSaveDraft={(report) => {
-            setParentReports(prev => [...prev, report]);
-            showToast('Draft saved!', 'info');
-            setReportData(null);
-          }}
-        />
-      )}
+      {
+        reportData && (
+          <ParentReportModal
+            student={reportData.student}
+            type={reportData.type}
+            onClose={() => setReportData(null)}
+            onSend={(report) => {
+              setParentReports(prev => [...prev, report]);
+              showToast('Report sent to guardian!', 'success');
+              setReportData(null);
+            }}
+            onSaveDraft={(report) => {
+              setParentReports(prev => [...prev, report]);
+              showToast('Draft saved!', 'info');
+              setReportData(null);
+            }}
+          />
+        )
+      }
 
       {toast && <Toast message={toast.msg} type={toast.type} />}
     </>
