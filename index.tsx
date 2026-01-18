@@ -538,7 +538,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead }: { 
 
   if (!showNewReportForm && !student.headInjury) {
     return (
-      <button onClick={() => setShowNewReportForm(true)} style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-danger)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+      <button onClick={() => setShowNewReportForm(true)} style={{ width: '100%', padding: '12px', backgroundColor: 'var(--color-danger)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
         <span className="material-icons-round">add_circle</span> New Report
       </button>
     );
@@ -1228,14 +1228,14 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {editedStudent.behavior === 'none' && !showTicketOptions ? (
-                    <button onClick={() => setShowTicketOptions(true)} style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <button onClick={() => setShowTicketOptions(true)} style={{ width: '100%', padding: '12px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                       <span className="material-icons-round">add_circle</span> New Ticket
                     </button>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
                         {(['green', 'yellow', 'red'] as BehaviorStatus[]).map(lvl => (
-                          <button key={lvl} onClick={() => setBehavior(lvl)} style={{ padding: '16px', borderRadius: '8px', border: editedStudent.behavior === lvl ? '3px solid var(--text-main)' : 'none', backgroundColor: lvl === 'green' ? 'var(--color-success)' : lvl === 'yellow' ? 'var(--color-warning)' : 'var(--color-danger)', color: 'white', fontWeight: '800', fontSize: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: 'var(--shadow-md)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                          <button key={lvl} onClick={() => setBehavior(lvl)} style={{ padding: '12px', borderRadius: '8px', border: editedStudent.behavior === lvl ? '3px solid var(--text-main)' : 'none', backgroundColor: lvl === 'green' ? 'var(--color-success)' : lvl === 'yellow' ? 'var(--color-warning)' : 'var(--color-danger)', color: 'white', fontWeight: '800', fontSize: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: 'var(--shadow-md)', cursor: 'pointer', transition: 'all 0.2s' }}>
                             Level {lvl === 'green' ? '1' : lvl === 'yellow' ? '2' : '3'}
                           </button>
                         ))}
