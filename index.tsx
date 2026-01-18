@@ -447,7 +447,7 @@ const CollapsedHeadInjuryView = ({ timeLeft }: { timeLeft: number }) => (
   </div>
 );
 
-const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead }: { student: Student, onUpdate: (updates: Partial<Student>, logs?: HeadInjuryLog[]) => void, currentStaffName: string, isLead: boolean }) => {
+const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, darkMode }: { student: Student, onUpdate: (updates: Partial<Student>, logs?: HeadInjuryLog[]) => void, currentStaffName: string, isLead: boolean, darkMode: boolean }) => {
   const [activeTab, setActiveTab] = useState<'0min' | '15min' | '30min'>('0min');
   const [currentSymptoms, setCurrentSymptoms] = useState<Record<string, boolean>>({});
   const [notes, setNotes] = useState('');
@@ -540,7 +540,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead }: { 
 
   if (!showNewReportForm && !student.headInjury) {
     return (
-      <button onClick={() => setShowNewReportForm(true)} style={{ width: '100%', padding: '12px', backgroundColor: 'var(--color-danger)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+      <button onClick={() => setShowNewReportForm(true)} style={{ width: '100%', padding: '12px', backgroundColor: 'var(--color-danger)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
         <span className="material-icons-round">add_circle</span> New Report
       </button>
     );
@@ -561,8 +561,8 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead }: { 
         />
         {!witnessDone && (
           <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-            <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={handleWitnessDone} disabled={!witnessText.trim()} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: '600', cursor: 'pointer', opacity: witnessText.trim() ? 1 : 0.5 }}>Done</button>
+            <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+            <button onClick={handleWitnessDone} disabled={!witnessText.trim()} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer', opacity: witnessText.trim() ? 1 : 0.5 }}>Done</button>
           </div>
         )}
       </div>
@@ -628,17 +628,17 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead }: { 
               {!surveyCompleted ? (
                 <>
                   {hasYesSymptoms && (
-                    <button onClick={handleYesDone} style={{ width: '100%', padding: '12px', backgroundColor: 'var(--color-success)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Done (Issues Found)</button>
+                    <button onClick={handleYesDone} style={{ width: '100%', padding: '12px', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Done (Issues Found)</button>
                   )}
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                    <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
                     <button onClick={handleNoToAll} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>"No" to All</button>
                   </div>
                 </>
               ) : (
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                  <button onClick={handleSaveLog} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--color-danger)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Assessment</button>
+                  <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={handleSaveLog} style={{ flex: 1, padding: '12px', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Assessment</button>
                 </div>
               )}
             </div>
@@ -649,7 +649,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead }: { 
   );
 };
 
-const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showPhotoOption, isDemoMode }: { student: Student, onConfirm: (photo?: string, biometricData?: any) => void, onCancel: () => void, title: string, message: string, showPhotoOption?: boolean, isDemoMode?: boolean }) => {
+const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showPhotoOption, isDemoMode, darkMode }: { student: Student, onConfirm: (photo?: string, biometricData?: any) => void, onCancel: () => void, title: string, message: string, showPhotoOption?: boolean, isDemoMode?: boolean, darkMode: boolean }) => {
   const [step, setStep] = useState<'confirm' | 'camera' | 'verifying' | 'verified'>('confirm');
   const [photo, setPhoto] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
@@ -772,7 +772,7 @@ const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showP
             )}
 
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={onCancel} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={onCancel} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
               <button onClick={() => showPhotoOption ? startCamera() : onConfirm()} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>
                 {showPhotoOption ? 'Verify & Check In' : 'Confirm'}
               </button>
@@ -810,7 +810,7 @@ const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showP
               </button>
 
               <div style={{ position: 'absolute', bottom: '16px', left: '0', right: '0', display: 'flex', gap: '12px', padding: '0 16px' }}>
-                <button onClick={() => { stopCamera(); onCancel(); }} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={() => { stopCamera(); onCancel(); }} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
                 <button onClick={capturePhoto} style={{ flex: 2, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
                   <span className="material-icons-round">camera_alt</span> Take Photo
                 </button>
@@ -866,7 +866,7 @@ const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showP
   );
 };
 
-const GuardianAddForm = ({ onSave, onCancel, onDelete, initialContact, unavailableTypes = [] }: { onSave: (g: GuardianContact) => void, onCancel: () => void, onDelete?: () => void, initialContact?: GuardianContact, unavailableTypes?: string[], key?: any }) => {
+const GuardianAddForm = ({ onSave, onCancel, onDelete, initialContact, unavailableTypes = [], darkMode }: { onSave: (g: GuardianContact) => void, onCancel: () => void, onDelete?: () => void, initialContact?: GuardianContact, unavailableTypes?: string[], key?: any, darkMode: boolean }) => {
   const [type, setType] = useState<'Primary' | 'Secondary' | 'Additional'>((initialContact?.type as any) || 'Secondary');
   const [first, setFirst] = useState(initialContact?.firstName || '');
   const [last, setLast] = useState(initialContact?.lastName || '');
@@ -907,7 +907,7 @@ const GuardianAddForm = ({ onSave, onCancel, onDelete, initialContact, unavailab
         </select>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
         <input placeholder="First Name" value={first} onChange={e => setFirst(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px' }} />
         <input placeholder="Last Name" value={last} onChange={e => setLast(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px' }} />
       </div>
@@ -950,13 +950,13 @@ const GuardianAddForm = ({ onSave, onCancel, onDelete, initialContact, unavailab
         {initialContact && onDelete && (
           <button onClick={onDelete} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--color-danger)', backgroundColor: 'var(--bg-card)', color: 'var(--color-danger)', cursor: 'pointer', fontWeight: '600' }}>Delete</button>
         )}
-        <button onClick={handleSubmit} style={{ flex: 2, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--color-primary)', color: 'white', cursor: 'pointer', fontWeight: '700' }}>{initialContact ? 'Save Changes' : 'Add Guardian'}</button>
+        <button onClick={handleSubmit} style={{ flex: 2, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', color: 'white', cursor: 'pointer', fontWeight: '700' }}>{initialContact ? 'Save Changes' : 'Add Guardian'}</button>
       </div>
     </div>
   );
 };
 
-const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff, program, isLeadMode }: { student: Student, onClose: () => void, onSave: (s: Student) => void, onCheckOut: (id: string, smsTime: string, checkOutBy?: string) => void, currentStaff: Staff, program: ProgramType, isLeadMode: boolean }) => {
+const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff, program, isLeadMode, darkMode }: { student: Student, onClose: () => void, onSave: (s: Student) => void, onCheckOut: (id: string, smsTime: string, checkOutBy?: string) => void, currentStaff: Staff, program: ProgramType, isLeadMode: boolean, darkMode: boolean }) => {
   const [editedStudent, setEditedStudent] = useState({ ...student });
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [behaviorCollapsed, setBehaviorCollapsed] = useState(student.behavior !== 'none');
@@ -1188,8 +1188,8 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                   </div>
 
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={() => setShowCheckOutConfirm(false)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                    <button onClick={handleLocalCheckOut} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--color-sunset)', color: 'white', fontWeight: '600', cursor: 'pointer' }}>Yes</button>
+                    <button onClick={() => setShowCheckOutConfirm(false)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                    <button onClick={handleLocalCheckOut} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Yes</button>
                   </div>
                 </div>
               )}
@@ -1230,15 +1230,15 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {editedStudent.behavior === 'none' && !showTicketOptions ? (
-                    <button onClick={() => setShowTicketOptions(true)} style={{ width: '100%', padding: '12px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <button onClick={() => setShowTicketOptions(true)} style={{ width: '100%', padding: '12px', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                       <span className="material-icons-round">add_circle</span> New Ticket
                     </button>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
-                        {(['green', 'yellow', 'red'] as BehaviorStatus[]).map(lvl => (
-                          <button key={lvl} onClick={() => setBehavior(lvl)} style={{ padding: '12px', borderRadius: '8px', border: editedStudent.behavior === lvl ? '3px solid var(--text-main)' : 'none', backgroundColor: lvl === 'green' ? 'var(--color-success)' : lvl === 'yellow' ? 'var(--color-warning)' : 'var(--color-danger)', color: 'white', fontWeight: '800', fontSize: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: 'var(--shadow-md)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                            Level {lvl === 'green' ? '1' : lvl === 'yellow' ? '2' : '3'}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+                        {(['green'] as BehaviorStatus[]).map(lvl => (
+                          <button key={lvl} onClick={() => setBehavior(lvl)} style={{ padding: '12px', borderRadius: '8px', border: editedStudent.behavior === lvl ? '3px solid var(--text-main)' : 'none', backgroundColor: 'var(--color-success)', color: 'white', fontWeight: '800', fontSize: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: 'var(--shadow-md)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                            Green - Level 1
                           </button>
                         ))}
                       </div>
@@ -1273,15 +1273,15 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                           />
 
                           <div style={{ display: 'flex', gap: '12px' }}>
-                            <button onClick={cancelTicket} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                            <button onClick={saveBehavior} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>Save Ticket</button>
+                            <button onClick={cancelTicket} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                            <button onClick={saveBehavior} style={{ flex: 1, padding: '12px', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Ticket</button>
                           </div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>Stamped: {editedStudent.behaviorTimestamp} by {editedStudent.behaviorStaff}</div>
                         </div>
                       )}
 
                       {editedStudent.behavior === 'none' && showTicketOptions && (
-                        <button onClick={() => setShowTicketOptions(false)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                        <button onClick={() => setShowTicketOptions(false)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
                       )}
                     </div>
                   )}
@@ -1309,6 +1309,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                     if (logs) merged.headInjuryLogs = logs;
                     handleSectionSave(merged);
                   }}
+                  darkMode={darkMode}
                 />
               )}
             </div>
@@ -1339,6 +1340,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                         onSave={handleSaveGuardian}
                         onCancel={() => setEditingGuardianIndex(null)}
                         onDelete={handleDeleteGuardian}
+                        darkMode={darkMode}
                       />
                     );
                   }
@@ -1397,6 +1399,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                     onSave={handleSaveGuardian}
                     onCancel={() => setIsAddingGuardian(false)}
                     unavailableTypes={(editedStudent.guardians || []).map(g => g.type)}
+                    darkMode={darkMode}
                   />
                 )}
               </div>
@@ -2979,6 +2982,7 @@ EDP Team - Cajon Valley School District`;
           onCancel={() => setShowConfirmId(null)}
           showPhotoOption={true}
           isDemoMode={isDemoMode}
+          darkMode={darkMode}
         />
       )
       }
@@ -2993,6 +2997,7 @@ EDP Team - Cajon Valley School District`;
             currentStaff={user}
             program={program}
             isLeadMode={isLeadMode}
+            darkMode={darkMode}
           />
         )
       }
