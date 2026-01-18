@@ -538,7 +538,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead }: { 
 
   if (!showNewReportForm && !student.headInjury) {
     return (
-      <button onClick={() => setShowNewReportForm(true)} style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-danger)', color: 'white', border: 'none', borderRadius: 'var(--radius-lg)', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+      <button onClick={() => setShowNewReportForm(true)} style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-danger)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
         <span className="material-icons-round">add_circle</span> New Report
       </button>
     );
@@ -560,7 +560,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead }: { 
         {!witnessDone && (
           <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
             <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={handleWitnessDone} disabled={!witnessText.trim()} style={{ flex: 1, padding: '10px', borderRadius: 'var(--radius-md)', border: 'none', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: '600', cursor: 'pointer', opacity: witnessText.trim() ? 1 : 0.5 }}>Done</button>
+            <button onClick={handleWitnessDone} disabled={!witnessText.trim()} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: '600', cursor: 'pointer', opacity: witnessText.trim() ? 1 : 0.5 }}>Done</button>
           </div>
         )}
       </div>
@@ -626,17 +626,17 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead }: { 
               {!surveyCompleted ? (
                 <>
                   {hasYesSymptoms && (
-                    <button onClick={handleYesDone} style={{ width: '100%', padding: '14px', backgroundColor: 'var(--color-success)', border: 'none', color: 'white', borderRadius: 'var(--radius-md)', fontWeight: '700', fontSize: '14px' }}>Done (Issues Found)</button>
+                    <button onClick={handleYesDone} style={{ width: '100%', padding: '12px', backgroundColor: 'var(--color-success)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Done (Issues Found)</button>
                   )}
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                    <button onClick={handleNoToAll} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: 'var(--radius-md)', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>"No" to All</button>
+                    <button onClick={handleNoToAll} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>"No" to All</button>
                   </div>
                 </>
               ) : (
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                  <button onClick={handleSaveLog} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Assessment</button>
+                  <button onClick={handleSaveLog} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--color-danger)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Assessment</button>
                 </div>
               )}
             </div>
@@ -650,13 +650,25 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead }: { 
 const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showPhotoOption, isDemoMode }: { student: Student, onConfirm: (photo?: string, biometricData?: any) => void, onCancel: () => void, title: string, message: string, showPhotoOption?: boolean, isDemoMode?: boolean }) => {
   const [step, setStep] = useState<'confirm' | 'camera' | 'verifying' | 'verified'>('confirm');
   const [photo, setPhoto] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+  };
 
   const startCamera = async () => {
     setStep('camera');
+    stopCamera();
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facingMode }
+        });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -665,6 +677,17 @@ const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showP
       }
     }
   };
+
+  const toggleCamera = () => {
+    const newMode = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(newMode);
+  };
+
+  useEffect(() => {
+    if (step === 'camera') {
+      startCamera();
+    }
+  }, [facingMode]);
 
   const capturePhoto = async () => {
     // Capture actual photo from video stream
@@ -760,8 +783,32 @@ const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showP
             <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>Capture Photo</h3>
             <div style={{ width: '100%', aspectRatio: '4/3', backgroundColor: '#000', borderRadius: '16px', marginBottom: '16px', overflow: 'hidden', position: 'relative' }}>
               <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+
+              {/* Camera Toggle Button */}
+              <button
+                onClick={toggleCamera}
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '20px',
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: '10'
+                }}
+              >
+                <span className="material-icons-round">sync</span>
+              </button>
+
               <div style={{ position: 'absolute', bottom: '16px', left: '0', right: '0', display: 'flex', gap: '12px', padding: '0 16px' }}>
-                <button onClick={onCancel} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={() => { stopCamera(); onCancel(); }} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                 <button onClick={capturePhoto} style={{ flex: 2, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
                   <span className="material-icons-round">camera_alt</span> Take Photo
                 </button>
@@ -1181,14 +1228,14 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {editedStudent.behavior === 'none' && !showTicketOptions ? (
-                    <button onClick={() => setShowTicketOptions(true)} style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <button onClick={() => setShowTicketOptions(true)} style={{ width: '100%', padding: '16px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                       <span className="material-icons-round">add_circle</span> New Ticket
                     </button>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
                         {(['green', 'yellow', 'red'] as BehaviorStatus[]).map(lvl => (
-                          <button key={lvl} onClick={() => setBehavior(lvl)} style={{ padding: '16px', borderRadius: '12px', border: editedStudent.behavior === lvl ? '3px solid var(--text-main)' : 'none', backgroundColor: lvl === 'green' ? 'var(--color-success)' : lvl === 'yellow' ? 'var(--color-warning)' : 'var(--color-danger)', color: 'white', fontWeight: '800', fontSize: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: 'var(--shadow-md)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                          <button key={lvl} onClick={() => setBehavior(lvl)} style={{ padding: '16px', borderRadius: '8px', border: editedStudent.behavior === lvl ? '3px solid var(--text-main)' : 'none', backgroundColor: lvl === 'green' ? 'var(--color-success)' : lvl === 'yellow' ? 'var(--color-warning)' : 'var(--color-danger)', color: 'white', fontWeight: '800', fontSize: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: 'var(--shadow-md)', cursor: 'pointer', transition: 'all 0.2s' }}>
                             Level {lvl === 'green' ? '1' : lvl === 'yellow' ? '2' : '3'}
                           </button>
                         ))}
@@ -1225,7 +1272,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
 
                           <div style={{ display: 'flex', gap: '12px' }}>
                             <button onClick={cancelTicket} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                            <button onClick={saveBehavior} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '12px', fontWeight: '700' }}>Save Ticket</button>
+                            <button onClick={saveBehavior} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>Save Ticket</button>
                           </div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>Stamped: {editedStudent.behaviorTimestamp} by {editedStudent.behaviorStaff}</div>
                         </div>
