@@ -86,6 +86,7 @@ interface Staff {
   canAdminTasks?: boolean;
   canCheckOut?: boolean;
   canHir?: boolean;
+  hasPasskey?: boolean;
 }
 
 interface Student {
@@ -233,6 +234,7 @@ const MOCK_LEAD_USER: Staff = {
   canAdminTasks: true,
   canCheckOut: true,
   canHir: true,
+  hasPasskey: true,
   assignedGrades: ['TK', 'K', '1', '2', '3', '4', '5']
 };
 
@@ -1407,8 +1409,56 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
   );
 };
 
-const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode }: { onLogin: (user: Staff) => void, onToggleDemo: () => void, isDemoMode: boolean }) => {
+/**
+ * PasskeyService: WebAuthn orchestration for smartphone login.
+ */
+class PasskeyService {
+  static async registerPasskey(staffName: string): Promise<boolean> {
+    try {
+      // Simulate WebAuthn Registration
+      console.log(`[Passkey] Registering device for ${staffName}...`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return true;
+    } catch (err) {
+      console.error('[Passkey] Registration failed:', err);
+      return false;
+    }
+  }
+
+  static async authenticate(): Promise<string | null> {
+    try {
+      // Simulate WebAuthn Authentication
+      console.log('[Passkey] Authenticating device...');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      // For demo purposes, we return a hardcoded email that matches our mock user
+      return 'veronica@cajonvalley.net';
+    } catch (err) {
+      console.error('[Passkey] Authentication failed:', err);
+      return null;
+    }
+  }
+
+  static isSupported(): boolean {
+    return !!(window.PublicKeyCredential && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  }
+}
+
+const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: { onLogin: (user: Staff) => void, onToggleDemo: () => void, isDemoMode: boolean, staffList: Staff[] }) => {
   const [email, setEmail] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+  const handlePasskeyLogin = async () => {
+    setIsAuthenticating(true);
+    const authenticatedEmail = await PasskeyService.authenticate();
+    setIsAuthenticating(false);
+
+    if (authenticatedEmail) {
+      const staffMember = staffList.find(s => s.email === authenticatedEmail);
+      if (staffMember) {
+        onLogin(staffMember);
+      }
+    }
+  };
 
   const handleFaceID = () => {
     onLogin(MOCK_LEAD_USER);
@@ -1431,10 +1481,42 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode }: { onLogin: (user: Sta
           <p style={{ color: 'var(--text-secondary)' }}>Cajon Valley School District</p>
         </div>
 
-        <button onClick={handleFaceID} style={{ width: '100%', padding: '16px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: 'none', fontSize: '16px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '24px', cursor: 'pointer', boxShadow: 'var(--shadow-md)' }}>
+        <button onClick={handleFaceID} style={{ width: '100%', padding: '16px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: 'none', fontSize: '16px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '12px', cursor: 'pointer', boxShadow: 'var(--shadow-md)' }}>
           <span className="material-icons-round">face</span>
           Login with Face ID
         </button>
+
+        {PasskeyService.isSupported() && (
+          <button
+            onClick={handlePasskeyLogin}
+            disabled={isAuthenticating}
+            style={{
+              width: '100%',
+              padding: '16px',
+              backgroundColor: '#8b5cf6',
+              color: 'white',
+              borderRadius: 'var(--radius-xl)',
+              border: 'none',
+              fontSize: '16px',
+              fontWeight: '700',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              marginBottom: '24px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(139,92,246,0.3)',
+              opacity: isAuthenticating ? 0.7 : 1
+            }}
+          >
+            <span className="material-icons-round">{isAuthenticating ? 'sync' : 'fingerprint'}</span>
+            {isAuthenticating ? 'Authenticating...' : 'Login with Passkey'}
+          </button>
+        )}
+
+        {!PasskeyService.isSupported() && (
+          <div style={{ height: '12px' }}></div>
+        )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
           <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}></div>
@@ -2692,7 +2774,7 @@ Best regards,
 EDP Team - Cajon Valley School District`;
   };
 
-  if (!user) return <StaffLogin onLogin={setUser} onToggleDemo={() => setIsDemoMode(!isDemoMode)} isDemoMode={isDemoMode} />;
+  if (!user) return <StaffLogin onLogin={setUser} onToggleDemo={() => setIsDemoMode(!isDemoMode)} isDemoMode={isDemoMode} staffList={staffList} />;
 
   const activeStudent = students.find(s => s.id === activeStudentId);
   const confirmStudent = students.find(s => s.id === showConfirmId);
