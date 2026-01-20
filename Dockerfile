@@ -2,38 +2,24 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy package files
+# Accept build arguments for environment variables
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+
+# Set them as environment variables for the build
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
 COPY package*.json ./
-
-# Install dependencies
 RUN npm ci
-
-# Copy source code
 COPY . .
-
-# Build the app
 RUN npm run build
 
 # Production stage
 FROM nginx:alpine AS production
 WORKDIR /usr/share/nginx/html
-
-# Create a non-root user and setup permissions for Nginx
-RUN touch /var/run/nginx.pid && \
-    chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/run /etc/nginx/conf.d /var/run/nginx.pid
-
-# Copy built assets from builder
 COPY --from=builder /app/dist .
-RUN chown -R nginx:nginx /usr/share/nginx/html
-
-# Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Switch to non-root user
 USER nginx
-
-# Expose port 8080 (Google Cloud Run standard)
 EXPOSE 8080
-
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
