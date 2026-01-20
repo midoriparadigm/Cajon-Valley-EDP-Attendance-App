@@ -135,6 +135,7 @@ interface Student {
   headInjuryLogs: HeadInjuryLog[];
   headInjuryStartTime?: number;
   smsSentTime?: string;
+  lastCheckOutBy?: string;
 }
 
 interface GuardianContact {
@@ -2748,6 +2749,41 @@ EDP Team - Cajon Valley School District`;
   );
 };
 
+
+
+// Helper to map DB student row to local Student interface
+const mapDbToStudent = (dbStudent: any): Student => ({
+  id: dbStudent.id,
+  firstName: dbStudent.first_name,
+  lastName: dbStudent.last_name,
+  grade: dbStudent.grade,
+  elopId: dbStudent.elop_id || '',
+  asesId: dbStudent.ases_id || '',
+  guardians: dbStudent.guardians || [],
+  programs: dbStudent.programs || [],
+  yearbookPhotoUrl: dbStudent.yearbook_photo_url,
+  sunriseStatus: dbStudent.sunrise_status || 'absent',
+  sunsetStatus: dbStudent.sunset_status || 'absent',
+  sunriseTime: dbStudent.sunrise_checkin_time,
+  sunsetTime: dbStudent.sunset_checkin_time,
+  sunriseCheckOutTime: dbStudent.sunrise_checkout_time,
+  sunsetCheckOutTime: dbStudent.sunset_checkout_time,
+  hasSnack: dbStudent.has_snack || false,
+  behavior: dbStudent.behavior || 'none',
+  behaviorIssues: dbStudent.behavior_issues || [],
+  headInjury: dbStudent.head_injury || false,
+  headInjuryLogs: dbStudent.head_injury_logs || [],
+  sunriseStaff: dbStudent.sunrise_staff,
+  sunsetStaff: dbStudent.sunset_staff,
+  lastCheckOutBy: dbStudent.last_checkout_by,
+  smsSentTime: dbStudent.sms_sent_time,
+  checkInPhoto: dbStudent.checkin_photo,
+  behaviorTimestamp: dbStudent.behavior_timestamp,
+  behaviorStaff: dbStudent.behavior_staff,
+  behaviorDescription: dbStudent.behavior_description,
+  isCheckInBlocked: dbStudent.is_checkin_blocked || false
+});
+
 const App = () => {
   const [staffList, setStaffList] = useState<Staff[]>(INITIAL_STAFF);
   const [user, setUser] = useState<Staff | null>(null);
@@ -2770,6 +2806,153 @@ const App = () => {
   const [parentReports, setParentReports] = useState<ParentReport[]>([]);
   const [biometricLogs, setBiometricLogs] = useState<BiometricLog[]>([]);
   const [rosterStatusFilter, setRosterStatusFilter] = useState<'all' | 'checked_in' | 'checked_out'>('all');
+
+  // Real-time sync state
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const pullStartY = useRef<number | null>(null);
+  const [pullDistance, setPullDistance] = useState(0);
+
+  // Fetch initial data from Supabase
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const { data, error } = await supabase.from('students').select('*');
+        if (error) console.error('Error fetching students:', error);
+        if (data && data.length > 0) {
+          setStudents(data.map(mapDbToStudent));
+        }
+      } catch (err) {
+        console.error('Fetch failed:', err);
+      }
+    };
+    fetchInitialData();
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.email) {
+        const staffMember = staffList.find(s => s.email === session.user.email);
+        if (staffMember) setUser(staffMember);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user?.email) {
+        const staffMember = staffList.find(s => s.email === session.user.email);
+        if (staffMember) setUser(staffMember);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [staffList]);
+
+  // Supabase Realtime subscription for multi-user sync
+  useEffect(() => {
+    // Subscribe to real-time changes on students table
+    const channel = supabase
+      .channel('students-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'students' },
+        (payload) => {
+          console.log('Realtime update received:', payload);
+
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            // Update the specific student in local state
+            setStudents(prev => prev.map(s => {
+              if (s.id === payload.new.id) {
+                // Map database fields to Student interface
+                return {
+                  ...s,
+                  sunriseStatus: payload.new.sunrise_status || s.sunriseStatus,
+                  sunsetStatus: payload.new.sunset_status || s.sunsetStatus,
+                  sunriseTime: payload.new.sunrise_checkin_time || s.sunriseTime,
+                  sunsetTime: payload.new.sunset_checkin_time || s.sunsetTime,
+                  sunriseCheckOutTime: payload.new.sunrise_checkout_time || s.sunriseCheckOutTime,
+                  sunsetCheckOutTime: payload.new.sunset_checkout_time || s.sunsetCheckOutTime,
+                  hasSnack: payload.new.has_snack ?? s.hasSnack,
+                  behavior: payload.new.behavior || s.behavior,
+                  behaviorIssues: payload.new.behavior_issues || s.behaviorIssues,
+                  headInjury: payload.new.head_injury ?? s.headInjury,
+                  headInjuryLogs: payload.new.head_injury_logs || s.headInjuryLogs,
+                };
+              }
+              return s;
+            }));
+            setLastSyncTime(new Date());
+          } else if (payload.eventType === 'INSERT' && payload.new) {
+            // Add new student to local state
+            showToast(`New student added: ${payload.new.first_name}`, 'info');
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            // Remove student from local state
+            setStudents(prev => prev.filter(s => s.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Manual refresh function
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+
+    setIsRefreshing(true);
+    try {
+      const { data, error } = await supabase.from('students').select('*');
+      if (error) throw error;
+
+      if (data) {
+        setStudents(data.map(mapDbToStudent));
+        setLastSyncTime(new Date());
+        showToast('Data synced successfully', 'success');
+      }
+    } catch (error) {
+      console.error('Refresh failed:', error);
+      showToast('Failed to sync data', 'error');
+    } finally {
+      setIsRefreshing(false);
+      setPullDistance(0);
+    }
+  };
+
+  // Pull-to-refresh touch handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const scrollTop = (e.currentTarget as HTMLElement).scrollTop;
+    if (scrollTop === 0) {
+      pullStartY.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (pullStartY.current === null) return;
+
+    const currentY = e.touches[0].clientY;
+    const distance = Math.max(0, currentY - pullStartY.current);
+
+    if (distance > 0) {
+      setPullDistance(Math.min(distance, 100));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (pullDistance > 60) {
+      handleRefresh();
+    } else {
+      setPullDistance(0);
+    }
+    pullStartY.current = null;
+  };
 
   useEffect(() => {
     const checkTime = () => {
@@ -2931,13 +3114,14 @@ const App = () => {
     }
   };
 
-  const handleCheckIn = (studentId: string, photo?: string, biometricData?: any) => {
+  const handleCheckIn = async (studentId: string, photo?: string, biometricData?: any) => {
     const now = new Date();
     const timeString = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const staffName = user ? `${user.name} (${user.organization})` : 'Staff';
 
+    // Optimistic update
     setStudents(prev => prev.map(s => {
       if (s.id === studentId) {
-        const staffName = user ? `${user.name} (${user.organization})` : 'Staff';
         const update = program === 'sunrise'
           ? { sunriseStatus: 'present', sunriseTime: timeString, sunriseStaff: staffName }
           : { sunsetStatus: 'present', sunsetTime: timeString, sunsetStaff: staffName };
@@ -2945,6 +3129,38 @@ const App = () => {
       }
       return s;
     }));
+
+    // Write to Supabase
+    try {
+      const updateData = program === 'sunrise'
+        ? {
+          sunrise_status: 'present',
+          sunrise_checkin_time: timeString,
+          sunrise_staff: staffName,
+          checkin_photo: photo
+        }
+        : {
+          sunset_status: 'present',
+          sunset_checkin_time: timeString,
+          sunset_staff: staffName,
+          checkin_photo: photo
+        };
+
+      // Merge biometric data if present
+      // Note: In a real schema, we might put biometric logs in a separate table, 
+      // but here we just update student record or separate log table. 
+      // For this implementation, we'll update the students table columns we tracked.
+
+      const { error } = await supabase
+        .from('students')
+        .update(updateData)
+        .eq('id', studentId);
+
+      if (error) throw error;
+    } catch (err) {
+      console.error('Failed to update Supabase:', err);
+      showToast('Offline mode: Change saved locally', 'info');
+    }
 
     const student = students.find(s => s.id === studentId);
     if (student) {
@@ -2978,7 +3194,8 @@ const App = () => {
     setSearchQuery('');
   };
 
-  const handleCheckOut = (studentId: string, smsTime: string, checkOutBy?: string) => {
+  const handleCheckOut = async (studentId: string, smsTime: string, checkOutBy?: string) => {
+    // Optimistic Update: Pending Parent
     setStudents(prev => prev.map(s => {
       if (s.id === studentId) {
         const update = program === 'sunrise'
@@ -2989,6 +3206,16 @@ const App = () => {
       return s;
     }));
 
+    try {
+      const updateData = program === 'sunrise'
+        ? { sunrise_status: 'pending_parent', sms_sent_time: smsTime, last_checkout_by: checkOutBy }
+        : { sunset_status: 'pending_parent', sms_sent_time: smsTime, last_checkout_by: checkOutBy };
+
+      await supabase.from('students').update(updateData).eq('id', studentId);
+    } catch (err) {
+      console.error('Supabase update failed:', err);
+    }
+
     setTimeout(() => {
       const now = new Date();
       const timeString = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -2998,6 +3225,16 @@ const App = () => {
           const update = program === 'sunrise'
             ? { sunriseStatus: 'checked_out', sunriseCheckOutTime: timeString }
             : { sunsetStatus: 'checked_out', sunsetCheckOutTime: timeString };
+
+          // Update Supabase for final checkout
+          const dbUpdate = program === 'sunrise'
+            ? { sunrise_status: 'checked_out', sunrise_checkout_time: timeString }
+            : { sunset_status: 'checked_out', sunset_checkout_time: timeString };
+
+          supabase.from('students').update(dbUpdate).eq('id', studentId).then(({ error }) => {
+            if (error) console.error('Final checkout sync failed:', error);
+          });
+
           return { ...s, ...update } as Student;
         }
         return s;
@@ -3005,9 +3242,35 @@ const App = () => {
     }, 5000);
   };
 
-  const handleSaveStudent = (updatedStudent: Student) => {
+  const handleSaveStudent = async (updatedStudent: Student) => {
     const oldStudent = students.find(s => s.id === updatedStudent.id);
+
+    // Optimistic update
     setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+
+    // Supabase update
+    try {
+      const updateData: any = {
+        first_name: updatedStudent.firstName,
+        last_name: updatedStudent.lastName,
+        grade: updatedStudent.grade,
+        elop_id: updatedStudent.elopId,
+        ases_id: updatedStudent.asesId,
+        guardians: updatedStudent.guardians,
+        programs: updatedStudent.programs,
+        has_snack: updatedStudent.hasSnack,
+        behavior: updatedStudent.behavior,
+        behavior_issues: updatedStudent.behaviorIssues,
+        head_injury: updatedStudent.headInjury,
+        head_injury_logs: updatedStudent.headInjuryLogs,
+        behavior_description: updatedStudent.behaviorDescription
+      };
+
+      await supabase.from('students').update(updateData).eq('id', updatedStudent.id);
+    } catch (err) {
+      console.error('Failed to update student:', err);
+      showToast('Failed to save changes to DB', 'error');
+    }
 
     if (oldStudent) {
       // Head injury still shows modal for immediate parent contact
@@ -3142,7 +3405,74 @@ EDP Team - Cajon Valley School District`;
         </div>
       </header>
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', position: 'relative', width: '100%', maxWidth: '100%' }}>
+      <main
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          position: 'relative',
+          width: '100%',
+          maxWidth: '100%',
+          transform: `translateY(${pullDistance * 0.5}px)`,
+          transition: pullDistance === 0 ? 'transform 0.2s ease' : 'none'
+        }}
+      >
+        {/* Pull-to-refresh indicator */}
+        {(pullDistance > 0 || isRefreshing) && (
+          <div style={{
+            position: 'absolute',
+            top: `-${50 - Math.min(pullDistance * 0.5, 50)}px`,
+            left: 0,
+            right: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '12px',
+            backgroundColor: 'var(--bg-app)',
+            zIndex: 100
+          }}>
+            <span
+              className="material-icons-round"
+              style={{
+                fontSize: '24px',
+                color: pullDistance > 60 || isRefreshing ? '#10b981' : 'var(--text-muted)',
+                transform: `rotate(${isRefreshing ? 360 : pullDistance * 3}deg)`,
+                transition: isRefreshing ? 'transform 0.8s linear' : 'none',
+                animation: isRefreshing ? 'spin 1s linear infinite' : 'none'
+              }}
+            >
+              sync
+            </span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              {isRefreshing ? 'Syncing...' : pullDistance > 60 ? 'Release to refresh' : 'Pull to refresh'}
+            </span>
+          </div>
+        )}
+
+        {/* Sync status bar */}
+        {lastSyncTime && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            padding: '6px 16px',
+            backgroundColor: 'var(--bg-header)',
+            borderBottom: '1px solid var(--border-subtle)',
+            fontSize: '11px',
+            color: 'var(--text-muted)'
+          }}>
+            <span className="material-icons-round" style={{ fontSize: '14px' }}>cloud_done</span>
+            Last synced: {lastSyncTime.toLocaleTimeString()}
+          </div>
+        )}
+
         <div style={{ padding: '16px', backgroundColor: 'var(--bg-app)', zIndex: 90, position: 'sticky', top: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
             {['all', 'checked_in', 'checked_out'].map(tab => (
