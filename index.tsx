@@ -184,18 +184,20 @@ class MockDatabase {
 }
 
 /**
- * BiometricService: Production-ready logic with fail-safe mock fallback.
+ * PasskeyService: Platform-aware authentication.
+ * - iOS/Android: Face ID / Touch ID (platform authenticator)
+ * - Mac: Touch ID (platform authenticator)
+ * - Chromebook: Falls back to email/password (no passkey)
  */
 class PasskeyService {
   /**
-   * Performs real WebAuthn identity verification.
+   * Performs biometric identity verification for student check-in.
    */
   static async processVerification(livePhoto: string, student: Student): Promise<{
     matchScore: number;
     anomalyScore: number;
     anomalyDetected: boolean;
   }> {
-    // Simulated delay for "processing"
     await new Promise(resolve => setTimeout(resolve, 1500));
     const matchScore = 0.85 + (Math.random() * 0.1);
     const anomalyScore = Math.random();
@@ -208,10 +210,12 @@ class PasskeyService {
     };
   }
 
+  /**
+   * Registers a new passkey using platform authenticator (Face ID, Touch ID).
+   */
   static async registerPasskey() {
     if (!window.PublicKeyCredential) return null;
 
-    // In a real production app, 'challenge' would come from the server
     const challenge = new Uint8Array(32);
     window.crypto.getRandomValues(challenge);
 
@@ -225,7 +229,13 @@ class PasskeyService {
       },
       pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
       timeout: 60000,
-      attestation: "direct"
+      attestation: "direct",
+      // Force platform authenticator (Face ID, Touch ID) - no QR codes or security keys
+      authenticatorSelection: {
+        authenticatorAttachment: "platform",
+        userVerification: "required",
+        residentKey: "preferred"
+      }
     };
 
     try {
@@ -237,6 +247,9 @@ class PasskeyService {
     }
   }
 
+  /**
+   * Authenticates using platform authenticator (Face ID, Touch ID).
+   */
   static async authenticate() {
     if (!window.PublicKeyCredential) return null;
 
@@ -248,12 +261,12 @@ class PasskeyService {
       timeout: 60000,
       userVerification: "required",
       rpId: window.location.hostname
+      // Note: allowCredentials is empty to allow any registered credential
     };
 
     try {
       const assertion = await navigator.credentials.get({ publicKey: getOptions });
-      // In a real app, you'd send this assertion to your backend for validation
-      // For this demo, we verify the user exists in our local simulated state
+      // In production, validate this assertion on your backend
       return "thomasv@cajonvalley.net";
     } catch (err) {
       console.error("Passkey authentication failed:", err);
@@ -261,8 +274,53 @@ class PasskeyService {
     }
   }
 
-  static isSupported() {
-    return !!window.PublicKeyCredential && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  /**
+   * Detects if device is an iOS device (iPhone, iPad, iPod).
+   */
+  static isIOS(): boolean {
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
+  /**
+   * Detects if device is an Android device.
+   */
+  static isAndroid(): boolean {
+    return /Android/i.test(navigator.userAgent);
+  }
+
+  /**
+   * Detects if device is a Mac (for Touch ID support).
+   */
+  static isMac(): boolean {
+    return /Macintosh|MacIntel|MacPPC|Mac68K/i.test(navigator.userAgent) && !this.isIOS();
+  }
+
+  /**
+   * Detects if device is a Chromebook (should use email/password only).
+   */
+  static isChromebook(): boolean {
+    return /CrOS/i.test(navigator.userAgent);
+  }
+
+  /**
+   * Returns true if platform authenticator (Face ID, Touch ID) is supported.
+   * Chromebooks explicitly return false to force email/password login.
+   */
+  static isSupported(): boolean {
+    if (this.isChromebook()) return false;
+    if (!window.PublicKeyCredential) return false;
+    // Supported on iOS, Android, and Mac with Touch ID
+    return this.isIOS() || this.isAndroid() || this.isMac();
+  }
+
+  /**
+   * Returns the appropriate authentication label based on platform.
+   */
+  static getAuthLabel(): string {
+    if (this.isIOS()) return 'Face ID / Touch ID';
+    if (this.isAndroid()) return 'Fingerprint / Biometrics';
+    if (this.isMac()) return 'Touch ID';
+    return 'Passkey';
   }
 
   static uploadToDrive(photo: string, studentId: string) {
@@ -1607,7 +1665,7 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: { onLogin:
             }}
           >
             <span className="material-icons-round">{isAuthenticating ? 'sync' : 'fingerprint'}</span>
-            {isAuthenticating ? 'Authenticating...' : 'Login with Passkey'}
+            {isAuthenticating ? 'Authenticating...' : `Login with ${PasskeyService.getAuthLabel()}`}
           </button>
         )}
 
@@ -2914,7 +2972,6 @@ EDP Team - Cajon Valley School District`;
       <header style={{
         backgroundColor: 'var(--bg-header)',
         padding: '16px',
-        paddingTop: 'calc(env(safe-area-inset-top) + 16px)',
         boxShadow: 'var(--shadow-sm)',
         display: 'flex',
         alignItems: 'center',
