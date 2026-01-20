@@ -1525,8 +1525,9 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: { onLogin:
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [step, setStep] = useState<'email' | 'password' | 'signup'>('email');
+  const [step, setStep] = useState<'email' | 'password' | 'signup' | 'setup_passkey'>('email');
   const [error, setError] = useState<string | null>(null);
+  const [pendingUser, setPendingUser] = useState<Staff | null>(null);
 
   const handlePasskeyLogin = async () => {
     setIsAuthenticating(true);
@@ -1575,18 +1576,21 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: { onLogin:
       if (authError) throw authError;
 
       const staffMember = staffList.find(s => s.email === email);
-      if (staffMember) {
-        onLogin(staffMember);
+      const user = staffMember || {
+        id: data.user?.id || 'new',
+        name: email.split('@')[0],
+        role: 'Assistant' as const,
+        organization: 'EDP',
+        email: email,
+        canCheckIn: true
+      };
+
+      // Check if device supports passkeys and we should offer setup
+      if (PasskeyService.isSupported()) {
+        setPendingUser(user);
+        setStep('setup_passkey');
       } else {
-        // Create temporary staff object if not in mock data
-        onLogin({
-          id: data.user?.id || 'new',
-          name: email.split('@')[0],
-          role: 'Assistant',
-          organization: 'EDP',
-          email: email,
-          canCheckIn: true
-        });
+        onLogin(user);
       }
     } catch (err: any) {
       setError(err.message || "Invalid password.");
@@ -1608,18 +1612,57 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: { onLogin:
 
       if (authError) throw authError;
 
-      onLogin({
+      const user: Staff = {
         id: data.user?.id || 'new',
         name: email.split('@')[0],
         role: 'Assistant',
         organization: 'EDP',
         email: email,
         canCheckIn: true
-      });
+      };
+
+      // Check if device supports passkeys and we should offer setup
+      if (PasskeyService.isSupported()) {
+        setPendingUser(user);
+        setStep('setup_passkey');
+      } else {
+        onLogin(user);
+      }
     } catch (err: any) {
       setError(err.message || "Signup failed.");
     } finally {
       setIsAuthenticating(false);
+    }
+  };
+
+  const handleSetupPasskey = async () => {
+    setIsAuthenticating(true);
+    setError(null);
+
+    try {
+      const credential = await PasskeyService.registerPasskey();
+      if (credential) {
+        // In production, save credential to backend
+        console.log("Passkey registered successfully:", credential);
+      }
+      // Login regardless of passkey success
+      if (pendingUser) {
+        onLogin(pendingUser);
+      }
+    } catch (err: any) {
+      // If passkey setup fails, still let user login
+      console.error("Passkey setup failed:", err);
+      if (pendingUser) {
+        onLogin(pendingUser);
+      }
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const skipPasskeySetup = () => {
+    if (pendingUser) {
+      onLogin(pendingUser);
     }
   };
 
@@ -1726,7 +1769,64 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: { onLogin:
           </form>
         )}
 
-        <div onClick={onToggleDemo} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', opacity: isDemoMode ? 1 : 0.6 }}>
+        {step === 'setup_passkey' && (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(139,92,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <span className="material-icons-round" style={{ fontSize: '40px', color: '#8b5cf6' }}>fingerprint</span>
+              </div>
+              <h2 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Quick Login Setup</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
+                Set up {PasskeyService.getAuthLabel()} for instant, secure access next time - no password needed.
+              </p>
+            </div>
+
+            <button
+              onClick={handleSetupPasskey}
+              disabled={isAuthenticating}
+              style={{
+                width: '100%',
+                padding: '16px',
+                backgroundColor: '#8b5cf6',
+                color: 'white',
+                borderRadius: 'var(--radius-xl)',
+                border: 'none',
+                fontSize: '16px',
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px',
+                marginBottom: '16px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(139,92,246,0.3)',
+                opacity: isAuthenticating ? 0.7 : 1
+              }}
+            >
+              <span className="material-icons-round">{isAuthenticating ? 'sync' : 'fingerprint'}</span>
+              {isAuthenticating ? 'Setting up...' : `Enable ${PasskeyService.getAuthLabel()}`}
+            </button>
+
+            <button
+              onClick={skipPasskeySetup}
+              style={{
+                width: '100%',
+                padding: '14px',
+                backgroundColor: 'transparent',
+                color: 'var(--text-secondary)',
+                borderRadius: 'var(--radius-xl)',
+                border: '1px solid var(--border-subtle)',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Skip for now
+            </button>
+          </div>
+        )}
+
+        <div onClick={onToggleDemo} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', opacity: isDemoMode ? 1 : 0.6, marginTop: step === 'setup_passkey' ? '24px' : '0' }}>
           <span className="material-icons-round" style={{ color: isDemoMode ? '#8b5cf6' : 'var(--text-muted)' }}>{isDemoMode ? 'toggle_on' : 'toggle_off'}</span>
           <span style={{ fontSize: '14px', fontWeight: '600', color: isDemoMode ? '#8b5cf6' : 'var(--text-muted)' }}>Enable Demo Mode</span>
         </div>
@@ -2977,70 +3077,74 @@ EDP Team - Cajon Valley School District`;
         alignItems: 'center',
         gap: '16px',
         zIndex: 100,
-        position: 'relative'
+        position: 'relative',
+        width: '100%',
+        maxWidth: '100%',
+        flexShrink: 0
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: program === 'sunrise' ? 'var(--color-sunrise)' : 'var(--color-sunset)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-            <span className="material-icons-round">{program === 'sunrise' ? 'wb_sunny' : 'nights_stay'}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: program === 'sunrise' ? 'var(--color-sunrise)' : 'var(--color-sunset)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }}>
+            <span className="material-icons-round" style={{ fontSize: '20px' }}>{program === 'sunrise' ? 'wb_sunny' : 'nights_stay'}</span>
           </div>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>{program === 'sunrise' ? 'Sunrise' : 'Sunset'} {isDemoMode && <span style={{ fontSize: '10px', color: '#8b5cf6', marginLeft: '4px' }}>DEMO</span>}</h1>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500' }}>{new Date().toLocaleDateString()}</div>
+          <div style={{ minWidth: 0, overflow: 'hidden' }}>
+            <h1 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{program === 'sunrise' ? 'Sunrise' : 'Sunset'} {isDemoMode && <span style={{ fontSize: '10px', color: '#8b5cf6', marginLeft: '4px' }}>DEMO</span>}</h1>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>{new Date().toLocaleDateString()}</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 1, overflow: 'hidden' }}>
           <div
             onClick={() => setIsLeadMode(!isLeadMode)}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              borderRadius: '20px',
+              gap: '4px',
+              padding: '4px 8px',
+              borderRadius: '16px',
               backgroundColor: isLeadMode ? 'rgba(139,92,246,0.1)' : 'var(--bg-hover)',
               border: `1px solid ${isLeadMode ? '#8b5cf6' : 'var(--border-subtle)'}`,
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              flexShrink: 0
             }}
           >
-            <span className="material-icons-round" style={{ fontSize: '18px', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
+            <span className="material-icons-round" style={{ fontSize: '16px', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
               {isLeadMode ? 'admin_panel_settings' : 'person'}
             </span>
-            <span style={{ fontSize: '12px', fontWeight: '700', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
               {isLeadMode ? 'LEAD' : 'STAFF'}
             </span>
           </div>
 
-          <button onClick={() => setDarkMode(!darkMode)} style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-            <span className="material-icons-round">{darkMode ? 'light_mode' : 'dark_mode'}</span>
+          <button onClick={() => setDarkMode(!darkMode)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}>
+            <span className="material-icons-round" style={{ fontSize: '20px' }}>{darkMode ? 'light_mode' : 'dark_mode'}</span>
           </button>
 
           {isLeadMode && (
             <>
-              <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                <span className="material-icons-round">dashboard</span>
+              <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}>
+                <span className="material-icons-round" style={{ fontSize: '20px' }}>dashboard</span>
               </button>
-              <button onClick={() => setUser(null)} style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer' }} title="Logout">
-                <span className="material-icons-round">logout</span>
+              <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer', flexShrink: 0 }} title="Logout">
+                <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
               </button>
             </>
           )}
 
           {!isLeadMode && (
-            <button onClick={() => setUser(null)} style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer' }} title="Logout">
-              <span className="material-icons-round">logout</span>
+            <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer', flexShrink: 0 }} title="Logout">
+              <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
             </button>
           )}
 
-          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#374151', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#374151', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>
             {user.name.charAt(0)}
           </div>
         </div>
       </header>
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', position: 'relative' }}>
-        <div style={{ padding: '16px', backgroundColor: 'var(--bg-app)', zIndex: 90, position: 'sticky', top: 0 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', position: 'relative', width: '100%', maxWidth: '100%' }}>
+        <div style={{ padding: '16px', backgroundColor: 'var(--bg-app)', zIndex: 90, position: 'sticky', top: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
             {['all', 'checked_in', 'checked_out'].map(tab => (
               <button
                 key={tab}
@@ -3055,7 +3159,11 @@ EDP Team - Cajon Valley School District`;
                   fontSize: '14px',
                   cursor: 'pointer',
                   boxShadow: 'var(--shadow-sm)',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 {tab === 'all'
@@ -3067,14 +3175,14 @@ EDP Team - Cajon Valley School District`;
             ))}
           </div>
 
-          <div style={{ position: 'relative', marginBottom: '16px' }}>
+          <div style={{ position: 'relative', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
             <span className="material-icons-round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>search</span>
             <input
               type="text"
               placeholder="Search student..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{ width: '100%', padding: '14px 14px 14px 44px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-card)', boxShadow: 'var(--shadow-sm)', fontSize: '16px', color: 'var(--text-main)' }}
+              style={{ width: '100%', maxWidth: '100%', padding: '14px 14px 14px 44px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-card)', boxShadow: 'var(--shadow-sm)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
             />
           </div>
 
