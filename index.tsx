@@ -3408,7 +3408,7 @@ EDP Team - Cajon Valley School District`;
           )
         }
 
-        <div style={{ padding: '16px', backgroundColor: 'var(--bg-app)', zIndex: 90, position: 'sticky', top: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+        <div className="sticky-header" style={{ padding: '16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
             {['all', 'checked_in', 'checked_out'].map(tab => (
               <button
@@ -3483,9 +3483,22 @@ EDP Team - Cajon Valley School District`;
               const opacity = (student.isCheckInBlocked || status === 'checked_out') ? 0.5 : 1;
 
               return (
-                <div key={student.id} onClick={() => !isPresent && !isCheckedOut ? handleStudentAction(student) : null} style={{ backgroundColor: 'var(--bg-card)', padding: '16px', borderRadius: '16px', marginBottom: '12px', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: `4px solid ${isPresent || isCheckedOut ? (status === 'checked_out' ? '#9ca3af' : (status === 'pending_parent' ? '#8b5cf6' : '#10b981')) : 'transparent'}`, cursor: isPresent || isCheckedOut ? 'default' : 'pointer', transition: 'transform 0.2s ease, box-shadow 0.2s ease', opacity }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
+                <div key={student.id}
+                  className="student-card"
+                  onClick={() => !isPresent && !isCheckedOut ? handleStudentAction(student) : null}
+                  style={{
+                    backgroundColor: 'var(--bg-card)',
+                    padding: '16px',
+                    borderRadius: '16px',
+                    marginBottom: '12px',
+                    boxShadow: 'var(--shadow-sm)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderLeft: `4px solid ${isPresent || isCheckedOut ? (status === 'checked_out' ? '#9ca3af' : (status === 'pending_parent' ? '#8b5cf6' : '#10b981')) : 'transparent'}`,
+                    cursor: isPresent || isCheckedOut ? 'default' : 'pointer',
+                    opacity
+                  }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '700', color: 'var(--text-secondary)' }}>

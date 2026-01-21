@@ -109,7 +109,30 @@ body {
   overflow-x: hidden;
   line-height: 1.5;
   transition: background-color 0.3s ease, color 0.3s ease;
-  overscroll-behavior-y: contain !important;
+  overscroll-behavior: none !important;
+  overscroll-behavior-y: none !important;
+}
+
+html {
+  overscroll-behavior: none !important;
+}
+
+/* FIX: Prevent layout jitter on mobile list items */
+.student-card {
+  transform: none !important;
+  transition: none !important;
+  will-change: auto !important;
+}
+
+/* FIX: Ensure header stays on top and opaque */
+.sticky-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 9999 !important;
+  background-color: var(--bg-app) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 #root {
