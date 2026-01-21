@@ -2810,8 +2810,6 @@ const App = () => {
   // Real-time sync state
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-  const pullStartY = useRef<number | null>(null);
-  const [pullDistance, setPullDistance] = useState(0);
 
   // Fetch initial data from Supabase
   useEffect(() => {
@@ -2886,8 +2884,8 @@ const App = () => {
             }));
             setLastSyncTime(new Date());
           } else if (payload.eventType === 'INSERT' && payload.new) {
-            // Add new student to local state
-            showToast(`New student added: ${payload.new.first_name}`, 'info');
+            // Add new student to local state silently
+            // showToast(`New student added: ${payload.new.first_name}`, 'info');
           } else if (payload.eventType === 'DELETE' && payload.old) {
             // Remove student from local state
             setStudents(prev => prev.filter(s => s.id !== payload.old.id));
@@ -2903,7 +2901,7 @@ const App = () => {
     };
   }, []);
 
-  // Manual refresh function
+  // Manual refresh function (Internal use only / Debugging)
   const handleRefresh = async () => {
     if (isRefreshing) return;
 
@@ -2915,43 +2913,16 @@ const App = () => {
       if (data) {
         setStudents(data.map(mapDbToStudent));
         setLastSyncTime(new Date());
-        showToast('Data synced successfully', 'success');
+        // Silent success
+        // showToast('Data synced successfully', 'success');
       }
     } catch (error) {
       console.error('Refresh failed:', error);
-      showToast('Failed to sync data', 'error');
+      // Silent failure
+      // showToast('Failed to sync data', 'error');
     } finally {
       setIsRefreshing(false);
-      setPullDistance(0);
     }
-  };
-
-  // Pull-to-refresh touch handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const scrollTop = (e.currentTarget as HTMLElement).scrollTop;
-    if (scrollTop === 0) {
-      pullStartY.current = e.touches[0].clientY;
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (pullStartY.current === null) return;
-
-    const currentY = e.touches[0].clientY;
-    const distance = Math.max(0, currentY - pullStartY.current);
-
-    if (distance > 0) {
-      setPullDistance(Math.min(distance, 100));
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (pullDistance > 60) {
-      handleRefresh();
-    } else {
-      setPullDistance(0);
-    }
-    pullStartY.current = null;
   };
 
   useEffect(() => {
@@ -3406,72 +3377,36 @@ EDP Team - Cajon Valley School District`;
       </header>
 
       <main
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
         style={{
           flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
           overflowY: 'auto',
           overflowX: 'hidden',
-          position: 'relative',
-          width: '100%',
-          maxWidth: '100%',
-          transform: `translateY(${pullDistance * 0.5}px)`,
-          transition: pullDistance === 0 ? 'transform 0.2s ease' : 'none'
+          padding: '16px',
+          paddingBottom: '100px', // Extra padding for footer/FAB
+          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
         }}
       >
-        {/* Pull-to-refresh indicator */}
-        {(pullDistance > 0 || isRefreshing) && (
-          <div style={{
-            position: 'absolute',
-            top: `-${50 - Math.min(pullDistance * 0.5, 50)}px`,
-            left: 0,
-            right: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '12px',
-            backgroundColor: 'var(--bg-app)',
-            zIndex: 100
-          }}>
-            <span
-              className="material-icons-round"
-              style={{
-                fontSize: '24px',
-                color: pullDistance > 60 || isRefreshing ? '#10b981' : 'var(--text-muted)',
-                transform: `rotate(${isRefreshing ? 360 : pullDistance * 3}deg)`,
-                transition: isRefreshing ? 'transform 0.8s linear' : 'none',
-                animation: isRefreshing ? 'spin 1s linear infinite' : 'none'
-              }}
-            >
-              sync
-            </span>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              {isRefreshing ? 'Syncing...' : pullDistance > 60 ? 'Release to refresh' : 'Pull to refresh'}
-            </span>
-          </div>
-        )}
+
 
         {/* Sync status bar */}
-        {lastSyncTime && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            padding: '6px 16px',
-            backgroundColor: 'var(--bg-header)',
-            borderBottom: '1px solid var(--border-subtle)',
-            fontSize: '11px',
-            color: 'var(--text-muted)'
-          }}>
-            <span className="material-icons-round" style={{ fontSize: '14px' }}>cloud_done</span>
-            Last synced: {lastSyncTime.toLocaleTimeString()}
-          </div>
-        )}
+        {
+          lastSyncTime && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              padding: '6px 16px',
+              backgroundColor: 'var(--bg-header)',
+              borderBottom: '1px solid var(--border-subtle)',
+              fontSize: '11px',
+              color: 'var(--text-muted)'
+            }}>
+              <span className="material-icons-round" style={{ fontSize: '14px' }}>cloud_done</span>
+              Last synced: {lastSyncTime.toLocaleTimeString()}
+            </div>
+          )
+        }
 
         <div style={{ padding: '16px', backgroundColor: 'var(--bg-app)', zIndex: 90, position: 'sticky', top: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
