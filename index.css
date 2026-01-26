@@ -56,18 +56,18 @@
 
 /* Dark Mode Overrides */
 [data-theme="dark"] {
-  --bg-app: #111827;
-  --bg-card: #1f2937;
-  --bg-header: #1f2937;
-  --bg-input: #374151;
-  --bg-hover: #374151;
+  --bg-app: #0f172a;
+  --bg-card: #1e293b;
+  --bg-header: #0f172a;
+  --bg-input: #1e293b;
+  --bg-hover: #1e293b;
 
-  --text-main: #f9fafb;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
+  --text-main: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
 
-  --border-subtle: #374151;
-  --border-focus: #60a5fa;
+  --border-subtle: #1e293b;
+  --border-focus: #3b82f6;
 
   --color-sunrise: #fbbf24;
   --color-sunrise-bg: #451a03;
@@ -76,7 +76,7 @@
   --color-sunset: #818cf8;
   --color-sunset-bg: #1e1b4b;
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
   --modal-overlay: rgba(0, 0, 0, 0.8);
 }
 

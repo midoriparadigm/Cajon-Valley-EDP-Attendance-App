@@ -2366,23 +2366,52 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
               </header>
 
               <div style={{ padding: '0 16px 16px 16px', backgroundColor: 'var(--bg-header)' }}>
-                <div style={{ position: 'relative', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
-                  <span className="material-icons-round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>search</span>
+                <div style={{ position: 'relative', marginBottom: '16px', width: '100%' }}>
+                  <span className="material-icons-round" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '20px' }}>search</span>
                   <input
                     type="text"
                     placeholder="Search student to manage access..."
                     value={blockSearch}
                     onChange={(e) => setBlockSearch(e.target.value)}
-                    style={{ width: '100%', maxWidth: '100%', padding: '14px 14px 14px 44px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-input)', boxShadow: 'var(--shadow-sm)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: 'none', backgroundColor: '#1e293b', fontSize: '16px', color: '#f8fafc', boxSizing: 'border-box' }}
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px' }}>
-                  <button onClick={() => setSelectedAccessGrade(prev => prev === 'All' ? null : 'All')} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedAccessGrade === 'All' ? 'var(--text-main)' : 'var(--bg-card)', color: selectedAccessGrade === 'All' ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedAccessGrade === 'All' ? 'scale(1.05)' : 'scale(1)' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setSelectedAccessGrade(prev => prev === 'All' ? null : 'All')}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      backgroundColor: selectedAccessGrade === 'All' ? '#f8fafc' : '#1e293b',
+                      color: selectedAccessGrade === 'All' ? '#0f172a' : '#f8fafc',
+                      fontWeight: '800',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      minWidth: '48px'
+                    }}
+                  >
                     All
                   </button>
                   {GRADES.map(g => (
-                    <button key={g} onClick={() => setSelectedAccessGrade(prev => prev === g ? null : g)} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedAccessGrade === g ? 'var(--text-main)' : 'var(--bg-card)', color: selectedAccessGrade === g ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedAccessGrade === g ? 'scale(1.05)' : 'scale(1)' }}>
+                    <button
+                      key={g}
+                      onClick={() => setSelectedAccessGrade(prev => prev === g ? null : g)}
+                      style={{
+                        padding: '10px 16px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        backgroundColor: selectedAccessGrade === g ? '#f8fafc' : '#1e293b',
+                        color: selectedAccessGrade === g ? '#0f172a' : '#f8fafc',
+                        fontWeight: '800',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        minWidth: '48px'
+                      }}
+                    >
                       {g}
                     </button>
                   ))}
@@ -3464,26 +3493,24 @@ const App = () => {
         }
 
         <div style={{ padding: '16px', backgroundColor: 'var(--bg-header)', borderBottom: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', width: '100%', overflowX: 'auto', paddingBottom: '4px' }} className="hide-scrollbar">
             {['all', 'checked_in', 'checked_out'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setRosterStatusFilter(tab as any)}
                 style={{
-                  padding: '10px',
+                  flex: 1,
+                  padding: '12px 16px',
                   borderRadius: '12px',
                   border: 'none',
-                  backgroundColor: rosterStatusFilter === tab ? 'var(--text-main)' : 'var(--bg-card)',
-                  color: rosterStatusFilter === tab ? 'var(--bg-card)' : 'var(--text-main)',
-                  fontWeight: '700',
+                  backgroundColor: rosterStatusFilter === tab ? '#f8fafc' : '#1e293b',
+                  color: rosterStatusFilter === tab ? '#0f172a' : '#f8fafc',
+                  fontWeight: '800',
                   fontSize: '14px',
                   cursor: 'pointer',
-                  boxShadow: 'var(--shadow-sm)',
                   transition: 'all 0.2s ease',
-                  minWidth: 0,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  boxShadow: rosterStatusFilter === tab ? '0 4px 12px rgba(0,0,0,0.2)' : 'none'
                 }}
               >
                 {tab === 'all'
@@ -3495,23 +3522,38 @@ const App = () => {
             ))}
           </div>
 
-          <div style={{ position: 'relative', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
-            <span className="material-icons-round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>search</span>
+          <div style={{ position: 'relative', marginBottom: '16px', width: '100%' }}>
+            <span className="material-icons-round" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '20px' }}>search</span>
             <input
               type="text"
               placeholder="Search student..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{ width: '100%', maxWidth: '100%', padding: '14px 14px 14px 44px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-input)', boxShadow: 'var(--shadow-sm)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: 'none', backgroundColor: '#1e293b', fontSize: '16px', color: '#f8fafc', boxSizing: 'border-box' }}
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {/* Render Buttons for Allowed Grades Only */}
             {GRADES
               .filter(g => (user.role === 'Lead' || !user.assignedGrades || user.assignedGrades.includes(g)))
               .map(g => (
-                <button key={g} onClick={() => setSelectedGrade(prev => prev === g ? 'All' : g)} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedGrade === g ? 'var(--text-main)' : 'var(--bg-card)', color: selectedGrade === g ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedGrade === g ? 'scale(1.05)' : 'scale(1)' }}>
+                <button
+                  key={g}
+                  onClick={() => setSelectedGrade(prev => prev === g ? 'All' : g)}
+                  style={{
+                    padding: '10px 16px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    backgroundColor: selectedGrade === g ? '#f8fafc' : '#1e293b',
+                    color: selectedGrade === g ? '#0f172a' : '#f8fafc',
+                    fontWeight: '800',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    minWidth: '48px'
+                  }}
+                >
                   {g}
                 </button>
               ))}
