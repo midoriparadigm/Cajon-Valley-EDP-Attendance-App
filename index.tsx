@@ -2336,28 +2336,48 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
 
         {activeTab === 'blocking' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, backgroundColor: 'var(--bg-app)' }}>
-            <div className="fixed-header" style={{
+            <div className="sticky-header" style={{
+              zIndex: 999,
+              backgroundColor: 'var(--bg-header)',
               position: 'sticky',
               top: 0,
-              zIndex: 100,
-              padding: '24px',
-              backgroundColor: 'var(--bg-header)',
-              borderBottom: '1px solid var(--border-subtle)',
-              boxShadow: 'var(--shadow-sm)'
+              boxShadow: 'var(--shadow-sm)',
+              borderBottom: '1px solid var(--border-subtle)'
             }}>
-              <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Student Check-In Access</h3>
-                <div style={{ position: 'relative' }}>
+              <header style={{
+                backgroundColor: 'var(--bg-header)',
+                padding: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                width: '100%',
+                maxWidth: '100%',
+                flexShrink: 0
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }}>
+                    <span className="material-icons-round" style={{ fontSize: '20px' }}>admin_panel_settings</span>
+                  </div>
+                  <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Student Check-In Access</h3>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>Administrative Control</div>
+                  </div>
+                </div>
+              </header>
+
+              <div style={{ padding: '0 16px 16px 16px', backgroundColor: 'var(--bg-header)' }}>
+                <div style={{ position: 'relative', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
                   <span className="material-icons-round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>search</span>
                   <input
+                    type="text"
+                    placeholder="Search student to manage access..."
                     value={blockSearch}
                     onChange={(e) => setBlockSearch(e.target.value)}
-                    placeholder="Search student to manage access..."
-                    style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '12px', border: '1px solid var(--border-subtle)', fontSize: '15px', boxSizing: 'border-box', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)' }}
+                    style={{ width: '100%', maxWidth: '100%', padding: '14px 14px 14px 44px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-input)', boxShadow: 'var(--shadow-sm)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px', marginTop: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px' }}>
                   <button onClick={() => setSelectedAccessGrade(prev => prev === 'All' ? null : 'All')} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedAccessGrade === 'All' ? 'var(--text-main)' : 'var(--bg-card)', color: selectedAccessGrade === 'All' ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedAccessGrade === 'All' ? 'scale(1.05)' : 'scale(1)' }}>
                     All
                   </button>
@@ -3349,7 +3369,15 @@ const App = () => {
 
   return (
     <>
-      <div className="sticky-header" style={{ paddingTop: 'env(safe-area-inset-top)', backgroundColor: 'var(--bg-app)' }}>
+      <div className="sticky-header" style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        backgroundColor: 'var(--bg-app)',
+        paddingTop: 'env(safe-area-inset-top)',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
         <header style={{
           backgroundColor: 'var(--bg-header)',
           padding: '16px',
@@ -3357,8 +3385,6 @@ const App = () => {
           display: 'flex',
           alignItems: 'center',
           gap: '16px',
-          zIndex: 100,
-          position: 'relative',
           width: '100%',
           maxWidth: '100%',
           flexShrink: 0
@@ -3437,7 +3463,7 @@ const App = () => {
           )
         }
 
-        <div style={{ padding: '16px' }}>
+        <div style={{ padding: '16px', backgroundColor: 'var(--bg-header)', borderBottom: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
             {['all', 'checked_in', 'checked_out'].map(tab => (
               <button
@@ -3476,7 +3502,7 @@ const App = () => {
               placeholder="Search student..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{ width: '100%', maxWidth: '100%', padding: '14px 14px 14px 44px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-card)', boxShadow: 'var(--shadow-sm)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
+              style={{ width: '100%', maxWidth: '100%', padding: '14px 14px 14px 44px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-input)', boxShadow: 'var(--shadow-sm)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
             />
           </div>
 
