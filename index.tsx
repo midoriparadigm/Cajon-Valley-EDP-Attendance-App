@@ -2169,193 +2169,181 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
         ))}
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {activeTab === 'roster' && (
-          <RosterManager onImport={onImport} onAdd={onAddStudent} showToast={showToast} />
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            <RosterManager onImport={onImport} onAdd={onAddStudent} showToast={showToast} />
+          </div>
         )}
 
         {activeTab === 'permissions' && (
-          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Staff Permissions</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {localStaff.map(staff => (
-                <div key={staff.id} style={{ backgroundColor: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <div>
-                      <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)' }}>{staff.name}</div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{staff.role} • {staff.organization}</div>
-                    </div>
-                    {staff.id !== 's1' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '180px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '600' }}>Can Check In</span>
-                          <button title="Toggle Check-In Permission" onClick={() => toggleStaffCheckIn(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckIn ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
-                            <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckIn ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
-                          </button>
-                        </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: isInline ? '16px' : '20px' }}>
+            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Staff Permissions</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {localStaff.map(staff => (
+                  <div key={staff.id} style={{ backgroundColor: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                      <div>
+                        <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)' }}>{staff.name}</div>
+                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{staff.role} • {staff.organization}</div>
+                      </div>
+                      {staff.id !== 's1' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '180px' }}>
-                            <span style={{ fontSize: '13px', fontWeight: '600' }}>Admin Tasks</span>
-                            <button title="Toggle Admin Tasks Permission" onClick={() => toggleStaffAdminTasks(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canAdminTasks ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
-                              <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canAdminTasks ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                            <span style={{ fontSize: '13px', fontWeight: '600' }}>Can Check In</span>
+                            <button title="Toggle Check-In Permission" onClick={() => toggleStaffCheckIn(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckIn ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                              <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckIn ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
                             </button>
                           </div>
-                          {staff.canAdminTasks && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingLeft: '16px', borderLeft: '2px solid var(--border-subtle)', marginLeft: '8px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '160px' }}>
-                                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Check Out</span>
-                                <button title="Toggle Check-Out Permission" onClick={() => toggleStaffCheckOut(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckOut ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckOut ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
-                                </button>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '160px' }}>
-                                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>HIR Quest.</span>
-                                <button title="Toggle HIR Permission" onClick={() => toggleStaffHir(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canHir ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canHir ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
-                                </button>
-                              </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '180px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: '600' }}>Admin Tasks</span>
+                              <button title="Toggle Admin Tasks Permission" onClick={() => toggleStaffAdminTasks(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canAdminTasks ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canAdminTasks ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                              </button>
                             </div>
-                          )}
+                            {staff.canAdminTasks && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingLeft: '16px', borderLeft: '2px solid var(--border-subtle)', marginLeft: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '160px' }}>
+                                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Check Out</span>
+                                  <button title="Toggle Check-Out Permission" onClick={() => toggleStaffCheckOut(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckOut ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckOut ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                                  </button>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '160px' }}>
+                                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>HIR Quest.</span>
+                                  <button title="Toggle HIR Permission" onClick={() => toggleStaffHir(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canHir ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canHir ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
 
-                  <div style={{ margin: '12px 0' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>Assigned Grades</div>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {GRADES.filter(g => g !== 'All').map(g => (
-                        <button key={g} onClick={() => toggleGradeAssignment(staff.id, g)} style={{ padding: '6px 12px', borderRadius: '8px', border: (staff.assignedGrades || []).includes(g) ? '1px solid var(--text-main)' : '1px solid var(--border-subtle)', backgroundColor: (staff.assignedGrades || []).includes(g) ? 'var(--text-main)' : 'transparent', color: (staff.assignedGrades || []).includes(g) ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-                          {g}
+                    <div style={{ margin: '12px 0' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>Assigned Grades</div>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {GRADES.filter(g => g !== 'All').map(g => (
+                          <button key={g} onClick={() => toggleGradeAssignment(staff.id, g)} style={{ padding: '6px 12px', borderRadius: '8px', border: (staff.assignedGrades || []).includes(g) ? '1px solid var(--text-main)' : '1px solid var(--border-subtle)', backgroundColor: (staff.assignedGrades || []).includes(g) ? 'var(--text-main)' : 'transparent', color: (staff.assignedGrades || []).includes(g) ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                            {g}
+                          </button>
+                        ))}
+                        <button onClick={() => toggleAllGrades(staff.id)} style={{ padding: '6px 12px', borderRadius: '8px', border: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? '1px solid var(--text-main)' : '1px solid var(--border-subtle)', backgroundColor: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? 'var(--text-main)' : 'transparent', color: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                          All
                         </button>
-                      ))}
-                      <button onClick={() => toggleAllGrades(staff.id)} style={{ padding: '6px 12px', borderRadius: '8px', border: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? '1px solid var(--text-main)' : '1px solid var(--border-subtle)', backgroundColor: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? 'var(--text-main)' : 'transparent', color: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-                        All
-                      </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {activeTab === 'batch' && (
-          <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-            <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '24px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-lg)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                <div style={{ padding: '12px', borderRadius: '12px', backgroundColor: 'var(--color-sunrise)', color: 'white' }}>
-                  <span className="material-icons-round">wb_sunny</span>
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>Sunrise Batch Checkout</h3>
-                </div>
-              </div>
-
-              <div style={{ margin: '24px 0', padding: '20px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>Checkout Time</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)' }}>Set as Default</span>
-                    <button title="Set current time as default" onClick={() => setIsBatchDefaultEnabled(!isBatchDefaultEnabled)} style={{ width: '36px', height: '20px', borderRadius: '10px', backgroundColor: isBatchDefaultEnabled ? 'var(--color-success)' : '#d1d5db', position: 'relative', border: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                      <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '1px', left: isBatchDefaultEnabled ? '18px' : '1px', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-                    </button>
+          <div style={{ flex: 1, overflowY: 'auto', padding: isInline ? '16px' : '24px' }}>
+            <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+              <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '24px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-lg)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{ padding: '12px', borderRadius: '12px', backgroundColor: 'var(--color-sunrise)', color: 'white' }}>
+                    <span className="material-icons-round">wb_sunny</span>
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>Sunrise Batch Checkout</h3>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '20px', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Hour</div>
-                    <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
-                        <div key={h} onClick={() => {
-                          const [_, m] = sunriseBatchTime.split(':');
-                          setSunriseBatchTime(`${String(h)}:${m || '00'}`);
-                        }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[0] === String(h) ? '800' : '600', color: sunriseBatchTime.split(':')[0] === String(h) ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
-                          {h}
-                        </div>
-                      ))}
+                <div style={{ margin: '24px 0', padding: '20px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>Checkout Time</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)' }}>Set as Default</span>
+                      <button title="Set current time as default" onClick={() => setIsBatchDefaultEnabled(!isBatchDefaultEnabled)} style={{ width: '36px', height: '20px', borderRadius: '10px', backgroundColor: isBatchDefaultEnabled ? 'var(--color-success)' : '#d1d5db', position: 'relative', border: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '1px', left: isBatchDefaultEnabled ? '18px' : '1px', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                      </button>
                     </div>
                   </div>
 
-                  <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-muted)', marginTop: '12px' }}>:</div>
+                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Hour</div>
+                      <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                          <div key={h} onClick={() => {
+                            const [_, m] = sunriseBatchTime.split(':');
+                            setSunriseBatchTime(`${String(h)}:${m || '00'}`);
+                          }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[0] === String(h) ? '800' : '600', color: sunriseBatchTime.split(':')[0] === String(h) ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
+                            {h}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Min</div>
-                    <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
-                      {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(m => (
-                        <div key={m} onClick={() => {
-                          const [h, _] = sunriseBatchTime.split(':');
-                          setSunriseBatchTime(`${h || '8'}:${m}`);
-                        }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[1] === m ? '800' : '600', color: sunriseBatchTime.split(':')[1] === m ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
-                          {m}
-                        </div>
-                      ))}
+                    <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-muted)', marginTop: '12px' }}>:</div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Min</div>
+                      <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
+                        {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(m => (
+                          <div key={m} onClick={() => {
+                            const [h, _] = sunriseBatchTime.split(':');
+                            setSunriseBatchTime(`${h || '8'}:${m}`);
+                          }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[1] === m ? '800' : '600', color: sunriseBatchTime.split(':')[1] === m ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
+                            {m}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', borderRadius: '12px', backgroundColor: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', marginTop: '12px' }}>
+                      <span className="material-icons-round" style={{ fontSize: '20px' }}>wb_sunny</span>
+                      <span style={{ fontWeight: '800', fontSize: '15px' }}>AM</span>
                     </div>
                   </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', borderRadius: '12px', backgroundColor: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', marginTop: '12px' }}>
-                    <span className="material-icons-round" style={{ fontSize: '20px' }}>wb_sunny</span>
-                    <span style={{ fontWeight: '800', fontSize: '15px' }}>AM</span>
-                  </div>
-                </div>
-                <style>{`
+                  <style>{`
                   .hide-scrollbar::-webkit-scrollbar { display: none; }
                   .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
                 `}</style>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0', fontSize: '14px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Students Eligible:</span>
-                <span style={{ fontWeight: '800', fontSize: '18px', color: '#8b5cf6' }}>{students.filter(s => s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent').length}</span>
-              </div>
-
-              {scheduledBatchCheckoutTime ? (
-                <div style={{ textAlign: 'center', padding: '24px', backgroundColor: 'rgba(139,92,246,0.1)', borderRadius: '16px', border: '2px dashed #8b5cf6' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#8b5cf6', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '1px' }}>Executing in</div>
-                  <div style={{ fontSize: '36px', fontWeight: '900', color: 'var(--text-main)', fontFamily: 'monospace' }}>{countdown}</div>
-                  <button onClick={() => onScheduleBatchCheckout(null)} style={{ marginTop: '16px', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Cancel Schedule</button>
                 </div>
-              ) : (
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button onClick={() => setSunriseBatchTime('')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                  <button onClick={handleSunriseBatchCheckout} disabled={!isFutureTime()} style={{ flex: 2, padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '16px', cursor: 'pointer', opacity: isFutureTime() ? 1 : 0.5 }}>
-                    Run Batch Checkout
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
-        {showScheduleConfirm && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-            <div style={{ backgroundColor: 'var(--bg-card)', padding: '32px', borderRadius: '24px', maxWidth: '400px', width: '100%', textAlign: 'center', boxShadow: 'var(--shadow-lg)' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'rgba(139,92,246,0.1)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                <span className="material-icons-round" style={{ fontSize: '32px' }}>schedule</span>
-              </div>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '12px' }}>Confirm Batch Schedule</h3>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '15px', lineHeight: '1.5' }}>
-                Schedule automatic check-out for all students at <strong>{sunriseBatchTime} AM</strong>?
-              </p>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button onClick={() => setShowScheduleConfirm(false)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                <button onClick={confirmSchedule} style={{ flex: 1, padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Confirm</button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0', fontSize: '14px' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Students Eligible:</span>
+                  <span style={{ fontWeight: '800', fontSize: '18px', color: '#8b5cf6' }}>{students.filter(s => s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent').length}</span>
+                </div>
+
+                {scheduledBatchCheckoutTime ? (
+                  <div style={{ textAlign: 'center', padding: '24px', backgroundColor: 'rgba(139,92,246,0.1)', borderRadius: '16px', border: '2px dashed #8b5cf6' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#8b5cf6', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '1px' }}>Executing in</div>
+                    <div style={{ fontSize: '36px', fontWeight: '900', color: 'var(--text-main)', fontFamily: 'monospace' }}>{countdown}</div>
+                    <button onClick={() => onScheduleBatchCheckout(null)} style={{ marginTop: '16px', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Cancel Schedule</button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button onClick={() => setSunriseBatchTime('')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                    <button onClick={handleSunriseBatchCheckout} disabled={!isFutureTime()} style={{ flex: 2, padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '16px', cursor: 'pointer', opacity: isFutureTime() ? 1 : 0.5 }}>
+                      Run Batch Checkout
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
 
         {activeTab === 'blocking' && (
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <div className="sticky-header" style={{
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, backgroundColor: 'var(--bg-app)' }}>
+            <div className="fixed-header" style={{
               position: 'sticky',
               top: 0,
-              zIndex: 15,
-              padding: '20px 24px',
-              backgroundColor: 'var(--bg-app)',
+              zIndex: 100,
+              padding: '24px',
+              backgroundColor: 'var(--bg-header)',
               borderBottom: '1px solid var(--border-subtle)',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+              boxShadow: 'var(--shadow-sm)'
             }}>
               <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Student Check-In Access</h3>
@@ -2369,7 +2357,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px', marginTop: '16px' }}>
                   <button onClick={() => setSelectedAccessGrade(prev => prev === 'All' ? null : 'All')} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedAccessGrade === 'All' ? 'var(--text-main)' : 'var(--bg-card)', color: selectedAccessGrade === 'All' ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedAccessGrade === 'All' ? 'scale(1.05)' : 'scale(1)' }}>
                     All
                   </button>
@@ -2382,155 +2370,178 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
               </div>
             </div>
 
-            <div style={{ padding: '0 24px 24px 24px', maxWidth: '800px', margin: '0 auto' }}>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {students
-                  .filter(s => (s.firstName.toLowerCase() + ' ' + s.lastName.toLowerCase()).includes(blockSearch.toLowerCase()))
-                  .filter(s => !selectedAccessGrade || selectedAccessGrade === 'All' || s.grade === selectedAccessGrade)
-                  .map(student => (
-                    <div key={student.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', opacity: student.isCheckInBlocked ? 0.8 : 1, borderLeft: student.isCheckInBlocked ? '4px solid var(--color-danger)' : '1px solid var(--border-subtle)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>{student.grade}</div>
-                        <div>
-                          <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>{student.firstName} {student.lastName}</div>
-                          <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                            {student.programs.includes('ELOP') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: '700' }}>ELOP</span>}
-                            {student.programs.includes('ASES') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8', fontWeight: '700' }}>ASES</span>}
+            <div style={{ flex: 1, overflowY: 'auto', overscrollBehaviorY: 'none', padding: '24px' }}>
+              <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {students
+                    .filter(s => (s.firstName.toLowerCase() + ' ' + s.lastName.toLowerCase()).includes(blockSearch.toLowerCase()))
+                    .filter(s => !selectedAccessGrade || selectedAccessGrade === 'All' || s.grade === selectedAccessGrade)
+                    .map(student => (
+                      <div key={student.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', opacity: student.isCheckInBlocked ? 0.8 : 1, borderLeft: student.isCheckInBlocked ? '4px solid var(--color-danger)' : '1px solid var(--border-subtle)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>{student.grade}</div>
+                          <div>
+                            <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>{student.firstName} {student.lastName}</div>
+                            <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                              {student.programs.includes('ELOP') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: '700' }}>ELOP</span>}
+                              {student.programs.includes('ASES') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8', fontWeight: '700' }}>ASES</span>}
+                            </div>
                           </div>
                         </div>
+                        <button onClick={() => toggleStudentBlock(student)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: student.isCheckInBlocked ? 'var(--color-danger-bg)' : 'var(--bg-hover)', color: student.isCheckInBlocked ? 'var(--color-danger)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                          {student.isCheckInBlocked ? 'No Check-In' : 'Active'}
+                        </button>
                       </div>
-                      <button onClick={() => toggleStudentBlock(student)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: student.isCheckInBlocked ? 'var(--color-danger-bg)' : 'var(--bg-hover)', color: student.isCheckInBlocked ? 'var(--color-danger)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-                        {student.isCheckInBlocked ? 'No Check-In' : 'Active'}
-                      </button>
-                    </div>
-                  ))}
+                    ))}
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {activeTab === 'biometric' && (
-          <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="material-icons-round">face</span> Photo Verification Review
-            </h3>
+          <div style={{ flex: 1, overflowY: 'auto', padding: isInline ? '16px' : '24px' }}>
+            <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="material-icons-round">face</span> Photo Verification Review
+              </h3>
 
-            {biometricLogs.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
-                <span className="material-icons-round" style={{ fontSize: '48px', marginBottom: '12px' }}>no_photography</span>
-                <div style={{ fontWeight: '600' }}>No verification logs yet</div>
-                <div style={{ fontSize: '14px' }}>Logs will appear here after student check-ins</div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {biometricLogs.map(log => (
-                  <div key={log.id} style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '20px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-md)', borderLeft: log.anomalyDetected ? '6px solid #f97316' : '1px solid var(--border-subtle)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                      <div>
-                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          {log.studentName}
-                          {log.anomalyDetected && (
-                            <span style={{ padding: '4px 12px', borderRadius: '20px', backgroundColor: '#fff7ed', color: '#ea580c', fontSize: '11px', fontWeight: '800', border: '1px solid #ffedd5', textTransform: 'uppercase' }}>
-                              Visual Anomaly Detected
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                          Log ID: {log.id} • {log.timestamp}
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Identity Match</div>
-                        <div style={{ fontSize: '20px', fontWeight: '900', color: 'var(--color-success)' }}>{(log.matchScore * 100).toFixed(0)}%</div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ height: '140px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border-subtle)', marginBottom: '8px' }}>
-                          <img src={log.yearbookPhoto} alt="Yearbook" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Yearbook</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ height: '140px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border-subtle)', marginBottom: '8px' }}>
-                          <img src={log.previousPhoto} alt="Previous Day" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Previous Day</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ height: '140px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', overflow: 'hidden', border: `3px solid ${log.anomalyDetected ? '#f97316' : '#8b5cf6'}`, marginBottom: '8px' }}>
-                          {log.livePhoto ? (
-                            <img src={log.livePhoto} alt="Live Capture" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
-                              <span className="material-icons-round" style={{ color: 'white' }}>no_photography</span>
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ fontSize: '11px', fontWeight: '800', color: log.anomalyDetected ? '#ea580c' : '#8b5cf6', textTransform: 'uppercase' }}>Check-In Capture</div>
-                      </div>
-                    </div>
-
-                    {log.anomalyDetected && (
-                      <div style={{ marginTop: '20px', padding: '12px', backgroundColor: '#fff7ed', borderRadius: '12px', border: '1px solid #ffedd5', fontSize: '13px', color: '#9a3412', display: 'flex', gap: '10px' }}>
-                        <span className="material-icons-round" style={{ fontSize: '18px' }}>warning</span>
+              {biometricLogs.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
+                  <span className="material-icons-round" style={{ fontSize: '48px', marginBottom: '12px' }}>no_photography</span>
+                  <div style={{ fontWeight: '600' }}>No verification logs yet</div>
+                  <div style={{ fontSize: '14px' }}>Logs will appear here after student check-ins</div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {biometricLogs.map(log => (
+                    <div key={log.id} style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '20px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-md)', borderLeft: log.anomalyDetected ? '6px solid #f97316' : '1px solid var(--border-subtle)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                         <div>
-                          <strong>Anomaly Detected:</strong> This student's current appearance significantly deviates from their previous check-in (Variance: {(log.anomalyScore * 100).toFixed(1)}%). Review for potential injury or unverified identity.
+                          <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            {log.studentName}
+                            {log.anomalyDetected && (
+                              <span style={{ padding: '4px 12px', borderRadius: '20px', backgroundColor: '#fff7ed', color: '#ea580c', fontSize: '11px', fontWeight: '800', border: '1px solid #ffedd5', textTransform: 'uppercase' }}>
+                                Visual Anomaly Detected
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                            Log ID: {log.id} • {log.timestamp}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Identity Match</div>
+                          <div style={{ fontSize: '20px', fontWeight: '900', color: 'var(--color-success)' }}>{(log.matchScore * 100).toFixed(0)}%</div>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ height: '140px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border-subtle)', marginBottom: '8px' }}>
+                            <img src={log.yearbookPhoto} alt="Yearbook" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Yearbook</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ height: '140px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border-subtle)', marginBottom: '8px' }}>
+                            <img src={log.previousPhoto} alt="Previous Day" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Previous Day</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ height: '140px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', overflow: 'hidden', border: `3px solid ${log.anomalyDetected ? '#f97316' : '#8b5cf6'}`, marginBottom: '8px' }}>
+                            {log.livePhoto ? (
+                              <img src={log.livePhoto} alt="Live Capture" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
+                                <span className="material-icons-round" style={{ color: 'white' }}>no_photography</span>
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '11px', fontWeight: '800', color: log.anomalyDetected ? '#ea580c' : '#8b5cf6', textTransform: 'uppercase' }}>Check-In Capture</div>
+                        </div>
+                      </div>
+
+                      {log.anomalyDetected && (
+                        <div style={{ marginTop: '20px', padding: '12px', backgroundColor: '#fff7ed', borderRadius: '12px', border: '1px solid #ffedd5', fontSize: '13px', color: '#9a3412', display: 'flex', gap: '10px' }}>
+                          <span className="material-icons-round" style={{ fontSize: '18px' }}>warning</span>
+                          <div>
+                            <strong>Anomaly Detected:</strong> This student's current appearance significantly deviates from their previous check-in (Variance: {(log.anomalyScore * 100).toFixed(1)}%). Review for potental injury or unverified identity.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {activeTab === 'reports' && (
-          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Parent Reports</h3>
-            {parentReports.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
-                <span className="material-icons-round" style={{ fontSize: '48px', marginBottom: '12px' }}>description</span>
-                <div style={{ fontWeight: '600' }}>No reports yet</div>
-                <div style={{ fontSize: '14px' }}>Reports will appear here when created from incidents</div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {parentReports.map(report => (
-                  <div
-                    key={report.id}
-                    style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', borderLeft: `4px solid ${report.status === 'sent' ? '#6b7280' : '#f59e0b'}`, cursor: 'pointer', transition: 'transform 0.15s' }}
-                    onClick={() => setSelectedDraft(report)}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.01)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>{report.studentName}</div>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: report.type === 'injury' ? '#fef2f2' : report.behaviorLevel === 'red' ? '#fef2f2' : report.behaviorLevel === 'yellow' ? '#fefce8' : '#dcfce7', color: report.type === 'injury' ? '#dc2626' : report.behaviorLevel === 'red' ? '#dc2626' : report.behaviorLevel === 'yellow' ? '#ca8a04' : '#16a34a' }}>
-                          {report.type === 'injury' ? 'Injury' : report.behaviorLevel ? `${report.behaviorLevel.charAt(0).toUpperCase() + report.behaviorLevel.slice(1)} Ticket` : 'Behavior'}
-                        </span>
-                        <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: report.status === 'sent' ? '#f3f4f6' : '#fef3c7', color: report.status === 'sent' ? '#4b5563' : '#d97706' }}>
-                          {report.status === 'sent' ? '✓ Sent' : 'Draft'}
-                        </span>
+          <div style={{ flex: 1, overflowY: 'auto', padding: isInline ? '16px' : '24px' }}>
+            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Parent Reports</h3>
+              {parentReports.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
+                  <span className="material-icons-round" style={{ fontSize: '48px', marginBottom: '12px' }}>description</span>
+                  <div style={{ fontWeight: '600' }}>No reports yet</div>
+                  <div style={{ fontSize: '14px' }}>Reports will appear here when created from incidents</div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {parentReports.map(report => (
+                    <div
+                      key={report.id}
+                      style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', borderLeft: `4px solid ${report.status === 'sent' ? '#6b7280' : '#f59e0b'}`, cursor: 'pointer', transition: 'transform 0.15s' }}
+                      onClick={() => setSelectedDraft(report)}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.01)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>{report.studentName}</div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: report.type === 'injury' ? '#fef2f2' : report.behaviorLevel === 'red' ? '#fef2f2' : report.behaviorLevel === 'yellow' ? '#fefce8' : '#dcfce7', color: report.type === 'injury' ? '#dc2626' : report.behaviorLevel === 'red' ? '#dc2626' : report.behaviorLevel === 'yellow' ? '#ca8a04' : '#16a34a' }}>
+                            {report.type === 'injury' ? 'Injury' : report.behaviorLevel ? `${report.behaviorLevel.charAt(0).toUpperCase() + report.behaviorLevel.slice(1)} Ticket` : 'Behavior'}
+                          </span>
+                          <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: report.status === 'sent' ? '#f3f4f6' : '#fef3c7', color: report.status === 'sent' ? '#4b5563' : '#d97706' }}>
+                            {report.status === 'sent' ? '✓ Sent' : 'Draft'}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                        via {report.method === 'both' ? '📧+💬 Both' : report.method === 'email' ? '📧 Email' : '💬 SMS'} • {new Date(report.createdAt).toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-main)', whiteSpace: 'pre-wrap', maxHeight: '80px', overflow: 'hidden', background: 'var(--bg-input)', padding: '8px', borderRadius: '8px' }}>
+                        {report.message.substring(0, 150)}...
                       </div>
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                      via {report.method === 'both' ? '📧+💬 Both' : report.method === 'email' ? '📧 Email' : '💬 SMS'} • {new Date(report.createdAt).toLocaleString()}
-                    </div>
-                    <div style={{ fontSize: '13px', color: 'var(--text-main)', whiteSpace: 'pre-wrap', maxHeight: '80px', overflow: 'hidden', background: 'var(--bg-input)', padding: '8px', borderRadius: '8px' }}>
-                      {report.message.substring(0, 150)}...
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
+
+      {showScheduleConfirm && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ backgroundColor: 'var(--bg-card)', padding: '32px', borderRadius: '24px', maxWidth: '400px', width: '100%', textAlign: 'center', boxShadow: 'var(--shadow-lg)' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'rgba(139,92,246,0.1)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <span className="material-icons-round" style={{ fontSize: '32px' }}>schedule</span>
+            </div>
+            <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '12px' }}>Confirm Batch Schedule</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '15px', lineHeight: '1.5' }}>
+              Schedule automatic check-out for all students at <strong>{sunriseBatchTime} AM</strong>?
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => setShowScheduleConfirm(false)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={confirmSchedule} style={{ flex: 1, padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmBlockStudent && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
@@ -2585,23 +2596,19 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                   onClick={() => {
                     const current = selectedDraft.method;
                     let next: 'email' | 'sms' | 'both' = 'email';
-                    if (current === 'email') next = 'email'; // Can't turn off if it's the only one? Or logic: toggle off -> error? Let's allow toggle logic:
-                    // Logic: If Email is ON (email/both), turn OFF. If OFF (sms), turn ON.
                     const isEmailOn = current === 'email' || current === 'both';
-
                     if (isEmailOn) {
-                      // Turn off -> if was both, become sms. If was email, become... none? Let's prevent none.
                       if (current === 'both') next = 'sms';
-                      else return; // Prevent turning off the only method
+                      else if (current === 'email' && selectedDraft.method !== 'sms') return;
+                      else next = 'sms';
                     } else {
-                      // Turn on -> if was sms, become both.
                       if (current === 'sms') next = 'both';
                       else next = 'email';
                     }
                     setSelectedDraft({ ...selectedDraft, method: next });
                   }}
-                  disabled={selectedDraft.status === 'sent'}
-                  style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: (selectedDraft.method === 'email' || selectedDraft.method === 'both') ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: selectedDraft.status === 'sent' ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: selectedDraft.status === 'sent' ? 0.5 : 1 }}>
+                  disabled={selectedDraft.status === 'sent' || (selectedDraft.method === 'email' && selectedDraft.method !== 'both')}
+                  style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: (selectedDraft.method === 'email' || selectedDraft.method === 'both') ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: selectedDraft.status === 'sent' || (selectedDraft.method === 'email' && selectedDraft.method !== 'both') ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: selectedDraft.status === 'sent' ? 0.5 : 1 }}>
                   <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: (selectedDraft.method === 'email' || selectedDraft.method === 'both') ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
                 </button>
               </div>
@@ -2612,20 +2619,19 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                   onClick={() => {
                     const current = selectedDraft.method;
                     let next: 'email' | 'sms' | 'both' = 'sms';
-                    // Logic: If SMS is ON (sms/both), turn OFF. If OFF (email), turn ON.
                     const isSmsOn = current === 'sms' || current === 'both';
-
                     if (isSmsOn) {
                       if (current === 'both') next = 'email';
-                      else return; // Prevent turning off only method
+                      else if (current === 'sms' && selectedDraft.method !== 'email') return;
+                      else next = 'email';
                     } else {
                       if (current === 'email') next = 'both';
                       else next = 'sms';
                     }
                     setSelectedDraft({ ...selectedDraft, method: next });
                   }}
-                  disabled={selectedDraft.status === 'sent'}
-                  style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: (selectedDraft.method === 'sms' || selectedDraft.method === 'both') ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: selectedDraft.status === 'sent' ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: selectedDraft.status === 'sent' ? 0.5 : 1 }}>
+                  disabled={selectedDraft.status === 'sent' || (selectedDraft.method === 'sms' && selectedDraft.method !== 'both')}
+                  style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: (selectedDraft.method === 'sms' || selectedDraft.method === 'both') ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: selectedDraft.status === 'sent' || (selectedDraft.method === 'sms' && selectedDraft.method !== 'both') ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: selectedDraft.status === 'sent' ? 0.5 : 1 }}>
                   <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: (selectedDraft.method === 'sms' || selectedDraft.method === 'both') ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
                 </button>
               </div>
@@ -2657,37 +2663,36 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
           </div>
         </div>
       )}
-    </div>
-  );
+
 };
 
-interface ParentReport {
-  id: string;
-  studentId: string;
-  studentName: string;
-  type: 'injury' | 'behavior';
-  behaviorLevel?: 'green' | 'yellow' | 'red';
-  message: string;
-  method: 'email' | 'sms' | 'both';
-  status: 'draft' | 'sent';
-  createdAt: string;
+      interface ParentReport {
+        id: string;
+      studentId: string;
+      studentName: string;
+      type: 'injury' | 'behavior';
+      behaviorLevel?: 'green' | 'yellow' | 'red';
+      message: string;
+      method: 'email' | 'sms' | 'both';
+      status: 'draft' | 'sent';
+      createdAt: string;
 }
 
-const ParentReportModal = ({ student, type, onClose, onSend, onSaveDraft }: { student: Student, type: 'injury' | 'behavior', onClose: () => void, onSend: (report: ParentReport) => void, onSaveDraft: (report: ParentReport) => void }) => {
+      const ParentReportModal = ({student, type, onClose, onSend, onSaveDraft}: {student: Student, type: 'injury' | 'behavior', onClose: () => void, onSend: (report: ParentReport) => void, onSaveDraft: (report: ParentReport) => void }) => {
   const [method, setMethod] = useState<'email' | 'sms' | 'both'>('both');
 
   // Generate detailed message based on incident type
   const generateMessage = () => {
     const date = new Date().toLocaleDateString();
-    const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      const time = new Date().toLocaleTimeString([], {hour: 'numeric', minute: '2-digit' });
 
-    if (type === 'injury') {
+      if (type === 'injury') {
       const symptoms = student.headInjuryLogs.length > 0
-        ? Object.entries(student.headInjuryLogs[student.headInjuryLogs.length - 1].symptoms)
+      ? Object.entries(student.headInjuryLogs[student.headInjuryLogs.length - 1].symptoms)
           .filter(([_, v]) => v === true)
           .map(([k]) => k)
-          .join(', ')
-        : 'None reported';
+      .join(', ')
+      : 'None reported';
 
       return `Dear ${(student.guardians?.[0]?.firstName || 'Unknown')} ${(student.guardians?.[0]?.lastName || '')},
 
@@ -2708,7 +2713,7 @@ const ParentReportModal = ({ student, type, onClose, onSend, onSaveDraft }: { st
       const ticketLevel = student.behavior === 'red' ? 'Level 3 (Red)' : student.behavior === 'yellow' ? 'Level 2 (Yellow)' : 'Level 1 (Green)';
       const behaviorList = student.behaviorIssues.length > 0
         ? student.behaviorIssues.map(b => `• ${b}`).join('\n')
-        : '• General behavior concern';
+      : '• General behavior concern';
 
       return `Dear ${(student.guardians?.[0]?.firstName || 'Unknown')} ${(student.guardians?.[0]?.lastName || '')},
 
@@ -2731,148 +2736,148 @@ const ParentReportModal = ({ student, type, onClose, onSend, onSaveDraft }: { st
     }
   };
 
-  const [message, setMessage] = useState(generateMessage());
+      const [message, setMessage] = useState(generateMessage());
 
   const createReport = (status: 'draft' | 'sent'): ParentReport => ({
-    id: Date.now().toString(),
-    studentId: student.id,
-    studentName: `${student.firstName} ${student.lastName}`,
-    type,
-    behaviorLevel: type === 'behavior' ? (student.behavior as 'green' | 'yellow' | 'red') : undefined,
-    message,
-    method,
-    status,
-    createdAt: new Date().toISOString()
+        id: Date.now().toString(),
+      studentId: student.id,
+      studentName: `${student.firstName} ${student.lastName}`,
+      type,
+      behaviorLevel: type === 'behavior' ? (student.behavior as 'green' | 'yellow' | 'red') : undefined,
+      message,
+      method,
+      status,
+      createdAt: new Date().toISOString()
   });
 
-  return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '16px', width: '90%', maxWidth: '600px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Parent Report Draft</h3>
-          <span style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', backgroundColor: type === 'injury' ? '#fef2f2' : student.behavior === 'red' ? '#fef2f2' : student.behavior === 'yellow' ? '#fefce8' : '#dcfce7', color: type === 'injury' ? '#dc2626' : student.behavior === 'red' ? '#dc2626' : student.behavior === 'yellow' ? '#ca8a04' : '#16a34a' }}>
-            {type === 'injury' ? 'Head Injury' : `${student.behavior.toUpperCase()} Ticket`}
-          </span>
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>Send via</label>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button onClick={() => setMethod('email')} style={{ padding: '8px 16px', borderRadius: '8px', border: method === 'email' ? '2px solid #8b5cf6' : '1px solid var(--border-subtle)', backgroundColor: method === 'email' ? 'rgba(139,92,246,0.1)' : 'transparent', fontWeight: '600', cursor: 'pointer', color: 'var(--text-main)' }}>📧 Email</button>
-            <button onClick={() => setMethod('sms')} style={{ padding: '8px 16px', borderRadius: '8px', border: method === 'sms' ? '2px solid #8b5cf6' : '1px solid var(--border-subtle)', backgroundColor: method === 'sms' ? 'rgba(139,92,246,0.1)' : 'transparent', fontWeight: '600', cursor: 'pointer', color: 'var(--text-main)' }}>💬 SMS</button>
-            <button onClick={() => setMethod('both')} style={{ padding: '8px 16px', borderRadius: '8px', border: method === 'both' ? '2px solid #8b5cf6' : '1px solid var(--border-subtle)', backgroundColor: method === 'both' ? 'rgba(139,92,246,0.1)' : 'transparent', fontWeight: '600', cursor: 'pointer', color: 'var(--text-main)' }}>📧+💬 Both</button>
+      return (
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '16px', width: '90%', maxWidth: '600px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Parent Report Draft</h3>
+            <span style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', backgroundColor: type === 'injury' ? '#fef2f2' : student.behavior === 'red' ? '#fef2f2' : student.behavior === 'yellow' ? '#fefce8' : '#dcfce7', color: type === 'injury' ? '#dc2626' : student.behavior === 'red' ? '#dc2626' : student.behavior === 'yellow' ? '#ca8a04' : '#16a34a' }}>
+              {type === 'injury' ? 'Head Injury' : `${student.behavior.toUpperCase()} Ticket`}
+            </span>
           </div>
-        </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <label style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>Message (Editable)</label>
-            <button onClick={() => setMessage(generateMessage())} style={{ padding: '4px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'transparent', fontSize: '12px', fontWeight: '600', cursor: 'pointer', color: 'var(--text-secondary)' }}>🔄 Regenerate</button>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>Send via</label>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => setMethod('email')} style={{ padding: '8px 16px', borderRadius: '8px', border: method === 'email' ? '2px solid #8b5cf6' : '1px solid var(--border-subtle)', backgroundColor: method === 'email' ? 'rgba(139,92,246,0.1)' : 'transparent', fontWeight: '600', cursor: 'pointer', color: 'var(--text-main)' }}>📧 Email</button>
+              <button onClick={() => setMethod('sms')} style={{ padding: '8px 16px', borderRadius: '8px', border: method === 'sms' ? '2px solid #8b5cf6' : '1px solid var(--border-subtle)', backgroundColor: method === 'sms' ? 'rgba(139,92,246,0.1)' : 'transparent', fontWeight: '600', cursor: 'pointer', color: 'var(--text-main)' }}>💬 SMS</button>
+              <button onClick={() => setMethod('both')} style={{ padding: '8px 16px', borderRadius: '8px', border: method === 'both' ? '2px solid #8b5cf6' : '1px solid var(--border-subtle)', backgroundColor: method === 'both' ? 'rgba(139,92,246,0.1)' : 'transparent', fontWeight: '600', cursor: 'pointer', color: 'var(--text-main)' }}>📧+💬 Both</button>
+            </div>
           </div>
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            style={{ width: '100%', height: '250px', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-subtle)', fontSize: '14px', lineHeight: '1.6', resize: 'vertical', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit' }}
-          />
-        </div>
 
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'var(--bg-hover)', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>Discard</button>
-          <button onClick={() => onSaveDraft(createReport('draft'))} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>Save Draft</button>
-          <button onClick={() => onSend(createReport('sent'))} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Send Report</button>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>Message (Editable)</label>
+              <button onClick={() => setMessage(generateMessage())} style={{ padding: '4px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'transparent', fontSize: '12px', fontWeight: '600', cursor: 'pointer', color: 'var(--text-secondary)' }}>🔄 Regenerate</button>
+            </div>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              style={{ width: '100%', height: '250px', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-subtle)', fontSize: '14px', lineHeight: '1.6', resize: 'vertical', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button onClick={onClose} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'var(--bg-hover)', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>Discard</button>
+            <button onClick={() => onSaveDraft(createReport('draft'))} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>Save Draft</button>
+            <button onClick={() => onSend(createReport('sent'))} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Send Report</button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+      );
 };
 
 
 
 // Helper to map DB student row to local Student interface
 const mapDbToStudent = (dbStudent: any): Student => ({
-  id: dbStudent.id,
-  firstName: dbStudent.first_name,
-  lastName: dbStudent.last_name,
-  grade: dbStudent.grade,
-  elopId: dbStudent.elop_id || '',
-  asesId: dbStudent.ases_id || '',
-  guardians: dbStudent.guardians || [],
-  programs: dbStudent.programs || [],
-  yearbookPhotoUrl: dbStudent.yearbook_photo_url,
-  sunriseStatus: dbStudent.sunrise_status || 'absent',
-  sunsetStatus: dbStudent.sunset_status || 'absent',
-  sunriseTime: dbStudent.sunrise_checkin_time,
-  sunsetTime: dbStudent.sunset_checkin_time,
-  sunriseCheckOutTime: dbStudent.sunrise_checkout_time,
-  sunsetCheckOutTime: dbStudent.sunset_checkout_time,
-  hasSnack: dbStudent.has_snack || false,
-  behavior: dbStudent.behavior || 'none',
-  behaviorIssues: dbStudent.behavior_issues || [],
-  headInjury: dbStudent.head_injury || false,
-  headInjuryLogs: dbStudent.head_injury_logs || [],
-  sunriseStaff: dbStudent.sunrise_staff,
-  sunsetStaff: dbStudent.sunset_staff,
-  lastCheckOutBy: dbStudent.last_checkout_by,
-  smsSentTime: dbStudent.sms_sent_time,
-  checkInPhoto: dbStudent.checkin_photo,
-  behaviorTimestamp: dbStudent.behavior_timestamp,
-  behaviorStaff: dbStudent.behavior_staff,
-  behaviorDescription: dbStudent.behavior_description,
-  isCheckInBlocked: dbStudent.is_checkin_blocked || false
+        id: dbStudent.id,
+      firstName: dbStudent.first_name,
+      lastName: dbStudent.last_name,
+      grade: dbStudent.grade,
+      elopId: dbStudent.elop_id || '',
+      asesId: dbStudent.ases_id || '',
+      guardians: dbStudent.guardians || [],
+      programs: dbStudent.programs || [],
+      yearbookPhotoUrl: dbStudent.yearbook_photo_url,
+      sunriseStatus: dbStudent.sunrise_status || 'absent',
+      sunsetStatus: dbStudent.sunset_status || 'absent',
+      sunriseTime: dbStudent.sunrise_checkin_time,
+      sunsetTime: dbStudent.sunset_checkin_time,
+      sunriseCheckOutTime: dbStudent.sunrise_checkout_time,
+      sunsetCheckOutTime: dbStudent.sunset_checkout_time,
+      hasSnack: dbStudent.has_snack || false,
+      behavior: dbStudent.behavior || 'none',
+      behaviorIssues: dbStudent.behavior_issues || [],
+      headInjury: dbStudent.head_injury || false,
+      headInjuryLogs: dbStudent.head_injury_logs || [],
+      sunriseStaff: dbStudent.sunrise_staff,
+      sunsetStaff: dbStudent.sunset_staff,
+      lastCheckOutBy: dbStudent.last_checkout_by,
+      smsSentTime: dbStudent.sms_sent_time,
+      checkInPhoto: dbStudent.checkin_photo,
+      behaviorTimestamp: dbStudent.behavior_timestamp,
+      behaviorStaff: dbStudent.behavior_staff,
+      behaviorDescription: dbStudent.behavior_description,
+      isCheckInBlocked: dbStudent.is_checkin_blocked || false
 });
 
 const App = () => {
   const [staffList, setStaffList] = useState<Staff[]>(INITIAL_STAFF);
-  const [user, setUser] = useState<Staff | null>(null);
-  const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
-  const [program, setProgram] = useState<ProgramType>('sunrise');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGrade, setSelectedGrade] = useState<string | null>(null);
-  const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
-  const [showConfirmId, setShowConfirmId] = useState<string | null>(null);
-  const [showLeaderDashboard, setShowLeaderDashboard] = useState(false);
-  const [inlineDashboardExpanded, setInlineDashboardExpanded] = useState(false);
-  const [toast, setToast] = useState<{ msg: string, type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
-  const [isDemoMode, setIsDemoMode] = useState(false);
-  const [isLeadMode, setIsLeadMode] = useState(true);
-  const [scheduledBatchCheckoutTime, setScheduledBatchCheckoutTime] = useState<string | null>(null);
-  const [defaultBatchTime, setDefaultBatchTime] = useState<string>('08:00');
-  const [isBatchDefaultEnabled, setIsBatchDefaultEnabled] = useState(false);
-  const [reportData, setReportData] = useState<{ student: Student, type: 'injury' | 'behavior' } | null>(null);
-  const [parentReports, setParentReports] = useState<ParentReport[]>([]);
-  const [biometricLogs, setBiometricLogs] = useState<BiometricLog[]>([]);
-  const [rosterStatusFilter, setRosterStatusFilter] = useState<'all' | 'checked_in' | 'checked_out'>('all');
+      const [user, setUser] = useState<Staff | null>(null);
+      const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
+      const [program, setProgram] = useState<ProgramType>('sunrise');
+        const [searchQuery, setSearchQuery] = useState('');
+        const [selectedGrade, setSelectedGrade] = useState<string | null>(null);
+        const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
+        const [showConfirmId, setShowConfirmId] = useState<string | null>(null);
+        const [showLeaderDashboard, setShowLeaderDashboard] = useState(false);
+        const [inlineDashboardExpanded, setInlineDashboardExpanded] = useState(false);
+        const [toast, setToast] = useState<{ msg: string, type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
+        const [darkMode, setDarkMode] = useState(false);
+        const [isDemoMode, setIsDemoMode] = useState(false);
+        const [isLeadMode, setIsLeadMode] = useState(true);
+        const [scheduledBatchCheckoutTime, setScheduledBatchCheckoutTime] = useState<string | null>(null);
+        const [defaultBatchTime, setDefaultBatchTime] = useState<string>('08:00');
+          const [isBatchDefaultEnabled, setIsBatchDefaultEnabled] = useState(false);
+          const [reportData, setReportData] = useState<{ student: Student, type: 'injury' | 'behavior' } | null>(null);
+          const [parentReports, setParentReports] = useState<ParentReport[]>([]);
+          const [biometricLogs, setBiometricLogs] = useState<BiometricLog[]>([]);
+          const [rosterStatusFilter, setRosterStatusFilter] = useState<'all' | 'checked_in' | 'checked_out'>('all');
 
-  // Real-time sync state
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+          // Real-time sync state
+          const [isRefreshing, setIsRefreshing] = useState(false);
+          const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
   // Fetch initial data from Supabase
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const { data, error } = await supabase.from('students').select('*');
-        if (error) console.error('Error fetching students:', error);
+        const {data, error} = await supabase.from('students').select('*');
+          if (error) console.error('Error fetching students:', error);
         if (data && data.length > 0) {
-          setStudents(data.map(mapDbToStudent));
+            setStudents(data.map(mapDbToStudent));
         }
       } catch (err) {
-        console.error('Fetch failed:', err);
+            console.error('Fetch failed:', err);
       }
     };
-    fetchInitialData();
+          fetchInitialData();
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+          // Check for existing session
+          supabase.auth.getSession().then(({data: {session} }) => {
       if (session?.user?.email) {
         const staffMember = staffList.find(s => s.email === session.user.email);
-        if (staffMember) setUser(staffMember);
+          if (staffMember) setUser(staffMember);
       }
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          // Listen for auth changes
+          const {data: {subscription} } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user?.email) {
         // Only trigger login state if we don't have a user or session changed
         if (!user || user.email !== session.user.email) {
@@ -2880,12 +2885,12 @@ const App = () => {
           if (staffMember) setUser(staffMember);
         }
       } else if (event === 'SIGNED_OUT') {
-        setUser(null);
+            setUser(null);
       }
     });
 
     return () => {
-      subscription.unsubscribe();
+            subscription.unsubscribe();
     };
   }, [user, staffList]); // Include user to stabilize logic
 
@@ -2893,12 +2898,12 @@ const App = () => {
   useEffect(() => {
     // Subscribe to real-time changes on students table
     const channel = supabase
-      .channel('students-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'students' },
+          .channel('students-realtime')
+          .on(
+          'postgres_changes',
+          {event: '*', schema: 'public', table: 'students' },
         (payload) => {
-          console.log('Realtime update received:', payload);
+            console.log('Realtime update received:', payload);
 
           if (payload.eventType === 'UPDATE' && payload.new) {
             // Update the specific student in local state
@@ -2922,7 +2927,7 @@ const App = () => {
               }
               return s;
             }));
-            setLastSyncTime(new Date());
+          setLastSyncTime(new Date());
           } else if (payload.eventType === 'INSERT' && payload.new) {
             // Add new student to local state silently
             // showToast(`New student added: ${payload.new.first_name}`, 'info');
@@ -2931,13 +2936,13 @@ const App = () => {
             setStudents(prev => prev.filter(s => s.id !== payload.old.id));
           }
         }
-      )
+          )
       .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
+            console.log('Realtime subscription status:', status);
       });
 
     return () => {
-      supabase.removeChannel(channel);
+            supabase.removeChannel(channel);
     };
   }, []);
 
@@ -2945,65 +2950,65 @@ const App = () => {
   const handleRefresh = async () => {
     if (isRefreshing) return;
 
-    setIsRefreshing(true);
-    try {
-      const { data, error } = await supabase.from('students').select('*');
-      if (error) throw error;
+          setIsRefreshing(true);
+          try {
+      const {data, error} = await supabase.from('students').select('*');
+          if (error) throw error;
 
-      if (data) {
-        setStudents(data.map(mapDbToStudent));
-        setLastSyncTime(new Date());
+          if (data) {
+            setStudents(data.map(mapDbToStudent));
+          setLastSyncTime(new Date());
         // Silent success
         // showToast('Data synced successfully', 'success');
       }
     } catch (error) {
-      console.error('Refresh failed:', error);
+            console.error('Refresh failed:', error);
       // Silent failure
       // showToast('Failed to sync data', 'error');
     } finally {
-      setIsRefreshing(false);
+            setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     const checkTime = () => {
       const hour = new Date().getHours();
-      setProgram(hour < 12 ? 'sunrise' : 'sunset');
+          setProgram(hour < 12 ? 'sunrise' : 'sunset');
     };
-    checkTime();
-    const interval = setInterval(checkTime, 60000);
+          checkTime();
+          const interval = setInterval(checkTime, 60000);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      students.forEach(s => {
-        if (s.headInjury && s.headInjuryStartTime) {
-          const elapsed = Number(Date.now()) - s.headInjuryStartTime;
-          const logsCount = s.headInjuryLogs.length;
-          const nextCheckMs = logsCount === 1 ? 15 * 60 * 1000 : logsCount === 2 ? 30 * 60 * 1000 : -1;
+            students.forEach(s => {
+              if (s.headInjury && s.headInjuryStartTime) {
+                const elapsed = Number(Date.now()) - s.headInjuryStartTime;
+                const logsCount = s.headInjuryLogs.length;
+                const nextCheckMs = logsCount === 1 ? 15 * 60 * 1000 : logsCount === 2 ? 30 * 60 * 1000 : -1;
 
-          if (nextCheckMs !== -1 && Math.abs(nextCheckMs - elapsed) < 1000) {
-            showToast(`Time for ${s.firstName}'s next check!`, 'warning');
-            playAlarm();
-          }
-        }
-      });
+                if (nextCheckMs !== -1 && Math.abs(nextCheckMs - elapsed) < 1000) {
+                  showToast(`Time for ${s.firstName}'s next check!`, 'warning');
+                  playAlarm();
+                }
+              }
+            });
     }, 1000);
     return () => clearInterval(interval);
   }, [students]);
 
   useEffect(() => {
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setDarkMode(isDark);
+          setDarkMode(isDark);
 
     const handler = (e: MediaQueryListEvent) => setDarkMode(e.matches);
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', handler);
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', handler);
     return () => window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', handler);
   }, []);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
   useEffect(() => {
@@ -3011,22 +3016,22 @@ const App = () => {
 
     const interval = setInterval(() => {
       const now = new Date();
-      const currentTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+          const currentTime = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', hour12: false });
 
-      // Convert scheduled time to 24h for comparison if necessary, but input type="time" is usually 24h
-      if (currentTime === scheduledBatchCheckoutTime) {
-        setStudents(prev => prev.map(s => {
-          if (s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent') {
-            return {
-              ...s,
-              sunriseStatus: 'checked_out',
-              sunriseCheckOutTime: `Sunrise EDP Auto-Check-Out by ${user?.name || 'EDP Lead'} at ${scheduledBatchCheckoutTime}`
-            } as Student;
-          }
-          return s;
-        }));
-        showToast(`EDP Sunrise students have been checked out at ${scheduledBatchCheckoutTime}`, 'success');
-        setScheduledBatchCheckoutTime(null);
+          // Convert scheduled time to 24h for comparison if necessary, but input type="time" is usually 24h
+          if (currentTime === scheduledBatchCheckoutTime) {
+            setStudents(prev => prev.map(s => {
+              if (s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent') {
+                return {
+                  ...s,
+                  sunriseStatus: 'checked_out',
+                  sunriseCheckOutTime: `Sunrise EDP Auto-Check-Out by ${user?.name || 'EDP Lead'} at ${scheduledBatchCheckoutTime}`
+                } as Student;
+              }
+              return s;
+            }));
+          showToast(`EDP Sunrise students have been checked out at ${scheduledBatchCheckoutTime}`, 'success');
+          setScheduledBatchCheckoutTime(null);
       }
     }, 1000);
 
@@ -3034,52 +3039,52 @@ const App = () => {
   }, [scheduledBatchCheckoutTime, program, user]);
 
   const showToast = (msg: string, type: 'success' | 'info' | 'warning' | 'error') => {
-    setToast({ msg, type });
+            setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
 
   const filteredStudents = useMemo(() => {
-    let result = students;
+            let result = students;
 
     // 1. Grade Permission Logic
     if (user && user.role !== 'Lead' && user.assignedGrades && user.assignedGrades.length > 0) {
-      result = result.filter(s => user.assignedGrades?.includes(s.grade));
+            result = result.filter(s => user.assignedGrades?.includes(s.grade));
     }
 
-    // 2. Status/Tab Filter
-    if (rosterStatusFilter === 'checked_in') {
-      result = result.filter(s => {
-        const status = program === 'sunrise' ? s.sunriseStatus : s.sunsetStatus;
-        return status === 'present';
-      });
+          // 2. Status/Tab Filter
+          if (rosterStatusFilter === 'checked_in') {
+            result = result.filter(s => {
+              const status = program === 'sunrise' ? s.sunriseStatus : s.sunsetStatus;
+              return status === 'present';
+            });
     } else if (rosterStatusFilter === 'checked_out') {
-      result = result.filter(s => {
-        const status = program === 'sunrise' ? s.sunriseStatus : s.sunsetStatus;
-        return status === 'checked_out';
-      });
+            result = result.filter(s => {
+              const status = program === 'sunrise' ? s.sunriseStatus : s.sunsetStatus;
+              return status === 'checked_out';
+            });
     } else { // 'all' - Show ALL Students (matching Leader Dashboard)
-      // Logic adjusted: 'all' now returns everything.
+            // Logic adjusted: 'all' now returns everything.
+          }
+          if (selectedGrade && selectedGrade !== 'All') {
+            result = result.filter(s => s.grade === selectedGrade);
     }
-    if (selectedGrade && selectedGrade !== 'All') {
-      result = result.filter(s => s.grade === selectedGrade);
-    }
-    if (searchQuery) {
+          if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(s =>
-        s.firstName.toLowerCase().includes(q) ||
-        s.lastName.toLowerCase().includes(q) ||
-        s.elopId.includes(q) ||
-        (s.asesId && s.asesId.includes(q))
-      );
+          s.firstName.toLowerCase().includes(q) ||
+          s.lastName.toLowerCase().includes(q) ||
+          s.elopId.includes(q) ||
+          (s.asesId && s.asesId.includes(q))
+          );
     }
     return result.sort((a, b) => {
       // 1. Sort by Grade (TK -> K -> 1 -> 2 -> 3 -> 4 -> 5)
       const gradeOrder = ['TK', 'K', '1', '2', '3', '4', '5'];
-      const gradeIndexA = gradeOrder.indexOf(a.grade);
-      const gradeIndexB = gradeOrder.indexOf(b.grade);
+          const gradeIndexA = gradeOrder.indexOf(a.grade);
+          const gradeIndexB = gradeOrder.indexOf(b.grade);
 
-      // If one has a valid grade and other doesn't (checking for -1)
-      if (gradeIndexA !== -1 && gradeIndexB !== -1) {
+          // If one has a valid grade and other doesn't (checking for -1)
+          if (gradeIndexA !== -1 && gradeIndexB !== -1) {
         if (gradeIndexA !== gradeIndexB) return gradeIndexA - gradeIndexB;
       } else if (gradeIndexA !== -1) {
         return -1; // A comes first
@@ -3087,10 +3092,10 @@ const App = () => {
         return 1; // B comes first
       }
 
-      // 2. Sort by Name (First, Last)
-      const nameCompare = a.firstName.localeCompare(b.firstName);
-      if (nameCompare !== 0) return nameCompare;
-      return a.lastName.localeCompare(b.lastName);
+          // 2. Sort by Name (First, Last)
+          const nameCompare = a.firstName.localeCompare(b.firstName);
+          if (nameCompare !== 0) return nameCompare;
+          return a.lastName.localeCompare(b.lastName);
     });
   }, [students, selectedGrade, searchQuery, program, user, rosterStatusFilter]);
 
@@ -3098,13 +3103,13 @@ const App = () => {
     // 1. Permission Check
     if (user && user.role !== 'Lead') {
       const staffMember = staffList.find(s => s.id === user.id);
-      if (staffMember) {
+          if (staffMember) {
         if (staffMember.canCheckIn === false) {
-          showToast("You do not have permission to check in students.", "error");
+            showToast("You do not have permission to check in students.", "error");
           return;
         }
         if (staffMember.assignedGrades && staffMember.assignedGrades.length > 0 && !staffMember.assignedGrades.includes(student.grade)) {
-          showToast(`You are not assigned to Grade ${student.grade}.`, "error");
+            showToast(`You are not assigned to Grade ${student.grade}.`, "error");
           return;
         }
       }
@@ -3112,76 +3117,76 @@ const App = () => {
 
     // 2. Blocking Check
     const latestStudent = students.find(s => s.id === student.id) || student;
-    if (latestStudent.isCheckInBlocked) {
-      showToast("This student is blocked from check-in. Contact Lead.", "error");
-      return;
+          if (latestStudent.isCheckInBlocked) {
+            showToast("This student is blocked from check-in. Contact Lead.", "error");
+          return;
     }
 
-    const status = program === 'sunrise' ? student.sunriseStatus : student.sunsetStatus;
-    if (status === 'absent') {
-      setShowConfirmId(student.id);
+          const status = program === 'sunrise' ? student.sunriseStatus : student.sunsetStatus;
+          if (status === 'absent') {
+            setShowConfirmId(student.id);
     } else {
-      setActiveStudentId(student.id);
+            setActiveStudentId(student.id);
     }
   };
 
   const handleCheckIn = async (studentId: string, photo?: string, biometricData?: any) => {
     const now = new Date();
-    const timeString = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    const staffName = user ? `${user.name} (${user.organization})` : 'Staff';
+          const timeString = now.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit' });
+          const staffName = user ? `${user.name} (${user.organization})` : 'Staff';
 
     // Optimistic update
     setStudents(prev => prev.map(s => {
       if (s.id === studentId) {
         const update = program === 'sunrise'
-          ? { sunriseStatus: 'present', sunriseTime: timeString, sunriseStaff: staffName }
-          : { sunsetStatus: 'present', sunsetTime: timeString, sunsetStaff: staffName };
-        return { ...s, ...update, ...biometricData, checkInPhoto: photo } as Student;
+          ? {sunriseStatus: 'present', sunriseTime: timeString, sunriseStaff: staffName }
+          : {sunsetStatus: 'present', sunsetTime: timeString, sunsetStaff: staffName };
+          return {...s, ...update, ...biometricData, checkInPhoto: photo } as Student;
       }
-      return s;
+          return s;
     }));
 
-    // Write to Supabase
-    try {
+          // Write to Supabase
+          try {
       const updateData = program === 'sunrise'
-        ? {
-          sunrise_status: 'present',
+          ? {
+            sunrise_status: 'present',
           sunrise_checkin_time: timeString,
           sunrise_staff: staffName,
           checkin_photo: photo
         }
-        : {
-          sunset_status: 'present',
+          : {
+            sunset_status: 'present',
           sunset_checkin_time: timeString,
           sunset_staff: staffName,
           checkin_photo: photo
         };
 
-      // Merge biometric data if present
-      // Note: In a real schema, we might put biometric logs in a separate table, 
-      // but here we just update student record or separate log table. 
-      // For this implementation, we'll update the students table columns we tracked.
+          // Merge biometric data if present
+          // Note: In a real schema, we might put biometric logs in a separate table, 
+          // but here we just update student record or separate log table. 
+          // For this implementation, we'll update the students table columns we tracked.
 
-      const { error } = await supabase
-        .from('students')
-        .update(updateData)
-        .eq('id', studentId);
+          const {error} = await supabase
+          .from('students')
+          .update(updateData)
+          .eq('id', studentId);
 
-      if (error) throw error;
+          if (error) throw error;
     } catch (err) {
-      console.error('Failed to update Supabase:', err);
-      showToast('Offline mode: Change saved locally', 'info');
+            console.error('Failed to update Supabase:', err);
+          showToast('Offline mode: Change saved locally', 'info');
     }
 
     const student = students.find(s => s.id === studentId);
-    if (student) {
-      showToast(`Checked In: ${student.firstName}`, 'success');
+          if (student) {
+            showToast(`Checked In: ${student.firstName}`, 'success');
 
-      // Create Biometric Log
-      if (biometricData) {
+          // Create Biometric Log
+          if (biometricData) {
         const mockPhotos = MockDatabase.getPhotosForStudent(student);
-        const newLog: BiometricLog = {
-          id: Date.now().toString(),
+          const newLog: BiometricLog = {
+            id: Date.now().toString(),
           studentId: studentId,
           studentName: `${student.firstName} ${student.lastName}`,
           timestamp: new Date().toLocaleString(),
@@ -3194,61 +3199,61 @@ const App = () => {
         };
         setBiometricLogs(prev => [newLog, ...prev]);
 
-        if (biometricData.visualAnomalyDetected) {
-          showToast('Visual Anomaly Detected - Review flagging in dashboard', 'warning');
+          if (biometricData.visualAnomalyDetected) {
+            showToast('Visual Anomaly Detected - Review flagging in dashboard', 'warning');
         }
 
-        PasskeyService.uploadToDrive(photo || '', studentId);
+          PasskeyService.uploadToDrive(photo || '', studentId);
       }
     }
-    setShowConfirmId(null);
-    setSearchQuery('');
+          setShowConfirmId(null);
+          setSearchQuery('');
   };
 
   const handleCheckOut = async (studentId: string, smsTime: string, checkOutBy?: string) => {
-    // Optimistic Update: Pending Parent
-    setStudents(prev => prev.map(s => {
-      if (s.id === studentId) {
-        const update = program === 'sunrise'
-          ? { sunriseStatus: 'pending_parent' as AttendanceStatus }
-          : { sunsetStatus: 'pending_parent' as AttendanceStatus };
-        return { ...s, ...update, smsSentTime: smsTime, lastCheckOutBy: checkOutBy };
-      }
-      return s;
-    }));
+            // Optimistic Update: Pending Parent
+            setStudents(prev => prev.map(s => {
+              if (s.id === studentId) {
+                const update = program === 'sunrise'
+                  ? { sunriseStatus: 'pending_parent' as AttendanceStatus }
+                  : { sunsetStatus: 'pending_parent' as AttendanceStatus };
+                return { ...s, ...update, smsSentTime: smsTime, lastCheckOutBy: checkOutBy };
+              }
+              return s;
+            }));
 
-    try {
+          try {
       const updateData = program === 'sunrise'
-        ? { sunrise_status: 'pending_parent', sms_sent_time: smsTime, last_checkout_by: checkOutBy }
-        : { sunset_status: 'pending_parent', sms_sent_time: smsTime, last_checkout_by: checkOutBy };
+          ? {sunrise_status: 'pending_parent', sms_sent_time: smsTime, last_checkout_by: checkOutBy }
+          : {sunset_status: 'pending_parent', sms_sent_time: smsTime, last_checkout_by: checkOutBy };
 
-      await supabase.from('students').update(updateData).eq('id', studentId);
+          await supabase.from('students').update(updateData).eq('id', studentId);
     } catch (err) {
-      console.error('Supabase update failed:', err);
+            console.error('Supabase update failed:', err);
     }
 
     setTimeout(() => {
       const now = new Date();
-      const timeString = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          const timeString = now.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit' });
 
       setStudents(prev => prev.map(s => {
         if (s.id === studentId) {
           const update = program === 'sunrise'
-            ? { sunriseStatus: 'checked_out', sunriseCheckOutTime: timeString }
-            : { sunsetStatus: 'checked_out', sunsetCheckOutTime: timeString };
+          ? {sunriseStatus: 'checked_out', sunriseCheckOutTime: timeString }
+          : {sunsetStatus: 'checked_out', sunsetCheckOutTime: timeString };
 
           // Update Supabase for final checkout
           const dbUpdate = program === 'sunrise'
-            ? { sunrise_status: 'checked_out', sunrise_checkout_time: timeString }
-            : { sunset_status: 'checked_out', sunset_checkout_time: timeString };
+          ? {sunrise_status: 'checked_out', sunrise_checkout_time: timeString }
+          : {sunset_status: 'checked_out', sunset_checkout_time: timeString };
 
-          supabase.from('students').update(dbUpdate).eq('id', studentId).then(({ error }) => {
+          supabase.from('students').update(dbUpdate).eq('id', studentId).then(({error}) => {
             if (error) console.error('Final checkout sync failed:', error);
           });
 
-          return { ...s, ...update } as Student;
+          return {...s, ...update } as Student;
         }
-        return s;
+          return s;
       }));
     }, 5000);
   };
@@ -3259,39 +3264,39 @@ const App = () => {
     // Optimistic update
     setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
 
-    // Supabase update
-    try {
+          // Supabase update
+          try {
       const updateData: any = {
-        first_name: updatedStudent.firstName,
-        last_name: updatedStudent.lastName,
-        grade: updatedStudent.grade,
-        elop_id: updatedStudent.elopId,
-        ases_id: updatedStudent.asesId,
-        guardians: updatedStudent.guardians,
-        programs: updatedStudent.programs,
-        has_snack: updatedStudent.hasSnack,
-        behavior: updatedStudent.behavior,
-        behavior_issues: updatedStudent.behaviorIssues,
-        head_injury: updatedStudent.headInjury,
-        head_injury_logs: updatedStudent.headInjuryLogs,
-        behavior_description: updatedStudent.behaviorDescription
+            first_name: updatedStudent.firstName,
+          last_name: updatedStudent.lastName,
+          grade: updatedStudent.grade,
+          elop_id: updatedStudent.elopId,
+          ases_id: updatedStudent.asesId,
+          guardians: updatedStudent.guardians,
+          programs: updatedStudent.programs,
+          has_snack: updatedStudent.hasSnack,
+          behavior: updatedStudent.behavior,
+          behavior_issues: updatedStudent.behaviorIssues,
+          head_injury: updatedStudent.headInjury,
+          head_injury_logs: updatedStudent.headInjuryLogs,
+          behavior_description: updatedStudent.behaviorDescription
       };
 
-      await supabase.from('students').update(updateData).eq('id', updatedStudent.id);
+          await supabase.from('students').update(updateData).eq('id', updatedStudent.id);
     } catch (err) {
-      console.error('Failed to update student:', err);
-      showToast('Failed to save changes to DB', 'error');
+            console.error('Failed to update student:', err);
+          showToast('Failed to save changes to DB', 'error');
     }
 
-    if (oldStudent) {
+          if (oldStudent) {
       // Head injury still shows modal for immediate parent contact
       if (!oldStudent.headInjury && updatedStudent.headInjury) {
-        setReportData({ student: updatedStudent, type: 'injury' });
+            setReportData({ student: updatedStudent, type: 'injury' });
       }
-      // Behavior tickets create draft silently - accessible in Lead Dashboard
-      else if (oldStudent.behavior === 'none' && updatedStudent.behavior !== 'none' && oldStudent.behavior !== updatedStudent.behavior) {
+          // Behavior tickets create draft silently - accessible in Lead Dashboard
+          else if (oldStudent.behavior === 'none' && updatedStudent.behavior !== 'none' && oldStudent.behavior !== updatedStudent.behavior) {
         const behaviorReport: ParentReport = {
-          id: Date.now().toString(),
+            id: Date.now().toString(),
           studentId: updatedStudent.id,
           studentName: `${updatedStudent.firstName} ${updatedStudent.lastName}`,
           type: 'behavior',
@@ -3302,7 +3307,7 @@ const App = () => {
           createdAt: new Date().toISOString()
         };
         setParentReports(prev => [...prev, behaviorReport]);
-        showToast('Behavior report draft created', 'info');
+          showToast('Behavior report draft created', 'info');
       }
     }
   };
@@ -3310,13 +3315,13 @@ const App = () => {
   // Helper to generate behavior message for auto-created drafts
   const generateBehaviorMessage = (student: Student) => {
     const date = new Date().toLocaleDateString();
-    const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    const ticketLevel = student.behavior === 'red' ? 'Level 3 (Red)' : student.behavior === 'yellow' ? 'Level 2 (Yellow)' : 'Level 1 (Green)';
+          const time = new Date().toLocaleTimeString([], {hour: 'numeric', minute: '2-digit' });
+          const ticketLevel = student.behavior === 'red' ? 'Level 3 (Red)' : student.behavior === 'yellow' ? 'Level 2 (Yellow)' : 'Level 1 (Green)';
     const behaviorList = student.behaviorIssues.length > 0
       ? student.behaviorIssues.map(b => `• ${b}`).join('\n')
-      : '• General behavior concern';
+          : '• General behavior concern';
 
-    return `Dear ${(student.guardians?.[0]?.firstName || 'Unknown')} ${(student.guardians?.[0]?.lastName || '')},
+          return `Dear ${(student.guardians?.[0]?.firstName || 'Unknown')} ${(student.guardians?.[0]?.lastName || '')},
 
           This is to inform you that your child, ${student.firstName} ${student.lastName}, received a behavior ticket today (${date}).
 
@@ -3336,325 +3341,325 @@ const App = () => {
           EDP Team - Cajon Valley School District`;
   };
 
-  if (!user) return <StaffLogin onLogin={setUser} onToggleDemo={() => setIsDemoMode(!isDemoMode)} isDemoMode={isDemoMode} staffList={staffList} />;
+          if (!user) return <StaffLogin onLogin={setUser} onToggleDemo={() => setIsDemoMode(!isDemoMode)} isDemoMode={isDemoMode} staffList={staffList} />;
 
   const activeStudent = students.find(s => s.id === activeStudentId);
   const confirmStudent = students.find(s => s.id === showConfirmId);
 
-  return (
-    <>
-      <div className="sticky-header" style={{ paddingTop: 'env(safe-area-inset-top)', backgroundColor: 'var(--bg-app)' }}>
-        <header style={{
-          backgroundColor: 'var(--bg-header)',
-          padding: '16px',
-          boxShadow: 'var(--shadow-sm)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '16px',
-          zIndex: 100,
-          position: 'relative',
-          width: '100%',
-          maxWidth: '100%',
-          flexShrink: 0
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: program === 'sunrise' ? 'var(--color-sunrise)' : 'var(--color-sunset)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }}>
-              <span className="material-icons-round" style={{ fontSize: '20px' }}>{program === 'sunrise' ? 'wb_sunny' : 'nights_stay'}</span>
-            </div>
-            <div style={{ minWidth: 0, overflow: 'hidden' }}>
-              <h1 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{program === 'sunrise' ? 'Sunrise' : 'Sunset'} {isDemoMode && <span style={{ fontSize: '10px', color: '#8b5cf6', marginLeft: '4px' }}>DEMO</span>}</h1>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>{new Date().toLocaleDateString()}</div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 1, overflow: 'hidden' }}>
-            <div
-              onClick={() => setIsLeadMode(!isLeadMode)}
-              style={{
+          return (
+          <>
+            <div className="sticky-header" style={{ paddingTop: 'env(safe-area-inset-top)', backgroundColor: 'var(--bg-app)' }}>
+              <header style={{
+                backgroundColor: 'var(--bg-header)',
+                padding: '16px',
+                boxShadow: 'var(--shadow-sm)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
-                padding: '4px 8px',
-                borderRadius: '16px',
-                backgroundColor: isLeadMode ? 'rgba(139,92,246,0.1)' : 'var(--bg-hover)',
-                border: `1px solid ${isLeadMode ? '#8b5cf6' : 'var(--border-subtle)'}`,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
+                gap: '16px',
+                zIndex: 100,
+                position: 'relative',
+                width: '100%',
+                maxWidth: '100%',
                 flexShrink: 0
-              }}
-            >
-              <span className="material-icons-round" style={{ fontSize: '16px', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
-                {isLeadMode ? 'admin_panel_settings' : 'person'}
-              </span>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
-                {isLeadMode ? 'LEAD' : 'STAFF'}
-              </span>
-            </div>
-
-            <button onClick={() => setDarkMode(!darkMode)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}>
-              <span className="material-icons-round" style={{ fontSize: '20px' }}>{darkMode ? 'light_mode' : 'dark_mode'}</span>
-            </button>
-
-            {isLeadMode && (
-              <>
-                <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}>
-                  <span className="material-icons-round" style={{ fontSize: '20px' }}>dashboard</span>
-                </button>
-              </>
-            )}
-            <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer', flexShrink: 0 }} title="Logout">
-              <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
-            </button>
-
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#374151', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>
-              {user.name.charAt(0)}
-            </div>
-          </div>
-        </header>
-
-        {/* Sync status bar */}
-        {
-          lastSyncTime && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              padding: '6px 16px',
-              backgroundColor: 'var(--bg-header)',
-              borderBottom: '1px solid var(--border-subtle)',
-              fontSize: '11px',
-              color: 'var(--text-muted)'
-            }}>
-              <span className="material-icons-round" style={{ fontSize: '14px' }}>cloud_done</span>
-              Last synced: {lastSyncTime.toLocaleTimeString()}
-            </div>
-          )
-        }
-
-        <div style={{ padding: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
-            {['all', 'checked_in', 'checked_out'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setRosterStatusFilter(tab as any)}
-                style={{
-                  padding: '10px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  backgroundColor: rosterStatusFilter === tab ? 'var(--text-main)' : 'var(--bg-card)',
-                  color: rosterStatusFilter === tab ? 'var(--bg-card)' : 'var(--text-main)',
-                  fontWeight: '700',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  boxShadow: 'var(--shadow-sm)',
-                  transition: 'all 0.2s ease',
-                  minWidth: 0,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {tab === 'all'
-                  ? (user && user.role !== 'Lead' && user.assignedGrades
-                    ? `All ${user.assignedGrades.join(', ')}`
-                    : 'All Students')
-                  : tab === 'checked_in' ? 'Checked In' : 'Checked Out'}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ position: 'relative', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
-            <span className="material-icons-round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>search</span>
-            <input
-              type="text"
-              placeholder="Search student..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ width: '100%', maxWidth: '100%', padding: '14px 14px 14px 44px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-card)', boxShadow: 'var(--shadow-sm)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px' }}>
-            {/* Render Buttons for Allowed Grades Only */}
-            {GRADES
-              .filter(g => (user.role === 'Lead' || !user.assignedGrades || user.assignedGrades.includes(g)))
-              .map(g => (
-                <button key={g} onClick={() => setSelectedGrade(prev => prev === g ? 'All' : g)} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedGrade === g ? 'var(--text-main)' : 'var(--bg-card)', color: selectedGrade === g ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedGrade === g ? 'scale(1.05)' : 'scale(1)' }}>
-                  {g}
-                </button>
-              ))}
-          </div>
-        </div>
-      </div>
-
-      <main
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          padding: '0 16px 100px 16px', // No top padding
-          height: '100%',
-          overscrollBehavior: 'none'
-        }}
-      >
-        <div style={{ paddingTop: '16px' }}>
-          {filteredStudents.length === 0 ? (
-            <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              <span className="material-icons-round" style={{ fontSize: '64px', marginBottom: '16px' }}>school</span>
-              <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>No Students Found</div>
-              <div style={{ fontSize: '14px' }}>Try adjusting your search or filters</div>
-            </div>
-          ) : (
-            filteredStudents.map(student => {
-              const status = program === 'sunrise' ? student.sunriseStatus : student.sunsetStatus;
-              const isPresent = status === 'present';
-              const isCheckedOut = status === 'checked_out' || status === 'pending_parent';
-
-              const opacity = (student.isCheckInBlocked || status === 'checked_out') ? 0.5 : 1;
-
-              return (
-                <div key={student.id}
-                  className="student-card"
-                  onClick={() => !isPresent && !isCheckedOut ? handleStudentAction(student) : null}
-                  style={{
-                    backgroundColor: 'var(--bg-card)',
-                    padding: '16px',
-                    borderRadius: '16px',
-                    marginBottom: '12px',
-                    boxShadow: 'var(--shadow-sm)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    borderLeft: `4px solid ${isPresent || isCheckedOut ? (status === 'checked_out' ? '#9ca3af' : (status === 'pending_parent' ? '#8b5cf6' : '#10b981')) : 'transparent'}`,
-                    cursor: isPresent || isCheckedOut ? 'default' : 'pointer',
-                    opacity
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '700', color: 'var(--text-secondary)' }}>
-                      {student.grade}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>{student.firstName} {student.lastName}</div>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        {student.programs.includes('ELOP') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: '700' }}>ELOP</span>}
-                        {student.programs.includes('ASES') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8', fontWeight: '700' }}>ASES</span>}
-                      </div>
-                    </div>
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: program === 'sunrise' ? 'var(--color-sunrise)' : 'var(--color-sunset)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }}>
+                    <span className="material-icons-round" style={{ fontSize: '20px' }}>{program === 'sunrise' ? 'wb_sunny' : 'nights_stay'}</span>
                   </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {student.headInjury && <span className="material-icons-round" style={{ color: '#ef4444' }}>personal_injury</span>}
-                    {student.behavior !== 'none' && <span className="material-icons-round" style={{ color: student.behavior === 'red' ? '#ef4444' : student.behavior === 'yellow' ? '#f59e0b' : '#10b981' }}>warning</span>}
-
-                    {status === 'absent' ? (
-                      <span className="material-icons-round" style={{ color: 'var(--border-subtle)' }}>radio_button_unchecked</span>
-                    ) : (
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '12px', fontWeight: '700', color: status === 'checked_out' ? '#9ca3af' : status === 'pending_parent' ? '#8b5cf6' : '#10b981', textTransform: 'uppercase' }}>
-                          {status === 'checked_out' ? 'CHECKED-OUT' : status === 'pending_parent' ? 'WAITING' : 'CHECKED-IN'}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                          {status === 'checked_out'
-                            ? `${program === 'sunrise' ? student.sunriseCheckOutTime : student.sunsetCheckOutTime} by ${program === 'sunrise' ? (student.sunriseStaff || 'Staff') : (student.sunsetStaff || 'Staff')}`
-                            : `${program === 'sunrise' ? student.sunriseTime : student.sunsetTime} by ${program === 'sunrise' ? (student.sunriseStaff || 'Staff') : (student.sunsetStaff || 'Staff')}`
-                          }
-                        </div>
-                      </div>
-                    )}
-                    {(isPresent || isCheckedOut) && (
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        {student.checkInPhoto && (
-                          <img src={student.checkInPhoto} alt="Check-in" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #8b5cf6', objectFit: 'cover' }} />
-                        )}
-                        {student.yearbookPhotoUrl && (
-                          <img src={student.yearbookPhotoUrl} alt="Yearbook" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--border-subtle)', objectFit: 'cover' }} />
-                        )}
-                        <button onClick={(e) => { e.stopPropagation(); handleStudentAction(student); }} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                          <span className="material-icons-round">more_vert</span>
-                        </button>
-                      </div>
-                    )}
+                  <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                    <h1 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{program === 'sunrise' ? 'Sunrise' : 'Sunset'} {isDemoMode && <span style={{ fontSize: '10px', color: '#8b5cf6', marginLeft: '4px' }}>DEMO</span>}</h1>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>{new Date().toLocaleDateString()}</div>
                   </div>
                 </div>
-              );
-            })
-          )}
-        </div>
-      </main>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 1, overflow: 'hidden' }}>
+                  <div
+                    onClick={() => setIsLeadMode(!isLeadMode)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 8px',
+                      borderRadius: '16px',
+                      backgroundColor: isLeadMode ? 'rgba(139,92,246,0.1)' : 'var(--bg-hover)',
+                      border: `1px solid ${isLeadMode ? '#8b5cf6' : 'var(--border-subtle)'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      flexShrink: 0
+                    }}
+                  >
+                    <span className="material-icons-round" style={{ fontSize: '16px', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
+                      {isLeadMode ? 'admin_panel_settings' : 'person'}
+                    </span>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
+                      {isLeadMode ? 'LEAD' : 'STAFF'}
+                    </span>
+                  </div>
 
-      {showConfirmId && confirmStudent && (
-        <ConfirmationModal
-          student={confirmStudent}
-          title="Check In?"
-          message={`Mark ${confirmStudent.firstName} as present?`}
-          onConfirm={(photo, biometricData) => handleCheckIn(confirmStudent.id, photo, biometricData)}
-          onCancel={() => setShowConfirmId(null)}
-          showPhotoOption={true}
-          isDemoMode={isDemoMode}
-          darkMode={darkMode}
-        />
-      )}
+                  <button onClick={() => setDarkMode(!darkMode)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}>
+                    <span className="material-icons-round" style={{ fontSize: '20px' }}>{darkMode ? 'light_mode' : 'dark_mode'}</span>
+                  </button>
 
-      {activeStudentId && activeStudent && (
-        <StudentDetailModal
-          student={activeStudent}
-          onClose={() => setActiveStudentId(null)}
-          onSave={handleSaveStudent}
-          onCheckOut={handleCheckOut}
-          currentStaff={user}
-          program={program}
-          isLeadMode={isLeadMode}
-          darkMode={darkMode}
-        />
-      )}
+                  {isLeadMode && (
+                    <>
+                      <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}>
+                        <span className="material-icons-round" style={{ fontSize: '20px' }}>dashboard</span>
+                      </button>
+                    </>
+                  )}
+                  <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer', flexShrink: 0 }} title="Logout">
+                    <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
+                  </button>
 
-      {showLeaderDashboard && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
-          <LeaderDashboard
-            students={students}
-            staffList={staffList}
-            parentReports={parentReports}
-            biometricLogs={biometricLogs}
-            onClose={() => setShowLeaderDashboard(false)}
-            onImport={(newStudents) => setStudents([...students, ...newStudents])}
-            onAddStudent={(newStudent) => setStudents([...students, newStudent])}
-            onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)}
-            onUpdateStudent={handleSaveStudent}
-            onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))}
-            onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)}
-            showToast={showToast}
-            isBatchDefaultEnabled={isBatchDefaultEnabled}
-            setIsBatchDefaultEnabled={setIsBatchDefaultEnabled}
-            defaultBatchTime={defaultBatchTime}
-            setDefaultBatchTime={setDefaultBatchTime}
-            scheduledBatchCheckoutTime={scheduledBatchCheckoutTime}
-          />
-        </div>
-      )}
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#374151', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>
+                    {user.name.charAt(0)}
+                  </div>
+                </div>
+              </header>
 
-      {reportData && (
-        <ParentReportModal
-          student={reportData.student}
-          type={reportData.type}
-          onClose={() => setReportData(null)}
-          onSend={(report) => {
-            setParentReports(prev => [...prev, report]);
-            showToast('Report sent to guardian!', 'success');
-            setReportData(null);
-          }}
-          onSaveDraft={(report) => {
-            setParentReports(prev => [...prev, report]);
-            showToast('Draft saved!', 'info');
-            setReportData(null);
-          }}
-        />
-      )}
+              {/* Sync status bar */}
+              {
+                lastSyncTime && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '6px 16px',
+                    backgroundColor: 'var(--bg-header)',
+                    borderBottom: '1px solid var(--border-subtle)',
+                    fontSize: '11px',
+                    color: 'var(--text-muted)'
+                  }}>
+                    <span className="material-icons-round" style={{ fontSize: '14px' }}>cloud_done</span>
+                    Last synced: {lastSyncTime.toLocaleTimeString()}
+                  </div>
+                )
+              }
 
-      {toast && <Toast message={toast.msg} type={toast.type} />}
-    </>
-  );
+              <div style={{ padding: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
+                  {['all', 'checked_in', 'checked_out'].map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setRosterStatusFilter(tab as any)}
+                      style={{
+                        padding: '10px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        backgroundColor: rosterStatusFilter === tab ? 'var(--text-main)' : 'var(--bg-card)',
+                        color: rosterStatusFilter === tab ? 'var(--bg-card)' : 'var(--text-main)',
+                        fontWeight: '700',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        boxShadow: 'var(--shadow-sm)',
+                        transition: 'all 0.2s ease',
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {tab === 'all'
+                        ? (user && user.role !== 'Lead' && user.assignedGrades
+                          ? `All ${user.assignedGrades.join(', ')}`
+                          : 'All Students')
+                        : tab === 'checked_in' ? 'Checked In' : 'Checked Out'}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ position: 'relative', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
+                  <span className="material-icons-round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>search</span>
+                  <input
+                    type="text"
+                    placeholder="Search student..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    style={{ width: '100%', maxWidth: '100%', padding: '14px 14px 14px 44px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-card)', boxShadow: 'var(--shadow-sm)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px' }}>
+                  {/* Render Buttons for Allowed Grades Only */}
+                  {GRADES
+                    .filter(g => (user.role === 'Lead' || !user.assignedGrades || user.assignedGrades.includes(g)))
+                    .map(g => (
+                      <button key={g} onClick={() => setSelectedGrade(prev => prev === g ? 'All' : g)} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedGrade === g ? 'var(--text-main)' : 'var(--bg-card)', color: selectedGrade === g ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedGrade === g ? 'scale(1.05)' : 'scale(1)' }}>
+                        {g}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            <main
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                padding: '0 16px 100px 16px', // No top padding
+                height: '100%',
+                overscrollBehavior: 'none'
+              }}
+            >
+              <div style={{ paddingTop: '16px' }}>
+                {filteredStudents.length === 0 ? (
+                  <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    <span className="material-icons-round" style={{ fontSize: '64px', marginBottom: '16px' }}>school</span>
+                    <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>No Students Found</div>
+                    <div style={{ fontSize: '14px' }}>Try adjusting your search or filters</div>
+                  </div>
+                ) : (
+                  filteredStudents.map(student => {
+                    const status = program === 'sunrise' ? student.sunriseStatus : student.sunsetStatus;
+                    const isPresent = status === 'present';
+                    const isCheckedOut = status === 'checked_out' || status === 'pending_parent';
+
+                    const opacity = (student.isCheckInBlocked || status === 'checked_out') ? 0.5 : 1;
+
+                    return (
+                      <div key={student.id}
+                        className="student-card"
+                        onClick={() => !isPresent && !isCheckedOut ? handleStudentAction(student) : null}
+                        style={{
+                          backgroundColor: 'var(--bg-card)',
+                          padding: '16px',
+                          borderRadius: '16px',
+                          marginBottom: '12px',
+                          boxShadow: 'var(--shadow-sm)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          borderLeft: `4px solid ${isPresent || isCheckedOut ? (status === 'checked_out' ? '#9ca3af' : (status === 'pending_parent' ? '#8b5cf6' : '#10b981')) : 'transparent'}`,
+                          cursor: isPresent || isCheckedOut ? 'default' : 'pointer',
+                          opacity
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '700', color: 'var(--text-secondary)' }}>
+                            {student.grade}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>{student.firstName} {student.lastName}</div>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              {student.programs.includes('ELOP') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: '700' }}>ELOP</span>}
+                              {student.programs.includes('ASES') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8', fontWeight: '700' }}>ASES</span>}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          {student.headInjury && <span className="material-icons-round" style={{ color: '#ef4444' }}>personal_injury</span>}
+                          {student.behavior !== 'none' && <span className="material-icons-round" style={{ color: student.behavior === 'red' ? '#ef4444' : student.behavior === 'yellow' ? '#f59e0b' : '#10b981' }}>warning</span>}
+
+                          {status === 'absent' ? (
+                            <span className="material-icons-round" style={{ color: 'var(--border-subtle)' }}>radio_button_unchecked</span>
+                          ) : (
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '12px', fontWeight: '700', color: status === 'checked_out' ? '#9ca3af' : status === 'pending_parent' ? '#8b5cf6' : '#10b981', textTransform: 'uppercase' }}>
+                                {status === 'checked_out' ? 'CHECKED-OUT' : status === 'pending_parent' ? 'WAITING' : 'CHECKED-IN'}
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                {status === 'checked_out'
+                                  ? `${program === 'sunrise' ? student.sunriseCheckOutTime : student.sunsetCheckOutTime} by ${program === 'sunrise' ? (student.sunriseStaff || 'Staff') : (student.sunsetStaff || 'Staff')}`
+                                  : `${program === 'sunrise' ? student.sunriseTime : student.sunsetTime} by ${program === 'sunrise' ? (student.sunriseStaff || 'Staff') : (student.sunsetStaff || 'Staff')}`
+                                }
+                              </div>
+                            </div>
+                          )}
+                          {(isPresent || isCheckedOut) && (
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              {student.checkInPhoto && (
+                                <img src={student.checkInPhoto} alt="Check-in" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #8b5cf6', objectFit: 'cover' }} />
+                              )}
+                              {student.yearbookPhotoUrl && (
+                                <img src={student.yearbookPhotoUrl} alt="Yearbook" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--border-subtle)', objectFit: 'cover' }} />
+                              )}
+                              <button onClick={(e) => { e.stopPropagation(); handleStudentAction(student); }} style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                                <span className="material-icons-round">more_vert</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </main>
+
+            {showConfirmId && confirmStudent && (
+              <ConfirmationModal
+                student={confirmStudent}
+                title="Check In?"
+                message={`Mark ${confirmStudent.firstName} as present?`}
+                onConfirm={(photo, biometricData) => handleCheckIn(confirmStudent.id, photo, biometricData)}
+                onCancel={() => setShowConfirmId(null)}
+                showPhotoOption={true}
+                isDemoMode={isDemoMode}
+                darkMode={darkMode}
+              />
+            )}
+
+            {activeStudentId && activeStudent && (
+              <StudentDetailModal
+                student={activeStudent}
+                onClose={() => setActiveStudentId(null)}
+                onSave={handleSaveStudent}
+                onCheckOut={handleCheckOut}
+                currentStaff={user}
+                program={program}
+                isLeadMode={isLeadMode}
+                darkMode={darkMode}
+              />
+            )}
+
+            {showLeaderDashboard && (
+              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
+                <LeaderDashboard
+                  students={students}
+                  staffList={staffList}
+                  parentReports={parentReports}
+                  biometricLogs={biometricLogs}
+                  onClose={() => setShowLeaderDashboard(false)}
+                  onImport={(newStudents) => setStudents([...students, ...newStudents])}
+                  onAddStudent={(newStudent) => setStudents([...students, newStudent])}
+                  onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)}
+                  onUpdateStudent={handleSaveStudent}
+                  onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))}
+                  onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)}
+                  showToast={showToast}
+                  isBatchDefaultEnabled={isBatchDefaultEnabled}
+                  setIsBatchDefaultEnabled={setIsBatchDefaultEnabled}
+                  defaultBatchTime={defaultBatchTime}
+                  setDefaultBatchTime={setDefaultBatchTime}
+                  scheduledBatchCheckoutTime={scheduledBatchCheckoutTime}
+                />
+              </div>
+            )}
+
+            {reportData && (
+              <ParentReportModal
+                student={reportData.student}
+                type={reportData.type}
+                onClose={() => setReportData(null)}
+                onSend={(report) => {
+                  setParentReports(prev => [...prev, report]);
+                  showToast('Report sent to guardian!', 'success');
+                  setReportData(null);
+                }}
+                onSaveDraft={(report) => {
+                  setParentReports(prev => [...prev, report]);
+                  showToast('Draft saved!', 'info');
+                  setReportData(null);
+                }}
+              />
+            )}
+
+            {toast && <Toast message={toast.msg} type={toast.type} />}
+          </>
+          );
 };
 
-const root = createRoot(document.getElementById('root')!);
-root.render(<App />);
+          const root = createRoot(document.getElementById('root')!);
+          root.render(<App />);
