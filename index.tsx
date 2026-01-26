@@ -2132,7 +2132,15 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
   return (
     <div style={{ position: isInline ? 'relative' : 'fixed', top: isInline ? 0 : 0, left: isInline ? 0 : 0, right: isInline ? 0 : 0, bottom: isInline ? 'auto' : 0, height: isInline ? 'auto' : '100vh', backgroundColor: isInline ? 'transparent' : 'var(--bg-app)', zIndex: isInline ? 1 : 300, display: 'flex', flexDirection: 'column', borderRadius: isInline ? '16px' : 0, border: isInline ? '1px solid var(--border-subtle)' : 'none', marginBottom: isInline ? '16px' : 0 }}>
       {!isInline && (
-        <div style={{ padding: '20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'var(--bg-card)' }}>
+        <div style={{
+          padding: '20px',
+          paddingTop: 'calc(20px + env(safe-area-inset-top))',
+          borderBottom: '1px solid var(--border-subtle)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: 'var(--bg-card)'
+        }}>
           <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span className="material-icons-round">dashboard</span> Leader Dashboard
           </h2>
@@ -3303,92 +3311,79 @@ EDP Team - Cajon Valley School District`;
 
   return (
     <>
-      <header style={{
-        backgroundColor: 'var(--bg-header)',
-        padding: '16px',
-        boxShadow: 'var(--shadow-sm)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '16px',
-        zIndex: 100,
-        position: 'relative',
-        width: '100%',
-        maxWidth: '100%',
-        flexShrink: 0
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
-          <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: program === 'sunrise' ? 'var(--color-sunrise)' : 'var(--color-sunset)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }}>
-            <span className="material-icons-round" style={{ fontSize: '20px' }}>{program === 'sunrise' ? 'wb_sunny' : 'nights_stay'}</span>
+      <div className="sticky-header" style={{ paddingTop: 'env(safe-area-inset-top)', backgroundColor: 'var(--bg-app)' }}>
+        <header style={{
+          backgroundColor: 'var(--bg-header)',
+          padding: '16px',
+          boxShadow: 'var(--shadow-sm)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          zIndex: 100,
+          position: 'relative',
+          width: '100%',
+          maxWidth: '100%',
+          flexShrink: 0
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: program === 'sunrise' ? 'var(--color-sunrise)' : 'var(--color-sunset)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }}>
+              <span className="material-icons-round" style={{ fontSize: '20px' }}>{program === 'sunrise' ? 'wb_sunny' : 'nights_stay'}</span>
+            </div>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <h1 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{program === 'sunrise' ? 'Sunrise' : 'Sunset'} {isDemoMode && <span style={{ fontSize: '10px', color: '#8b5cf6', marginLeft: '4px' }}>DEMO</span>}</h1>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>{new Date().toLocaleDateString()}</div>
+            </div>
           </div>
-          <div style={{ minWidth: 0, overflow: 'hidden' }}>
-            <h1 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{program === 'sunrise' ? 'Sunrise' : 'Sunset'} {isDemoMode && <span style={{ fontSize: '10px', color: '#8b5cf6', marginLeft: '4px' }}>DEMO</span>}</h1>
-            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>{new Date().toLocaleDateString()}</div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 1, overflow: 'hidden' }}>
-          <div
-            onClick={() => setIsLeadMode(!isLeadMode)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '4px 8px',
-              borderRadius: '16px',
-              backgroundColor: isLeadMode ? 'rgba(139,92,246,0.1)' : 'var(--bg-hover)',
-              border: `1px solid ${isLeadMode ? '#8b5cf6' : 'var(--border-subtle)'}`,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              flexShrink: 0
-            }}
-          >
-            <span className="material-icons-round" style={{ fontSize: '16px', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
-              {isLeadMode ? 'admin_panel_settings' : 'person'}
-            </span>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
-              {isLeadMode ? 'LEAD' : 'STAFF'}
-            </span>
-          </div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 1, overflow: 'hidden' }}>
+            <div
+              onClick={() => setIsLeadMode(!isLeadMode)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 8px',
+                borderRadius: '16px',
+                backgroundColor: isLeadMode ? 'rgba(139,92,246,0.1)' : 'var(--bg-hover)',
+                border: `1px solid ${isLeadMode ? '#8b5cf6' : 'var(--border-subtle)'}`,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                flexShrink: 0
+              }}
+            >
+              <span className="material-icons-round" style={{ fontSize: '16px', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
+                {isLeadMode ? 'admin_panel_settings' : 'person'}
+              </span>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
+                {isLeadMode ? 'LEAD' : 'STAFF'}
+              </span>
+            </div>
 
-          <button onClick={() => setDarkMode(!darkMode)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}>
-            <span className="material-icons-round" style={{ fontSize: '20px' }}>{darkMode ? 'light_mode' : 'dark_mode'}</span>
-          </button>
+            <button onClick={() => setDarkMode(!darkMode)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}>
+              <span className="material-icons-round" style={{ fontSize: '20px' }}>{darkMode ? 'light_mode' : 'dark_mode'}</span>
+            </button>
 
-          {isLeadMode && (
-            <>
-              <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}>
-                <span className="material-icons-round" style={{ fontSize: '20px' }}>dashboard</span>
-              </button>
+            {isLeadMode && (
+              <>
+                <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}>
+                  <span className="material-icons-round" style={{ fontSize: '20px' }}>dashboard</span>
+                </button>
+                <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer', flexShrink: 0 }} title="Logout">
+                  <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
+                </button>
+              </>
+            )}
+
+            {!isLeadMode && (
               <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer', flexShrink: 0 }} title="Logout">
                 <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
               </button>
-            </>
-          )}
+            )}
 
-          {!isLeadMode && (
-            <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer', flexShrink: 0 }} title="Logout">
-              <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
-            </button>
-          )}
-
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#374151', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>
-            {user.name.charAt(0)}
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#374151', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>
+              {user.name.charAt(0)}
+            </div>
           </div>
-        </div>
-      </header>
-
-      <main
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          padding: '16px',
-          paddingBottom: '100px', // Extra padding for footer/FAB
-          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
-          height: '100%', // Ensure it fills remaining vertical space
-          overscrollBehavior: 'none' // Prevent pull-to-refresh on content
-        }}
-      >
-
+        </header>
 
         {/* Sync status bar */}
         {
@@ -3410,7 +3405,7 @@ EDP Team - Cajon Valley School District`;
           )
         }
 
-        <div className="sticky-header" style={{ padding: '16px' }}>
+        <div style={{ padding: '16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px', width: '100%', maxWidth: '100%' }}>
             {['all', 'checked_in', 'checked_out'].map(tab => (
               <button
@@ -3454,9 +3449,6 @@ EDP Team - Cajon Valley School District`;
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px' }}>
-            {/* 1. Permission-Aware Navigation: Hide 'All' if restricted */}
-            {/* 1. Permission-Aware Navigation: Hide 'All' button (redundant) */}
-
             {/* Render Buttons for Allowed Grades Only */}
             {GRADES
               .filter(g => (user.role === 'Lead' || !user.assignedGrades || user.assignedGrades.includes(g)))
@@ -3466,10 +3458,20 @@ EDP Team - Cajon Valley School District`;
                 </button>
               ))}
           </div>
-
         </div>
+      </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 80px 16px' }}>
+      <main
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          padding: '0 16px 100px 16px', // No top padding
+          height: '100%',
+          overscrollBehavior: 'none'
+        }}
+      >
+        <div style={{ paddingTop: '16px' }}>
           {filteredStudents.length === 0 ? (
             <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
               <span className="material-icons-round" style={{ fontSize: '64px', marginBottom: '16px' }}>school</span>
@@ -3550,10 +3552,10 @@ EDP Team - Cajon Valley School District`;
                   </div>
                 </div>
               );
-            }))
-          }
+            })
+          )}
         </div>
-      </main >
+      </main>
 
       {showConfirmId && confirmStudent && (
         <ConfirmationModal
@@ -3566,70 +3568,62 @@ EDP Team - Cajon Valley School District`;
           isDemoMode={isDemoMode}
           darkMode={darkMode}
         />
-      )
-      }
+      )}
 
-      {
-        activeStudentId && activeStudent && (
-          <StudentDetailModal
-            student={activeStudent}
-            onClose={() => setActiveStudentId(null)}
-            onSave={handleSaveStudent}
-            onCheckOut={handleCheckOut}
-            currentStaff={user}
-            program={program}
-            isLeadMode={isLeadMode}
-            darkMode={darkMode}
+      {activeStudentId && activeStudent && (
+        <StudentDetailModal
+          student={activeStudent}
+          onClose={() => setActiveStudentId(null)}
+          onSave={handleSaveStudent}
+          onCheckOut={handleCheckOut}
+          currentStaff={user}
+          program={program}
+          isLeadMode={isLeadMode}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showLeaderDashboard && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
+          <LeaderDashboard
+            students={students}
+            staffList={staffList}
+            parentReports={parentReports}
+            biometricLogs={biometricLogs}
+            onClose={() => setShowLeaderDashboard(false)}
+            onImport={(newStudents) => setStudents([...students, ...newStudents])}
+            onAddStudent={(newStudent) => setStudents([...students, newStudent])}
+            onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)}
+            onUpdateStudent={handleSaveStudent}
+            onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))}
+            onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)}
+            showToast={showToast}
+            isBatchDefaultEnabled={isBatchDefaultEnabled}
+            setIsBatchDefaultEnabled={setIsBatchDefaultEnabled}
+            defaultBatchTime={defaultBatchTime}
+            setDefaultBatchTime={setDefaultBatchTime}
+            scheduledBatchCheckoutTime={scheduledBatchCheckoutTime}
           />
-        )
-      }
+        </div>
+      )}
 
-      {
-        showLeaderDashboard && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 300, paddingTop: 'env(safe-area-inset-top)' }}>
-            <LeaderDashboard
-              students={students}
-              staffList={staffList}
-              parentReports={parentReports}
-              biometricLogs={biometricLogs}
-              onClose={() => setShowLeaderDashboard(false)}
-              onImport={(newStudents) => setStudents([...students, ...newStudents])}
-              onAddStudent={(newStudent) => setStudents([...students, newStudent])}
-              onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)}
-              onUpdateStudent={handleSaveStudent}
-              onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))}
-              onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)}
-              showToast={showToast}
-              isBatchDefaultEnabled={isBatchDefaultEnabled}
-              setIsBatchDefaultEnabled={setIsBatchDefaultEnabled}
-              defaultBatchTime={defaultBatchTime}
-              setDefaultBatchTime={setDefaultBatchTime}
-              scheduledBatchCheckoutTime={scheduledBatchCheckoutTime}
-            />
-          </div>
-        )
-      }
-
-
-      {
-        reportData && (
-          <ParentReportModal
-            student={reportData.student}
-            type={reportData.type}
-            onClose={() => setReportData(null)}
-            onSend={(report) => {
-              setParentReports(prev => [...prev, report]);
-              showToast('Report sent to guardian!', 'success');
-              setReportData(null);
-            }}
-            onSaveDraft={(report) => {
-              setParentReports(prev => [...prev, report]);
-              showToast('Draft saved!', 'info');
-              setReportData(null);
-            }}
-          />
-        )
-      }
+      {reportData && (
+        <ParentReportModal
+          student={reportData.student}
+          type={reportData.type}
+          onClose={() => setReportData(null)}
+          onSend={(report) => {
+            setParentReports(prev => [...prev, report]);
+            showToast('Report sent to guardian!', 'success');
+            setReportData(null);
+          }}
+          onSaveDraft={(report) => {
+            setParentReports(prev => [...prev, report]);
+            showToast('Draft saved!', 'info');
+            setReportData(null);
+          }}
+        />
+      )}
 
       {toast && <Toast message={toast.msg} type={toast.type} />}
     </>
