@@ -3383,7 +3383,9 @@ EDP Team - Cajon Valley School District`;
           overflowX: 'hidden',
           padding: '16px',
           paddingBottom: '100px', // Extra padding for footer/FAB
-          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
+          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+          height: '100%', // Ensure it fills remaining vertical space
+          overscrollBehavior: 'none' // Prevent pull-to-refresh on content
         }}
       >
 
@@ -3584,7 +3586,7 @@ EDP Team - Cajon Valley School District`;
 
       {
         showLeaderDashboard && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 300 }}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 300, paddingTop: 'env(safe-area-inset-top)' }}>
             <LeaderDashboard
               students={students}
               staffList={staffList}
