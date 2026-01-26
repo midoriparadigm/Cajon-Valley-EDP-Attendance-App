@@ -2036,15 +2036,23 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
   const [confirmBlockStudent, setConfirmBlockStudent] = useState<Student | null>(null);
 
   const toggleStaffCheckIn = (staffId: string) => {
-    const updated = localStaff.map(s => s.id === staffId ? { ...s, canCheckIn: !s.canCheckIn } : s);
-    setLocalStaff(updated);
-    onUpdateStaff(updated);
+    try {
+      const updated = localStaff.map(s => s.id === staffId ? { ...s, canCheckIn: !s.canCheckIn } : s);
+      setLocalStaff(updated);
+      onUpdateStaff(updated);
+    } catch (err) {
+      console.error('Failed to toggle staff check-in:', err);
+    }
   };
 
   const toggleStaffAdminTasks = (staffId: string) => {
-    const updated = localStaff.map(s => s.id === staffId ? { ...s, canAdminTasks: !s.canAdminTasks } : s);
-    setLocalStaff(updated);
-    onUpdateStaff(updated);
+    try {
+      const updated = localStaff.map(s => s.id === staffId ? { ...s, canAdminTasks: !s.canAdminTasks } : s);
+      setLocalStaff(updated);
+      onUpdateStaff(updated);
+    } catch (err) {
+      console.error('Failed to toggle staff admin tasks:', err);
+    }
   };
 
   const toggleStaffCheckOut = (staffId: string) => {
@@ -2161,7 +2169,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
         ))}
       </div>
 
-      <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto' }}>
         {activeTab === 'roster' && (
           <RosterManager onImport={onImport} onAdd={onAddStudent} showToast={showToast} />
         )}
@@ -2339,44 +2347,65 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
         )}
 
         {activeTab === 'blocking' && (
-          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Student Check-In Access</h3>
-            <div style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', marginBottom: '24px' }}>
-              <input value={blockSearch} onChange={(e) => setBlockSearch(e.target.value)} placeholder="Search student to manage access..." style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-subtle)', fontSize: '15px' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div className="sticky-header" style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 15,
+              padding: '20px 24px',
+              backgroundColor: 'var(--bg-app)',
+              borderBottom: '1px solid var(--border-subtle)',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+            }}>
+              <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Student Check-In Access</h3>
+                <div style={{ position: 'relative' }}>
+                  <span className="material-icons-round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>search</span>
+                  <input
+                    value={blockSearch}
+                    onChange={(e) => setBlockSearch(e.target.value)}
+                    placeholder="Search student to manage access..."
+                    style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '12px', border: '1px solid var(--border-subtle)', fontSize: '15px', boxSizing: 'border-box', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px' }}>
+                  <button onClick={() => setSelectedAccessGrade(prev => prev === 'All' ? null : 'All')} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedAccessGrade === 'All' ? 'var(--text-main)' : 'var(--bg-card)', color: selectedAccessGrade === 'All' ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedAccessGrade === 'All' ? 'scale(1.05)' : 'scale(1)' }}>
+                    All
+                  </button>
+                  {GRADES.map(g => (
+                    <button key={g} onClick={() => setSelectedAccessGrade(prev => prev === g ? null : g)} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedAccessGrade === g ? 'var(--text-main)' : 'var(--bg-card)', color: selectedAccessGrade === g ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedAccessGrade === g ? 'scale(1.05)' : 'scale(1)' }}>
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '8px', marginBottom: '16px' }}>
-              <button onClick={() => setSelectedAccessGrade(prev => prev === 'All' ? null : 'All')} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedAccessGrade === 'All' ? 'var(--text-main)' : 'var(--bg-card)', color: selectedAccessGrade === 'All' ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedAccessGrade === 'All' ? 'scale(1.05)' : 'scale(1)' }}>
-                All
-              </button>
-              {GRADES.map(g => (
-                <button key={g} onClick={() => setSelectedAccessGrade(prev => prev === g ? null : g)} style={{ padding: '10px', borderRadius: '12px', border: 'none', backgroundColor: selectedAccessGrade === g ? 'var(--text-main)' : 'var(--bg-card)', color: selectedAccessGrade === g ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s ease', transform: selectedAccessGrade === g ? 'scale(1.05)' : 'scale(1)' }}>
-                  {g}
-                </button>
-              ))}
-            </div>
+            <div style={{ padding: '0 24px 24px 24px', maxWidth: '800px', margin: '0 auto' }}>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {students
-                .filter(s => (s.firstName.toLowerCase() + ' ' + s.lastName.toLowerCase()).includes(blockSearch.toLowerCase()))
-                .filter(s => !selectedAccessGrade || selectedAccessGrade === 'All' || s.grade === selectedAccessGrade)
-                .map(student => (
-                  <div key={student.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', opacity: student.isCheckInBlocked ? 0.8 : 1, borderLeft: student.isCheckInBlocked ? '4px solid var(--color-danger)' : '1px solid var(--border-subtle)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>{student.grade}</div>
-                      <div>
-                        <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>{student.firstName} {student.lastName}</div>
-                        <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                          {student.programs.includes('ELOP') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: '700' }}>ELOP</span>}
-                          {student.programs.includes('ASES') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8', fontWeight: '700' }}>ASES</span>}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {students
+                  .filter(s => (s.firstName.toLowerCase() + ' ' + s.lastName.toLowerCase()).includes(blockSearch.toLowerCase()))
+                  .filter(s => !selectedAccessGrade || selectedAccessGrade === 'All' || s.grade === selectedAccessGrade)
+                  .map(student => (
+                    <div key={student.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', opacity: student.isCheckInBlocked ? 0.8 : 1, borderLeft: student.isCheckInBlocked ? '4px solid var(--color-danger)' : '1px solid var(--border-subtle)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>{student.grade}</div>
+                        <div>
+                          <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>{student.firstName} {student.lastName}</div>
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                            {student.programs.includes('ELOP') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: '700' }}>ELOP</span>}
+                            {student.programs.includes('ASES') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8', fontWeight: '700' }}>ASES</span>}
+                          </div>
                         </div>
                       </div>
+                      <button onClick={() => toggleStudentBlock(student)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: student.isCheckInBlocked ? 'var(--color-danger-bg)' : 'var(--bg-hover)', color: student.isCheckInBlocked ? 'var(--color-danger)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                        {student.isCheckInBlocked ? 'No Check-In' : 'Active'}
+                      </button>
                     </div>
-                    <button onClick={() => toggleStudentBlock(student)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: student.isCheckInBlocked ? 'var(--color-danger-bg)' : 'var(--bg-hover)', color: student.isCheckInBlocked ? 'var(--color-danger)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-                      {student.isCheckInBlocked ? 'No Check-In' : 'Active'}
-                    </button>
-                  </div>
-                ))}
+                  ))}
+              </div>
             </div>
           </div>
         )}
@@ -2662,19 +2691,19 @@ const ParentReportModal = ({ student, type, onClose, onSend, onSaveDraft }: { st
 
       return `Dear ${(student.guardians?.[0]?.firstName || 'Unknown')} ${(student.guardians?.[0]?.lastName || '')},
 
-This is to inform you that your child, ${student.firstName} ${student.lastName}, experienced a head injury incident today (${date}) at approximately ${student.headInjuryTimestamp || time}.
+      This is to inform you that your child, ${student.firstName} ${student.lastName}, experienced a head injury incident today (${date}) at approximately ${student.headInjuryTimestamp || time}.
 
-**Incident Details:**
-• Witness: ${student.headInjuryWitness || 'Staff member'}
-• Description: ${student.headInjuryWitnessDesc || 'Minor bump observed'}
-• Symptoms Monitored: ${symptoms || 'None observed'}
+      **Incident Details:**
+      • Witness: ${student.headInjuryWitness || 'Staff member'}
+      • Description: ${student.headInjuryWitnessDesc || 'Minor bump observed'}
+      • Symptoms Monitored: ${symptoms || 'None observed'}
 
-Our staff followed the standard head injury protocol and monitored ${student.firstName} throughout the day. ${student.headInjuryLogs.length} assessment(s) were completed.
+      Our staff followed the standard head injury protocol and monitored ${student.firstName} throughout the day. ${student.headInjuryLogs.length} assessment(s) were completed.
 
-Please monitor your child at home and contact us if you notice any concerning symptoms.
+      Please monitor your child at home and contact us if you notice any concerning symptoms.
 
-Best regards,
-EDP Team - Cajon Valley School District`;
+      Best regards,
+      EDP Team - Cajon Valley School District`;
     } else {
       const ticketLevel = student.behavior === 'red' ? 'Level 3 (Red)' : student.behavior === 'yellow' ? 'Level 2 (Yellow)' : 'Level 1 (Green)';
       const behaviorList = student.behaviorIssues.length > 0
@@ -2683,22 +2712,22 @@ EDP Team - Cajon Valley School District`;
 
       return `Dear ${(student.guardians?.[0]?.firstName || 'Unknown')} ${(student.guardians?.[0]?.lastName || '')},
 
-This is to inform you that your child, ${student.firstName} ${student.lastName}, received a behavior ticket today (${date}).
+      This is to inform you that your child, ${student.firstName} ${student.lastName}, received a behavior ticket today (${date}).
 
-**Ticket Information:**
-• Level: ${ticketLevel}
-• Time: ${student.behaviorTimestamp || time}
-• Staff: ${student.behaviorStaff || 'EDP Staff'}
+      **Ticket Information:**
+      • Level: ${ticketLevel}
+      • Time: ${student.behaviorTimestamp || time}
+      • Staff: ${student.behaviorStaff || 'EDP Staff'}
 
-**Reported Behaviors:**
-${behaviorList}
+      **Reported Behaviors:**
+      ${behaviorList}
 
-${student.behaviorDescription ? `**Additional Notes:** ${student.behaviorDescription}` : ''}
+      ${student.behaviorDescription ? `**Additional Notes:** ${student.behaviorDescription}` : ''}
 
-Please discuss this with your child. We appreciate your partnership in supporting positive behavior.
+      Please discuss this with your child. We appreciate your partnership in supporting positive behavior.
 
-Best regards,
-EDP Team - Cajon Valley School District`;
+      Best regards,
+      EDP Team - Cajon Valley School District`;
     }
   };
 
@@ -2843,11 +2872,14 @@ const App = () => {
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user?.email) {
-        const staffMember = staffList.find(s => s.email === session.user.email);
-        if (staffMember) setUser(staffMember);
-      } else {
+        // Only trigger login state if we don't have a user or session changed
+        if (!user || user.email !== session.user.email) {
+          const staffMember = staffList.find(s => s.email === session.user.email);
+          if (staffMember) setUser(staffMember);
+        }
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
       }
     });
@@ -2855,7 +2887,7 @@ const App = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [staffList]);
+  }, [user, staffList]); // Include user to stabilize logic
 
   // Supabase Realtime subscription for multi-user sync
   useEffect(() => {
@@ -3286,22 +3318,22 @@ const App = () => {
 
     return `Dear ${(student.guardians?.[0]?.firstName || 'Unknown')} ${(student.guardians?.[0]?.lastName || '')},
 
-This is to inform you that your child, ${student.firstName} ${student.lastName}, received a behavior ticket today (${date}).
+          This is to inform you that your child, ${student.firstName} ${student.lastName}, received a behavior ticket today (${date}).
 
-**Ticket Information:**
-• Level: ${ticketLevel}
-• Time: ${student.behaviorTimestamp || time}
-• Staff: ${student.behaviorStaff || 'EDP Staff'}
+          **Ticket Information:**
+          • Level: ${ticketLevel}
+          • Time: ${student.behaviorTimestamp || time}
+          • Staff: ${student.behaviorStaff || 'EDP Staff'}
 
-**Reported Behaviors:**
-${behaviorList}
+          **Reported Behaviors:**
+          ${behaviorList}
 
-${student.behaviorDescription ? `**Additional Notes:** ${student.behaviorDescription}` : ''}
+          ${student.behaviorDescription ? `**Additional Notes:** ${student.behaviorDescription}` : ''}
 
-Please discuss this with your child. We appreciate your partnership in supporting positive behavior.
+          Please discuss this with your child. We appreciate your partnership in supporting positive behavior.
 
-Best regards,
-EDP Team - Cajon Valley School District`;
+          Best regards,
+          EDP Team - Cajon Valley School District`;
   };
 
   if (!user) return <StaffLogin onLogin={setUser} onToggleDemo={() => setIsDemoMode(!isDemoMode)} isDemoMode={isDemoMode} staffList={staffList} />;
@@ -3367,17 +3399,11 @@ EDP Team - Cajon Valley School District`;
                 <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}>
                   <span className="material-icons-round" style={{ fontSize: '20px' }}>dashboard</span>
                 </button>
-                <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer', flexShrink: 0 }} title="Logout">
-                  <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
-                </button>
               </>
             )}
-
-            {!isLeadMode && (
-              <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer', flexShrink: 0 }} title="Logout">
-                <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
-              </button>
-            )}
+            <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer', flexShrink: 0 }} title="Logout">
+              <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
+            </button>
 
             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#374151', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>
               {user.name.charAt(0)}
