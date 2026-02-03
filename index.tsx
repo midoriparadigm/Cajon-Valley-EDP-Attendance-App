@@ -2335,26 +2335,25 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
         )}
 
         {activeTab === 'blocking' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, backgroundColor: 'var(--bg-app)' }}>
-            <div className="sticky-header" style={{
-              zIndex: 999,
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, backgroundColor: 'var(--bg-app)', position: 'relative' }}>
+            {/* Header Container - Static Flex Item */}
+            <div style={{
+              zIndex: 10,
               backgroundColor: 'var(--bg-header)',
-              position: 'sticky',
-              top: 0,
               boxShadow: 'var(--shadow-sm)',
-              borderBottom: '1px solid var(--border-subtle)'
+              borderBottom: '1px solid var(--border-subtle)',
+              display: 'flex',
+              flexDirection: 'column',
+              flexShrink: 0
             }}>
               <header style={{
-                backgroundColor: 'var(--bg-header)',
                 padding: '16px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '16px',
-                width: '100%',
-                maxWidth: '100%',
-                flexShrink: 0
+                width: '100%'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
                   <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }}>
                     <span className="material-icons-round" style={{ fontSize: '20px' }}>admin_panel_settings</span>
                   </div>
@@ -2365,7 +2364,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                 </div>
               </header>
 
-              <div style={{ padding: '0 16px 16px 16px', backgroundColor: 'var(--bg-header)' }}>
+              <div style={{ padding: '0 16px 16px 16px' }}>
                 <div style={{ position: 'relative', marginBottom: '16px', width: '100%' }}>
                   <span className="material-icons-round" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '20px' }}>search</span>
                   <input
@@ -2373,7 +2372,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                     placeholder="Search student to manage access..."
                     value={blockSearch}
                     onChange={(e) => setBlockSearch(e.target.value)}
-                    style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: 'none', backgroundColor: '#1e293b', fontSize: '16px', color: '#f8fafc', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-input)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
                   />
                 </div>
 
@@ -2384,8 +2383,8 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                       padding: '10px 16px',
                       borderRadius: '12px',
                       border: 'none',
-                      backgroundColor: selectedAccessGrade === 'All' ? '#f8fafc' : '#1e293b',
-                      color: selectedAccessGrade === 'All' ? '#0f172a' : '#f8fafc',
+                      backgroundColor: selectedAccessGrade === 'All' ? '#f8fafc' : 'var(--bg-input)',
+                      color: selectedAccessGrade === 'All' ? '#0f172a' : 'var(--text-main)',
                       fontWeight: '800',
                       fontSize: '14px',
                       cursor: 'pointer',
@@ -2403,8 +2402,8 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                         padding: '10px 16px',
                         borderRadius: '12px',
                         border: 'none',
-                        backgroundColor: selectedAccessGrade === g ? '#f8fafc' : '#1e293b',
-                        color: selectedAccessGrade === g ? '#0f172a' : '#f8fafc',
+                        backgroundColor: selectedAccessGrade === g ? '#f8fafc' : 'var(--bg-input)',
+                        color: selectedAccessGrade === g ? '#0f172a' : 'var(--text-main)',
                         fontWeight: '800',
                         fontSize: '14px',
                         cursor: 'pointer',
@@ -2888,7 +2887,8 @@ const App = () => {
   const [showLeaderDashboard, setShowLeaderDashboard] = useState(false);
   const [inlineDashboardExpanded, setInlineDashboardExpanded] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
+  // Default to true for Deep Dark Theme as primary
+  const [darkMode, setDarkMode] = useState(true);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isLeadMode, setIsLeadMode] = useState(true);
   const [scheduledBatchCheckoutTime, setScheduledBatchCheckoutTime] = useState<string | null>(null);
@@ -3049,10 +3049,14 @@ const App = () => {
   }, [students]);
 
   useEffect(() => {
+    // Force set if preferences change, but we fundamentally default to true now
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setDarkMode(isDark);
+    // Don't auto-overwrite if user manually toggled, but here we just respect init
+    // setDarkMode(isDark); // Disabled auto-detect loosely to prefer the default true
 
-    const handler = (e: MediaQueryListEvent) => setDarkMode(e.matches);
+    const handler = (e: MediaQueryListEvent) => {
+      // Optional: Auto-switch? Let's just keep manual control or default
+    };
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', handler);
     return () => window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', handler);
   }, []);
@@ -3408,7 +3412,7 @@ const App = () => {
         flexDirection: 'column'
       }}>
         <header style={{
-          backgroundColor: 'var(--bg-header)',
+          backgroundColor: '#0f172a',
           padding: '16px',
           boxShadow: 'var(--shadow-sm)',
           display: 'flex',
@@ -3492,7 +3496,7 @@ const App = () => {
           )
         }
 
-        <div style={{ padding: '16px', backgroundColor: 'var(--bg-header)', borderBottom: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ padding: '16px', backgroundColor: '#0f172a', borderBottom: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', width: '100%', overflowX: 'auto', paddingBottom: '4px' }} className="hide-scrollbar">
             {['all', 'checked_in', 'checked_out'].map(tab => (
               <button
@@ -3684,7 +3688,7 @@ const App = () => {
       )}
 
       {showLeaderDashboard && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#0f172a', zIndex: 2000 }}>
           <LeaderDashboard
             students={students}
             staffList={staffList}

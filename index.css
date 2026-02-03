@@ -1,7 +1,7 @@
 :root {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  /* Light Mode Defaults */
+  /* Light Mode Defaults - UPDATED TO MATCH DARK REFERENCE IF NEEDED, BUT KEEPING LIGHT FOR NOW */
   --bg-app: #f3f4f6;
   --bg-card: #ffffff;
   --bg-header: #ffffff;
@@ -128,8 +128,8 @@ html {
 .sticky-header {
   position: sticky !important;
   top: 0 !important;
-  z-index: 1000 !important;
-  background-color: var(--bg-app) !important;
+  z-index: 900 !important;
+  background-color: #0f172a !important;
   width: 100% !important;
   max-width: 100% !important;
   box-sizing: border-box !important;
