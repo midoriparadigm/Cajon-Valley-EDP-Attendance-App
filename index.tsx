@@ -3555,20 +3555,20 @@ const App = () => {
       showToast('Behavior report draft created', 'info');
     }
   }
-};
 
-// Helper to generate behavior message for auto-created drafts
-const generateBehaviorMessage = (student: Student) => {
-  const date = new Date().toLocaleDateString();
-  const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  const ticketLevel = student.behavior === 'red' ? 'Level 3 (Red)' : student.behavior === 'yellow' ? 'Level 2 (Yellow)' : 'Level 1 (Green)';
-  const behaviorList = student.behaviorIssues.length > 0
-    ? student.behaviorIssues.map(b => `• ${b}`).join('\n')
-    : '• General behavior concern';
 
-  return `PARENT COMMUNICATION\n\nSite: EDP\nDate: ${date}\nStudent: ${student.firstName} ${student.lastName}\n\nThis is what happened today:\n${behaviorList}\n\n${student.behaviorDescription || ''}`;
+  // Helper to generate behavior message for auto-created drafts
+  const generateBehaviorMessage = (student: Student) => {
+    const date = new Date().toLocaleDateString();
+    const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const ticketLevel = student.behavior === 'red' ? 'Level 3 (Red)' : student.behavior === 'yellow' ? 'Level 2 (Yellow)' : 'Level 1 (Green)';
+    const behaviorList = student.behaviorIssues.length > 0
+      ? student.behaviorIssues.map(b => `• ${b}`).join('\n')
+      : '• General behavior concern';
 
-  return `Dear ${(student.guardians?.[0]?.firstName || 'Unknown')} ${(student.guardians?.[0]?.lastName || '')},
+    return `PARENT COMMUNICATION\n\nSite: EDP\nDate: ${date}\nStudent: ${student.firstName} ${student.lastName}\n\nThis is what happened today:\n${behaviorList}\n\n${student.behaviorDescription || ''}`;
+
+    return `Dear ${(student.guardians?.[0]?.firstName || 'Unknown')} ${(student.guardians?.[0]?.lastName || '')},
 
           This is to inform you that your child, ${student.firstName} ${student.lastName}, received a behavior ticket today (${date}).
 
@@ -3586,365 +3586,366 @@ const generateBehaviorMessage = (student: Student) => {
 
           Best regards,
           EDP Team - Cajon Valley School District`;
-};
+  };
 
-if (!user) return <StaffLogin onLogin={setUser} onToggleDemo={() => setIsDemoMode(!isDemoMode)} isDemoMode={isDemoMode} staffList={staffList} />;
+  if (!user) return <StaffLogin onLogin={setUser} onToggleDemo={() => setIsDemoMode(!isDemoMode)} isDemoMode={isDemoMode} staffList={staffList} />;
 
-const activeStudent = students.find(s => s.id === activeStudentId);
-const confirmStudent = students.find(s => s.id === showConfirmId);
+  const activeStudent = students.find(s => s.id === activeStudentId);
+  const confirmStudent = students.find(s => s.id === showConfirmId);
 
-return (
-  <>
-    <div className="sticky-header" style={{
-      position: 'sticky',
-      top: 0,
-      zIndex: 3000, // Global Header - Most Persistent (Above Leader Dashboard & Modals if desired)
-      backgroundColor: 'var(--bg-app)',
-      paddingTop: 'env(safe-area-inset-top)',
-      display: 'flex',
-      flexDirection: 'column'
-    }}>
-      <header style={{
-        backgroundColor: 'var(--bg-header)',
-        padding: '16px',
-        boxShadow: 'var(--shadow-sm)',
+  return (
+    <>
+      <div className="sticky-header" style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 3000, // Global Header - Most Persistent (Above Leader Dashboard & Modals if desired)
+        backgroundColor: 'var(--bg-app)',
+        paddingTop: 'env(safe-area-inset-top)',
         display: 'flex',
-        alignItems: 'center',
-        gap: '16px',
-        width: '100%',
-        maxWidth: '100%',
-        flexShrink: 0
+        flexDirection: 'column'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
-          <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: program === 'sunrise' ? 'var(--color-sunrise)' : 'var(--color-sunset)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }}>
-            <span className="material-icons-round" style={{ fontSize: '20px' }}>{program === 'sunrise' ? 'wb_sunny' : 'nights_stay'}</span>
+        <header style={{
+          backgroundColor: 'var(--bg-header)',
+          padding: '16px',
+          boxShadow: 'var(--shadow-sm)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          width: '100%',
+          maxWidth: '100%',
+          flexShrink: 0
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: program === 'sunrise' ? 'var(--color-sunrise)' : 'var(--color-sunset)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }}>
+              <span className="material-icons-round" style={{ fontSize: '20px' }}>{program === 'sunrise' ? 'wb_sunny' : 'nights_stay'}</span>
+            </div>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <h1 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{program === 'sunrise' ? 'Sunrise' : 'Sunset'} {isDemoMode && <span style={{ fontSize: '10px', color: '#8b5cf6', marginLeft: '4px' }}>DEMO</span>}</h1>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>{new Date().toLocaleDateString()}</div>
+            </div>
           </div>
-          <div style={{ minWidth: 0, overflow: 'hidden' }}>
-            <h1 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{program === 'sunrise' ? 'Sunrise' : 'Sunset'} {isDemoMode && <span style={{ fontSize: '10px', color: '#8b5cf6', marginLeft: '4px' }}>DEMO</span>}</h1>
-            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>{new Date().toLocaleDateString()}</div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 1, overflow: 'hidden' }}>
-          <div
-            onClick={() => setIsLeadMode(!isLeadMode)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '4px 8px',
-              borderRadius: '16px',
-              backgroundColor: isLeadMode ? 'rgba(139,92,246,0.1)' : 'var(--bg-hover)',
-              border: `1px solid ${isLeadMode ? '#8b5cf6' : 'var(--border-subtle)'}`,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              flexShrink: 0
-            }}
-          >
-            <span className="material-icons-round" style={{ fontSize: '16px', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
-              {isLeadMode ? 'admin_panel_settings' : 'person'}
-            </span>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
-              {isLeadMode ? 'LEAD' : 'STAFF'}
-            </span>
-          </div>
-
-          <button
-            onClick={() => {
-              // Home Button Logic: Return to Main Search
-              setActiveStudentId(null);
-              setShowLeaderDashboard(false);
-              setShowConfirmId(null);
-              setReportData(null);
-            }}
-            style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}
-            title="Home"
-          >
-            <span className="material-icons-round" style={{ fontSize: '20px' }}>home</span>
-          </button>
-
-          {isLeadMode && (
-            <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }} title="Dashboard">
-              <span className="material-icons-round" style={{ fontSize: '20px' }}>dashboard</span>
-            </button>
-          )}
-
-          <button onClick={() => setDarkMode(!darkMode)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }} title="Toggle Theme">
-            <span className="material-icons-round" style={{ fontSize: '20px' }}>{darkMode ? 'light_mode' : 'dark_mode'}</span>
-          </button>
-
-          <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer', flexShrink: 0 }} title="Logout">
-            <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
-          </button>
-
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#374151', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>
-            {user.name.charAt(0)}
-          </div>
-        </div>
-      </header>
-
-      {/* Sync status bar */}
-      {
-        lastSyncTime && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            padding: '6px 16px',
-            backgroundColor: 'var(--bg-header)',
-            borderBottom: '1px solid var(--border-subtle)',
-            fontSize: '11px',
-            color: 'var(--text-muted)'
-          }}>
-            <span className="material-icons-round" style={{ fontSize: '14px' }}>cloud_done</span>
-            Last synced: {lastSyncTime.toLocaleTimeString()}
-          </div>
-        )
-      }
-
-      <div style={{ padding: '16px', backgroundColor: 'var(--bg-header)', borderBottom: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', width: '100%', overflowX: 'auto', paddingBottom: '4px' }} className="hide-scrollbar">
-          {['all', 'checked_in', 'checked_out'].map(tab => (
-            <button
-              key={tab}
-              onClick={() => setRosterStatusFilter(tab as any)}
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 1, overflow: 'hidden' }}>
+            <div
+              onClick={() => setIsLeadMode(!isLeadMode)}
               style={{
-                flex: 1,
-                padding: '12px 16px',
-                borderRadius: '12px',
-                border: 'none',
-                backgroundColor: rosterStatusFilter === tab ? (darkMode ? '#f8fafc' : 'var(--text-main)') : (darkMode ? '#1e293b' : 'var(--bg-input)'),
-                color: rosterStatusFilter === tab ? (darkMode ? '#0f172a' : 'white') : (darkMode ? '#f8fafc' : 'var(--text-main)'),
-                fontWeight: '800',
-                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 8px',
+                borderRadius: '16px',
+                backgroundColor: isLeadMode ? 'rgba(139,92,246,0.1)' : 'var(--bg-hover)',
+                border: `1px solid ${isLeadMode ? '#8b5cf6' : 'var(--border-subtle)'}`,
                 cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                whiteSpace: 'nowrap',
-                boxShadow: rosterStatusFilter === tab ? '0 4px 12px rgba(0,0,0,0.2)' : 'none'
+                transition: 'all 0.2s',
+                flexShrink: 0
               }}
             >
-              {tab === 'all'
-                ? (user && user.role !== 'Lead' && user.assignedGrades
-                  ? `All ${user.assignedGrades.join(', ')}`
-                  : 'All Students')
-                : tab === 'checked_in' ? 'Checked In' : 'Checked Out'}
+              <span className="material-icons-round" style={{ fontSize: '16px', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
+                {isLeadMode ? 'admin_panel_settings' : 'person'}
+              </span>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>
+                {isLeadMode ? 'LEAD' : 'STAFF'}
+              </span>
+            </div>
+
+            <button
+              onClick={() => {
+                // Home Button Logic: Return to Main Search
+                setActiveStudentId(null);
+                setShowLeaderDashboard(false);
+                setShowConfirmId(null);
+                setReportData(null);
+              }}
+              style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}
+              title="Home"
+            >
+              <span className="material-icons-round" style={{ fontSize: '20px' }}>home</span>
             </button>
-          ))}
-        </div>
 
-        <div style={{ position: 'relative', marginBottom: '16px', width: '100%' }}>
-          <span className="material-icons-round" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '20px' }}>search</span>
-          <input
-            type="text"
-            placeholder="Search student..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-input)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
-          />
-        </div>
+            {isLeadMode && (
+              <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }} title="Dashboard">
+                <span className="material-icons-round" style={{ fontSize: '20px' }}>dashboard</span>
+              </button>
+            )}
 
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {/* Render Buttons for Allowed Grades Only */}
-          {GRADES
-            .filter(g => (user.role === 'Lead' || !user.assignedGrades || user.assignedGrades.includes(g)))
-            .map(g => (
+            <button onClick={() => setDarkMode(!darkMode)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }} title="Toggle Theme">
+              <span className="material-icons-round" style={{ fontSize: '20px' }}>{darkMode ? 'light_mode' : 'dark_mode'}</span>
+            </button>
+
+            <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer', flexShrink: 0 }} title="Logout">
+              <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
+            </button>
+
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#374151', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>
+              {user.name.charAt(0)}
+            </div>
+          </div>
+        </header>
+
+        {/* Sync status bar */}
+        {
+          lastSyncTime && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              padding: '6px 16px',
+              backgroundColor: 'var(--bg-header)',
+              borderBottom: '1px solid var(--border-subtle)',
+              fontSize: '11px',
+              color: 'var(--text-muted)'
+            }}>
+              <span className="material-icons-round" style={{ fontSize: '14px' }}>cloud_done</span>
+              Last synced: {lastSyncTime.toLocaleTimeString()}
+            </div>
+          )
+        }
+
+        <div style={{ padding: '16px', backgroundColor: 'var(--bg-header)', borderBottom: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', width: '100%', overflowX: 'auto', paddingBottom: '4px' }} className="hide-scrollbar">
+            {['all', 'checked_in', 'checked_out'].map(tab => (
               <button
-                key={g}
-                onClick={() => setSelectedGrade(prev => prev === g ? 'All' : g)}
+                key={tab}
+                onClick={() => setRosterStatusFilter(tab as any)}
                 style={{
-                  padding: '10px 16px',
+                  flex: 1,
+                  padding: '12px 16px',
                   borderRadius: '12px',
                   border: 'none',
-                  backgroundColor: selectedGrade === g ? (darkMode ? '#f8fafc' : 'var(--text-main)') : (darkMode ? '#1e293b' : 'var(--bg-input)'),
-                  color: selectedGrade === g ? (darkMode ? '#0f172a' : 'white') : (darkMode ? '#f8fafc' : 'var(--text-main)'),
+                  backgroundColor: rosterStatusFilter === tab ? (darkMode ? '#f8fafc' : 'var(--text-main)') : (darkMode ? '#1e293b' : 'var(--bg-input)'),
+                  color: rosterStatusFilter === tab ? (darkMode ? '#0f172a' : 'white') : (darkMode ? '#f8fafc' : 'var(--text-main)'),
                   fontWeight: '800',
                   fontSize: '14px',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  minWidth: '48px'
+                  whiteSpace: 'nowrap',
+                  boxShadow: rosterStatusFilter === tab ? '0 4px 12px rgba(0,0,0,0.2)' : 'none'
                 }}
               >
-                {g}
+                {tab === 'all'
+                  ? (user && user.role !== 'Lead' && user.assignedGrades
+                    ? `All ${user.assignedGrades.join(', ')}`
+                    : 'All Students')
+                  : tab === 'checked_in' ? 'Checked In' : 'Checked Out'}
               </button>
             ))}
+          </div>
+
+          <div style={{ position: 'relative', marginBottom: '16px', width: '100%' }}>
+            <span className="material-icons-round" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '20px' }}>search</span>
+            <input
+              type="text"
+              placeholder="Search student..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-input)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {/* Render Buttons for Allowed Grades Only */}
+            {GRADES
+              .filter(g => (user.role === 'Lead' || !user.assignedGrades || user.assignedGrades.includes(g)))
+              .map(g => (
+                <button
+                  key={g}
+                  onClick={() => setSelectedGrade(prev => prev === g ? 'All' : g)}
+                  style={{
+                    padding: '10px 16px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    backgroundColor: selectedGrade === g ? (darkMode ? '#f8fafc' : 'var(--text-main)') : (darkMode ? '#1e293b' : 'var(--bg-input)'),
+                    color: selectedGrade === g ? (darkMode ? '#0f172a' : 'white') : (darkMode ? '#f8fafc' : 'var(--text-main)'),
+                    fontWeight: '800',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    minWidth: '48px'
+                  }}
+                >
+                  {g}
+                </button>
+              ))}
+          </div>
         </div>
       </div>
-    </div>
 
-    <main
-      style={{
-        flex: 1,
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        padding: '0 16px 100px 16px', // No top padding
-        height: '100%',
-        overscrollBehavior: 'none'
-      }}
-    >
-      <div style={{ paddingTop: '16px' }}>
-        {filteredStudents.length === 0 ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-            <span className="material-icons-round" style={{ fontSize: '64px', marginBottom: '16px' }}>school</span>
-            <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>No Students Found</div>
-            <div style={{ fontSize: '14px' }}>Try adjusting your search or filters</div>
-          </div>
-        ) : (
-          filteredStudents.map(student => {
-            const status = program === 'sunrise' ? student.sunriseStatus : student.sunsetStatus;
-            const isPresent = status === 'present';
-            const isCheckedOut = status === 'checked_out' || status === 'pending_parent';
+      <main
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          padding: '0 16px 100px 16px', // No top padding
+          height: '100%',
+          overscrollBehavior: 'none'
+        }}
+      >
+        <div style={{ paddingTop: '16px' }}>
+          {filteredStudents.length === 0 ? (
+            <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              <span className="material-icons-round" style={{ fontSize: '64px', marginBottom: '16px' }}>school</span>
+              <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>No Students Found</div>
+              <div style={{ fontSize: '14px' }}>Try adjusting your search or filters</div>
+            </div>
+          ) : (
+            filteredStudents.map(student => {
+              const status = program === 'sunrise' ? student.sunriseStatus : student.sunsetStatus;
+              const isPresent = status === 'present';
+              const isCheckedOut = status === 'checked_out' || status === 'pending_parent';
 
-            const opacity = (student.isCheckInBlocked || status === 'checked_out') ? 0.5 : 1;
+              const opacity = (student.isCheckInBlocked || status === 'checked_out') ? 0.5 : 1;
 
-            return (
-              <div key={student.id}
-                className="student-card"
-                onClick={() => !isPresent && !isCheckedOut ? handleStudentAction(student) : null}
-                style={{
-                  backgroundColor: 'var(--bg-card)',
-                  padding: '16px',
-                  borderRadius: '16px',
-                  marginBottom: '12px',
-                  boxShadow: 'var(--shadow-sm)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderLeft: `4px solid ${isPresent || isCheckedOut ? (status === 'checked_out' ? '#9ca3af' : (status === 'pending_parent' ? '#8b5cf6' : '#10b981')) : 'transparent'}`,
-                  cursor: isPresent || isCheckedOut ? 'default' : 'pointer',
-                  opacity
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '700', color: 'var(--text-secondary)' }}>
-                    {student.grade}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>{student.firstName} {student.lastName}</div>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      {student.programs.includes('ELOP') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: '700' }}>ELOP</span>}
-                      {student.programs.includes('ASES') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8', fontWeight: '700' }}>ASES</span>}
+              return (
+                <div key={student.id}
+                  className="student-card"
+                  onClick={() => !isPresent && !isCheckedOut ? handleStudentAction(student) : null}
+                  style={{
+                    backgroundColor: 'var(--bg-card)',
+                    padding: '16px',
+                    borderRadius: '16px',
+                    marginBottom: '12px',
+                    boxShadow: 'var(--shadow-sm)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderLeft: `4px solid ${isPresent || isCheckedOut ? (status === 'checked_out' ? '#9ca3af' : (status === 'pending_parent' ? '#8b5cf6' : '#10b981')) : 'transparent'}`,
+                    cursor: isPresent || isCheckedOut ? 'default' : 'pointer',
+                    opacity
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '700', color: 'var(--text-secondary)' }}>
+                      {student.grade}
                     </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  {student.headInjury && <span className="material-icons-round" style={{ color: '#ef4444' }}>personal_injury</span>}
-                  {student.behavior !== 'none' && <span className="material-icons-round" style={{ color: student.behavior === 'red' ? '#ef4444' : student.behavior === 'yellow' ? '#f59e0b' : '#10b981' }}>warning</span>}
-
-                  {status === 'absent' ? (
-                    <span className="material-icons-round" style={{ color: 'var(--border-subtle)' }}>radio_button_unchecked</span>
-                  ) : (
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '12px', fontWeight: '700', color: status === 'checked_out' ? '#9ca3af' : status === 'pending_parent' ? '#8b5cf6' : '#10b981', textTransform: 'uppercase' }}>
-                        {status === 'checked_out' ? 'CHECKED-OUT' : status === 'pending_parent' ? 'WAITING' : 'CHECKED-IN'}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        {status === 'checked_out'
-                          ? `${program === 'sunrise' ? student.sunriseCheckOutTime : student.sunsetCheckOutTime} by ${program === 'sunrise' ? (student.sunriseStaff || 'Staff') : (student.sunsetStaff || 'Staff')}`
-                          : `${program === 'sunrise' ? student.sunriseTime : student.sunsetTime} by ${program === 'sunrise' ? (student.sunriseStaff || 'Staff') : (student.sunsetStaff || 'Staff')}`
-                        }
+                    <div>
+                      <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>{student.firstName} {student.lastName}</div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {student.programs.includes('ELOP') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: '700' }}>ELOP</span>}
+                        {student.programs.includes('ASES') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8', fontWeight: '700' }}>ASES</span>}
                       </div>
                     </div>
-                  )}
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    {(isPresent || isCheckedOut) && (
-                      <>
-                        {student.checkInPhoto && (
-                          <img src={student.checkInPhoto} alt="Check-in" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #8b5cf6', objectFit: 'cover' }} />
-                        )}
-                        {student.yearbookPhotoUrl && (
-                          <img src={student.yearbookPhotoUrl} alt="Yearbook" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--border-subtle)', objectFit: 'cover' }} />
-                        )}
-                      </>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {student.headInjury && <span className="material-icons-round" style={{ color: '#ef4444' }}>personal_injury</span>}
+                    {student.behavior !== 'none' && <span className="material-icons-round" style={{ color: student.behavior === 'red' ? '#ef4444' : student.behavior === 'yellow' ? '#f59e0b' : '#10b981' }}>warning</span>}
+
+                    {status === 'absent' ? (
+                      <span className="material-icons-round" style={{ color: 'var(--border-subtle)' }}>radio_button_unchecked</span>
+                    ) : (
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: status === 'checked_out' ? '#9ca3af' : status === 'pending_parent' ? '#8b5cf6' : '#10b981', textTransform: 'uppercase' }}>
+                          {status === 'checked_out' ? 'CHECKED-OUT' : status === 'pending_parent' ? 'WAITING' : 'CHECKED-IN'}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          {status === 'checked_out'
+                            ? `${program === 'sunrise' ? student.sunriseCheckOutTime : student.sunsetCheckOutTime} by ${program === 'sunrise' ? (student.sunriseStaff || 'Staff') : (student.sunsetStaff || 'Staff')}`
+                            : `${program === 'sunrise' ? student.sunriseTime : student.sunsetTime} by ${program === 'sunrise' ? (student.sunriseStaff || 'Staff') : (student.sunsetStaff || 'Staff')}`
+                          }
+                        </div>
+                      </div>
                     )}
-                    <button onClick={(e) => { e.stopPropagation(); handleStudentAction(student); }} style={{ background: 'none', border: 'none', padding: '8px', cursor: 'pointer', color: 'var(--text-secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span className="material-icons-round">more_vert</span>
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {(isPresent || isCheckedOut) && (
+                        <>
+                          {student.checkInPhoto && (
+                            <img src={student.checkInPhoto} alt="Check-in" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #8b5cf6', objectFit: 'cover' }} />
+                          )}
+                          {student.yearbookPhotoUrl && (
+                            <img src={student.yearbookPhotoUrl} alt="Yearbook" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--border-subtle)', objectFit: 'cover' }} />
+                          )}
+                        </>
+                      )}
+                      <button onClick={(e) => { e.stopPropagation(); handleStudentAction(student); }} style={{ background: 'none', border: 'none', padding: '8px', cursor: 'pointer', color: 'var(--text-secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span className="material-icons-round">more_vert</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-    </main>
+              );
+            })
+          )}
+        </div>
+      </main>
 
-    {showConfirmId && confirmStudent && createPortal(
-      <ConfirmationModal
-        student={confirmStudent}
-        title="Check In?"
-        message={`Mark ${confirmStudent.firstName} as present?`}
-        onConfirm={(photo, biometricData) => handleCheckIn(confirmStudent.id, photo, biometricData)}
-        onCancel={() => setShowConfirmId(null)}
-        showPhotoOption={true}
-        isDemoMode={isDemoMode}
-        darkMode={darkMode}
-      />,
-      document.body
-    )}
+      {showConfirmId && confirmStudent && createPortal(
+        <ConfirmationModal
+          student={confirmStudent}
+          title="Check In?"
+          message={`Mark ${confirmStudent.firstName} as present?`}
+          onConfirm={(photo, biometricData) => handleCheckIn(confirmStudent.id, photo, biometricData)}
+          onCancel={() => setShowConfirmId(null)}
+          showPhotoOption={true}
+          isDemoMode={isDemoMode}
+          darkMode={darkMode}
+        />,
+        document.body
+      )}
 
-    {activeStudentId && activeStudent && createPortal(
-      <StudentDetailModal
-        student={activeStudent}
-        onClose={() => setActiveStudentId(null)}
-        onSave={handleSaveStudent}
-        onCheckOut={handleCheckOut}
-        currentStaff={user}
-        program={program}
-        isLeadMode={isLeadMode}
-        darkMode={darkMode}
-        onUpdateReport={(report) => setParentReports(prev => [...prev, report])}
-        showToast={showToast}
-      />,
-      document.body
-    )}
-
-    {showLeaderDashboard && createPortal(
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
-        <LeaderDashboard
-          students={students}
-          staffList={staffList}
-          parentReports={parentReports}
-          biometricLogs={biometricLogs}
-          onClose={() => setShowLeaderDashboard(false)}
-          onImport={(newStudents) => setStudents([...students, ...newStudents])}
-          onAddStudent={(newStudent) => setStudents([...students, newStudent])}
-          onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)}
-          onUpdateStudent={handleSaveStudent}
-          onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))}
-          onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)}
+      {activeStudentId && activeStudent && createPortal(
+        <StudentDetailModal
+          student={activeStudent}
+          onClose={() => setActiveStudentId(null)}
+          onSave={handleSaveStudent}
+          onCheckOut={handleCheckOut}
+          currentStaff={user}
+          program={program}
+          isLeadMode={isLeadMode}
+          darkMode={darkMode}
+          onUpdateReport={(report) => setParentReports(prev => [...prev, report])}
           showToast={showToast}
-          isBatchDefaultEnabled={isBatchDefaultEnabled}
-          setIsBatchDefaultEnabled={setIsBatchDefaultEnabled}
-          defaultBatchTime={defaultBatchTime}
-          setDefaultBatchTime={setDefaultBatchTime}
-          scheduledBatchCheckoutTime={scheduledBatchCheckoutTime}
+        />,
+        document.body
+      )}
+
+      {showLeaderDashboard && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
+          <LeaderDashboard
+            students={students}
+            staffList={staffList}
+            parentReports={parentReports}
+            biometricLogs={biometricLogs}
+            onClose={() => setShowLeaderDashboard(false)}
+            onImport={(newStudents) => setStudents([...students, ...newStudents])}
+            onAddStudent={(newStudent) => setStudents([...students, newStudent])}
+            onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)}
+            onUpdateStudent={handleSaveStudent}
+            onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))}
+            onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)}
+            showToast={showToast}
+            isBatchDefaultEnabled={isBatchDefaultEnabled}
+            setIsBatchDefaultEnabled={setIsBatchDefaultEnabled}
+            defaultBatchTime={defaultBatchTime}
+            setDefaultBatchTime={setDefaultBatchTime}
+            scheduledBatchCheckoutTime={scheduledBatchCheckoutTime}
+          />
+        </div>,
+        document.body
+      )}
+
+      {reportData && (
+        <ParentReportModal
+          student={reportData.student}
+          type={reportData.type}
+          onClose={() => setReportData(null)}
+          onSend={(report) => {
+            setParentReports(prev => [...prev, report]);
+            showToast('Report sent to guardian!', 'success');
+            setReportData(null);
+          }}
+          onSaveDraft={(report) => {
+            setParentReports(prev => [...prev, report]);
+            showToast('Draft saved!', 'info');
+            setReportData(null);
+          }}
         />
-      </div>,
-      document.body
-    )}
+      )}
 
-    {reportData && (
-      <ParentReportModal
-        student={reportData.student}
-        type={reportData.type}
-        onClose={() => setReportData(null)}
-        onSend={(report) => {
-          setParentReports(prev => [...prev, report]);
-          showToast('Report sent to guardian!', 'success');
-          setReportData(null);
-        }}
-        onSaveDraft={(report) => {
-          setParentReports(prev => [...prev, report]);
-          showToast('Draft saved!', 'info');
-          setReportData(null);
-        }}
-      />
-    )}
-
-    {toast && <Toast message={toast.msg} type={toast.type} />}
-  </>
-);
+      {toast && <Toast message={toast.msg} type={toast.type} />}
+    </>
+  );
+};
 
 const root = createRoot(document.getElementById('root')!);
 root.render(<App />);
