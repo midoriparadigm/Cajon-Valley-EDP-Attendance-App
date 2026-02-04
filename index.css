@@ -128,9 +128,11 @@ html {
 
 /* FIX: Ensure header stays on top and opaque */
 .sticky-header {
-  position: sticky !important;
+  position: fixed !important;
   top: 0 !important;
-  z-index: 900 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9999 !important;
   background-color: var(--bg-header) !important;
   width: 100% !important;
   max-width: 100% !important;

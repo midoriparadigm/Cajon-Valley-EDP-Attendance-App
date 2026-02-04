@@ -138,6 +138,8 @@ interface Student {
   headInjuryStartTime?: number;
   smsSentTime?: string;
   lastCheckOutBy?: string;
+  weCareTimestamp?: string;
+  weCareStaff?: string;
 }
 
 interface GuardianContact {
@@ -1067,9 +1069,7 @@ const GuardianAddForm = ({ onSave, onCancel, onDelete, initialContact, unavailab
   );
 };
 
-const WeCareReportForm = ({ student, currentStaffName, onSave, darkMode }: { student: Student, currentStaffName: string, onSave: (data: any) => void, darkMode: boolean }) => {
-  const [date, setDate] = useState(new Date().toLocaleDateString());
-  const [time, setTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMode }: { student: Student, currentStaffName: string, onSave: (data: any) => void, onCancel: () => void, darkMode: boolean }) => {
   const [activity, setActivity] = useState('');
   const [info, setInfo] = useState('');
   const [firstAid, setFirstAid] = useState<string[]>([]);
@@ -1082,17 +1082,6 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, darkMode }: { stu
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-        <div>
-          <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>Date</label>
-          <input value={date} onChange={e => setDate(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
-        </div>
-        <div>
-          <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>Time</label>
-          <input value={time} onChange={e => setTime(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
-        </div>
-      </div>
-
       <div>
         <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>Activity</label>
         <input placeholder="e.g., Soccer, Tag, Snack" value={activity} onChange={e => setActivity(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
@@ -1114,9 +1103,10 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, darkMode }: { stu
         <textarea placeholder="Details about the incident..." value={info} onChange={e => setInfo(e.target.value)} style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
       </div>
 
-      <button onClick={() => onSave({ date, time, activity, info, firstAid })} style={{ marginTop: '8px', width: '100%', padding: '12px', borderRadius: '12px', border: 'none', backgroundColor: '#ec4899', color: 'white', fontWeight: '700', cursor: 'pointer' }}>
-        Save We Care Report
-      </button>
+      <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+        <button onClick={onCancel} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+        <button onClick={() => onSave({ activity, info, firstAid })} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: '#ec4899', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Report</button>
+      </div>
     </div>
   );
 };
@@ -1126,6 +1116,8 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [behaviorCollapsed, setBehaviorCollapsed] = useState(student.behavior !== 'none');
   const [showTicketOptions, setShowTicketOptions] = useState(false);
+  const [showWeCareOptions, setShowWeCareOptions] = useState(false);
+  const [weCareCollapsed, setWeCareCollapsed] = useState(!!student.weCareTimestamp);
   const [checkoutBy, setCheckoutBy] = useState<'Primary' | 'Secondary' | 'Additional'>('Primary');
 
   // Guardian Management V2 State
@@ -1245,10 +1237,30 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
     if (status === editedStudent.behavior) {
       setEditedStudent({ ...editedStudent, behavior: 'none' as BehaviorStatus, behaviorIssues: [], behaviorDescription: undefined });
     } else {
-      setEditedStudent({ ...editedStudent, behavior: status, behaviorTimestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), behaviorStaff: currentStaff.name });
+      const now = new Date();
+      const stamp = now.toLocaleString([], { month: 'numeric', day: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+      setEditedStudent({
+        ...editedStudent,
+        behavior: status,
+        behaviorTimestamp: stamp,
+        behaviorStaff: currentStaff.name
+      });
       setBehaviorCollapsed(false);
       setShowTicketOptions(true);
     }
+  };
+
+  const startNewTicket = () => {
+    const now = new Date();
+    const stamp = now.toLocaleString([], { month: 'numeric', day: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+    setEditedStudent({
+      ...editedStudent,
+      behavior: 'green',
+      behaviorTimestamp: stamp,
+      behaviorStaff: currentStaff.name
+    });
+    setBehaviorCollapsed(false);
+    setShowTicketOptions(true);
   };
 
   // --- Notification Logic ---
@@ -1396,15 +1408,15 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {editedStudent.behavior === 'none' && !showTicketOptions ? (
-                    <button onClick={() => setShowTicketOptions(true)} style={{ width: '100%', padding: '12px', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <button onClick={startNewTicket} style={{ width: '100%', padding: '12px', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                       <span className="material-icons-round">add_circle</span> New Ticket
                     </button>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
-                        {(['green'] as BehaviorStatus[]).map(lvl => (
-                          <button key={lvl} onClick={() => setBehavior(lvl)} style={{ padding: '12px', borderRadius: '8px', border: editedStudent.behavior === lvl ? '3px solid var(--text-main)' : 'none', backgroundColor: 'var(--color-success)', color: 'white', fontWeight: '800', fontSize: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: 'var(--shadow-md)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                            Green - Level 1
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                        {(['yellow', 'red'] as BehaviorStatus[]).map(lvl => (
+                          <button key={lvl} onClick={() => setBehavior(lvl)} style={{ padding: '12px', borderRadius: '8px', border: editedStudent.behavior === lvl ? '3px solid var(--text-main)' : 'none', backgroundColor: `var(--color-${lvl})`, color: 'white', fontWeight: '800', fontSize: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: 'var(--shadow-md)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                            {lvl.toUpperCase()}
                           </button>
                         ))}
                       </div>
@@ -1463,25 +1475,51 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
               <span style={{ fontWeight: '800', color: 'var(--text-main)', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>We Care Report</span>
             </div>
             <div style={{ padding: '16px' }}>
-              <WeCareReportForm
-                student={editedStudent}
-                currentStaffName={currentStaff.name}
-                onSave={(reportData) => {
-                  const weCareReport: ParentReport = {
-                    id: Date.now().toString(),
-                    studentId: editedStudent.id,
-                    studentName: `${editedStudent.firstName} ${editedStudent.lastName}`,
-                    type: 'wecare',
-                    message: `WE CARE REPORT\n\nDate: ${reportData.date}\nTime: ${reportData.time}\nSite: ${currentStaff.organization}\nActivity: ${reportData.activity}\n\nFirst Aid Given:\n${reportData.firstAid.map((f: string) => `[x] ${f}`).join('\n')}\n\nAdditional Information:\n${reportData.info}\n\nLead Signature: ${currentStaff.name}`,
-                    method: 'both',
-                    status: 'draft',
-                    createdAt: new Date().toISOString()
-                  };
-                  if (onUpdateReport) onUpdateReport(weCareReport); // Logic to add to parentReports
-                  if (showToast) showToast('We Care Report draft created', 'success');
-                }}
-                darkMode={darkMode}
-              />
+              {!showWeCareOptions && !editedStudent.weCareTimestamp ? (
+                <button onClick={() => setShowWeCareOptions(true)} style={{ width: '100%', padding: '12px', backgroundColor: '#ec4899', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <span className="material-icons-round">add_circle</span> New Report
+                </button>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <WeCareReportForm
+                    student={editedStudent}
+                    currentStaffName={currentStaff.name}
+                    onSave={(reportData) => {
+                      const now = new Date();
+                      const stamp = now.toLocaleString([], { month: 'numeric', day: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+                      const weCareReport: ParentReport = {
+                        id: Date.now().toString(),
+                        studentId: editedStudent.id,
+                        studentName: `${editedStudent.firstName} ${editedStudent.lastName}`,
+                        type: 'wecare',
+                        message: `WE CARE REPORT\n\nDate: ${now.toLocaleDateString()}\nTime: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}\nSite: ${currentStaff.organization}\nActivity: ${reportData.activity}\n\nFirst Aid Given:\n${reportData.firstAid.map((f: string) => `[x] ${f}`).join('\n')}\n\nAdditional Information:\n${reportData.info}\n\nLead Signature: ${currentStaff.name}`,
+                        method: 'both',
+                        status: 'draft',
+                        createdAt: now.toISOString()
+                      };
+
+                      setEditedStudent({
+                        ...editedStudent,
+                        weCareTimestamp: stamp,
+                        weCareStaff: currentStaff.name
+                      });
+                      setShowWeCareOptions(false);
+                      handleSectionSave({
+                        ...editedStudent,
+                        weCareTimestamp: stamp,
+                        weCareStaff: currentStaff.name
+                      });
+                      if (onUpdateReport) onUpdateReport(weCareReport);
+                      if (showToast) showToast('We Care Report draft created', 'success');
+                    }}
+                    onCancel={() => setShowWeCareOptions(false)}
+                    darkMode={darkMode}
+                  />
+                  {editedStudent.weCareTimestamp && (
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>Stamped: {editedStudent.weCareTimestamp} by {editedStudent.weCareStaff}</div>
+                  )}
+                </div>
+              )}
             </div>
           </section>
 
@@ -1506,6 +1544,9 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                   }}
                   darkMode={darkMode}
                 />
+              )}
+              {editedStudent.headInjuryTimestamp && (
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>Stamped: {editedStudent.headInjuryTimestamp} by {editedStudent.headInjuryWitness || 'Staff'}</div>
               )}
             </div>
           </section>
@@ -2100,13 +2141,17 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
   // Header height is approx 80px (including safe area potentially). 
   // We use padding-top to ensure content isn't hidden.
   const containerStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: '72px',
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'var(--bg-app)',
-    width: '100%',
-    height: '100%',
+    zIndex: 2000,
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
-    position: 'relative',
+    paddingBottom: 'env(safe-area-inset-bottom)',
     paddingTop: '80px' // FIXED: Ensure space for Global Header (zIndex 3000)
   };
 
@@ -2775,7 +2820,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
             </p>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button onClick={() => setShowScheduleConfirm(false)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={confirmSchedule} style={{ flex: 1, padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Confirm</button>
+              <button onClick={confirmSchedule} style={{ flex: 1, padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '16px', cursor: 'pointer' }}>Confirm</button>
             </div>
           </div>
         </div>
@@ -3513,7 +3558,9 @@ const App = () => {
         behavior_issues: updatedStudent.behaviorIssues,
         head_injury: updatedStudent.headInjury,
         head_injury_logs: updatedStudent.headInjuryLogs,
-        behavior_description: updatedStudent.behaviorDescription
+        behavior_description: updatedStudent.behaviorDescription,
+        we_care_timestamp: updatedStudent.weCareTimestamp,
+        we_care_staff: updatedStudent.weCareStaff
       };
 
       await supabase.from('students').update(updateData).eq('id', updatedStudent.id);
@@ -3596,9 +3643,11 @@ const App = () => {
   return (
     <>
       <div className="sticky-header" style={{
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
-        zIndex: 3000, // Global Header - Most Persistent (Above Leader Dashboard & Modals if desired)
+        left: 0,
+        right: 0,
+        zIndex: 9999, // Global Header - Most Persistent
         backgroundColor: 'var(--bg-app)',
         paddingTop: 'env(safe-area-inset-top)',
         display: 'flex',
@@ -3773,10 +3822,13 @@ const App = () => {
 
       <main
         style={{
+          paddingTop: '72px', // Account for fixed header height
           flex: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
-          padding: '0 16px 100px 16px', // No top padding
+          paddingLeft: '16px', // Keep horizontal padding
+          paddingRight: '16px', // Keep horizontal padding
+          paddingBottom: '100px', // Keep bottom padding
           height: '100%',
           overscrollBehavior: 'none'
         }}
@@ -3884,18 +3936,22 @@ const App = () => {
       )}
 
       {activeStudentId && activeStudent && createPortal(
-        <StudentDetailModal
-          student={activeStudent}
-          onClose={() => setActiveStudentId(null)}
-          onSave={handleSaveStudent}
-          onCheckOut={handleCheckOut}
-          currentStaff={user}
-          program={program}
-          isLeadMode={isLeadMode}
-          darkMode={darkMode}
-          onUpdateReport={(report) => setParentReports(prev => [...prev, report])}
-          showToast={showToast}
-        />,
+        <div style={{ position: 'fixed', top: '72px', left: 0, right: 0, bottom: 0, zIndex: 1000, backgroundColor: 'var(--bg-app)', overflowY: 'auto' }}>
+          <StudentDetailModal
+            student={activeStudent}
+            onClose={() => setActiveStudentId(null)}
+            onSave={handleSaveStudent}
+            onCheckOut={handleCheckOut}
+            currentStaff={user}
+            program={program}
+            isLeadMode={isLeadMode}
+            darkMode={darkMode}
+            onUpdateReport={(report) => {
+              setParentReports(prev => [...prev, report]);
+            }}
+            showToast={showToast}
+          />
+        </div>,
         document.body
       )}
 
