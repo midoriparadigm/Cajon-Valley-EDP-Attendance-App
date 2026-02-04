@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
 
@@ -860,7 +861,7 @@ const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showP
   }, []);
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, animation: 'fadeIn 0.2s' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2200, animation: 'fadeIn 0.2s' }}>
       <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '24px', padding: '24px', width: '90%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
 
         {step === 'confirm' && (
@@ -1255,7 +1256,8 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
   const isPresent = currentStatus === 'present';
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200, backgroundColor: 'var(--modal-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 2100, backgroundColor: 'var(--modal-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
       <div style={{ backgroundColor: 'var(--bg-card)', width: '100%', maxWidth: '600px', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
           <div><h2 style={{ margin: 0, fontSize: '22px', fontWeight: '800', color: 'var(--text-main)' }}>{student.firstName} {student.lastName}</h2><div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Grade {student.grade}</div></div>
@@ -1876,7 +1878,7 @@ const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]
   };
 
   return (
-    <div style={{ padding: '20px', backgroundColor: 'var(--bg-card)', borderRadius: '16px', marginBottom: '20px', border: '1px solid var(--border-subtle)' }}>
+    <div style={{ padding: '20px', backgroundColor: 'var(--bg-card)', borderRadius: '16px', marginBottom: '20px', border: '1px solid var(--border-subtle)', marginTop: '24px', boxShadow: 'var(--shadow-sm)' }}>
       <h3 style={{ margin: '0 0 16px 0' }}>Roster Management</h3>
       <div style={{ display: 'grid', gap: '16px' }}>
         <div>
@@ -1997,6 +1999,17 @@ const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]
 };
 
 const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateStaff, onUpdateStudent, staffList, parentReports, biometricLogs, isInline, onUpdateReport, onScheduleBatchCheckout, showToast, isBatchDefaultEnabled, setIsBatchDefaultEnabled, defaultBatchTime, setDefaultBatchTime, scheduledBatchCheckoutTime }: { students: Student[], onClose: () => void, onImport: (students: Student[]) => void, onAddStudent: (s: Student) => void, onUpdateStaff: (staff: Staff[]) => void, onUpdateStudent: (s: Student) => void, staffList: Staff[], parentReports: ParentReport[], biometricLogs: BiometricLog[], isInline?: boolean, onUpdateReport?: (report: ParentReport) => void, onScheduleBatchCheckout: (time: string | null) => void, showToast: (msg: string, type: any) => void, isBatchDefaultEnabled: boolean, setIsBatchDefaultEnabled: (v: boolean) => void, defaultBatchTime: string, setDefaultBatchTime: (v: string) => void, scheduledBatchCheckoutTime: string | null }) => {
+  // Ensure the component has a solid background to cover the underlying app when used in a Portal
+  const containerStyle: React.CSSProperties = {
+    backgroundColor: 'var(--bg-app)',
+    width: '100%', // Ensure full width
+    height: '100%', // Ensure full height
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    position: 'relative'
+  };
+
   const [activeTab, setActiveTab] = useState<'roster' | 'permissions' | 'batch' | 'blocking' | 'reports' | 'biometric'>('roster');
   const [localStaff, setLocalStaff] = useState<Staff[]>(staffList);
   const [sunriseBatchTime, setSunriseBatchTime] = useState(defaultBatchTime || '08:00');
@@ -2138,7 +2151,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
   };
 
   return (
-    <div style={{ position: isInline ? 'relative' : 'fixed', top: isInline ? 0 : 0, left: isInline ? 0 : 0, right: isInline ? 0 : 0, bottom: isInline ? 'auto' : 0, height: isInline ? 'auto' : '100vh', backgroundColor: isInline ? 'transparent' : 'var(--bg-app)', zIndex: isInline ? 1 : 300, display: 'flex', flexDirection: 'column', borderRadius: isInline ? '16px' : 0, border: isInline ? '1px solid var(--border-subtle)' : 'none', marginBottom: isInline ? '16px' : 0 }}>
+    <div style={{ position: isInline ? 'relative' : 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: isInline ? 'auto' : '100%', width: '100%', backgroundColor: isInline ? 'transparent' : 'var(--bg-app)', zIndex: isInline ? 1 : 'auto', display: 'flex', flexDirection: 'column', borderRadius: isInline ? '16px' : 0, border: isInline ? '1px solid var(--border-subtle)' : 'none', marginBottom: isInline ? '16px' : 0 }}>
       {!isInline && (
         <div style={{
           padding: '20px',
@@ -2887,8 +2900,7 @@ const App = () => {
   const [showLeaderDashboard, setShowLeaderDashboard] = useState(false);
   const [inlineDashboardExpanded, setInlineDashboardExpanded] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
-  // Default to true for Deep Dark Theme as primary
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isLeadMode, setIsLeadMode] = useState(true);
   const [scheduledBatchCheckoutTime, setScheduledBatchCheckoutTime] = useState<string | null>(null);
@@ -3049,14 +3061,10 @@ const App = () => {
   }, [students]);
 
   useEffect(() => {
-    // Force set if preferences change, but we fundamentally default to true now
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    // Don't auto-overwrite if user manually toggled, but here we just respect init
-    // setDarkMode(isDark); // Disabled auto-detect loosely to prefer the default true
+    setDarkMode(isDark);
 
-    const handler = (e: MediaQueryListEvent) => {
-      // Optional: Auto-switch? Let's just keep manual control or default
-    };
+    const handler = (e: MediaQueryListEvent) => setDarkMode(e.matches);
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', handler);
     return () => window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', handler);
   }, []);
@@ -3412,7 +3420,7 @@ const App = () => {
         flexDirection: 'column'
       }}>
         <header style={{
-          backgroundColor: '#0f172a',
+          backgroundColor: 'var(--bg-header)',
           padding: '16px',
           boxShadow: 'var(--shadow-sm)',
           display: 'flex',
@@ -3496,7 +3504,7 @@ const App = () => {
           )
         }
 
-        <div style={{ padding: '16px', backgroundColor: '#0f172a', borderBottom: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ padding: '16px', backgroundColor: 'var(--bg-header)', borderBottom: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', width: '100%', overflowX: 'auto', paddingBottom: '4px' }} className="hide-scrollbar">
             {['all', 'checked_in', 'checked_out'].map(tab => (
               <button
@@ -3507,8 +3515,8 @@ const App = () => {
                   padding: '12px 16px',
                   borderRadius: '12px',
                   border: 'none',
-                  backgroundColor: rosterStatusFilter === tab ? '#f8fafc' : '#1e293b',
-                  color: rosterStatusFilter === tab ? '#0f172a' : '#f8fafc',
+                  backgroundColor: rosterStatusFilter === tab ? (darkMode ? '#f8fafc' : 'var(--text-main)') : (darkMode ? '#1e293b' : 'var(--bg-input)'),
+                  color: rosterStatusFilter === tab ? (darkMode ? '#0f172a' : 'white') : (darkMode ? '#f8fafc' : 'var(--text-main)'),
                   fontWeight: '800',
                   fontSize: '14px',
                   cursor: 'pointer',
@@ -3533,7 +3541,7 @@ const App = () => {
               placeholder="Search student..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: 'none', backgroundColor: '#1e293b', fontSize: '16px', color: '#f8fafc', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-input)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
             />
           </div>
 
@@ -3549,8 +3557,8 @@ const App = () => {
                     padding: '10px 16px',
                     borderRadius: '12px',
                     border: 'none',
-                    backgroundColor: selectedGrade === g ? '#f8fafc' : '#1e293b',
-                    color: selectedGrade === g ? '#0f172a' : '#f8fafc',
+                    backgroundColor: selectedGrade === g ? (darkMode ? '#f8fafc' : 'var(--text-main)') : (darkMode ? '#1e293b' : 'var(--bg-input)'),
+                    color: selectedGrade === g ? (darkMode ? '#0f172a' : 'white') : (darkMode ? '#f8fafc' : 'var(--text-main)'),
                     fontWeight: '800',
                     fontSize: '14px',
                     cursor: 'pointer',
@@ -3661,7 +3669,7 @@ const App = () => {
         </div>
       </main>
 
-      {showConfirmId && confirmStudent && (
+      {showConfirmId && confirmStudent && createPortal(
         <ConfirmationModal
           student={confirmStudent}
           title="Check In?"
@@ -3671,10 +3679,11 @@ const App = () => {
           showPhotoOption={true}
           isDemoMode={isDemoMode}
           darkMode={darkMode}
-        />
+        />,
+        document.body
       )}
 
-      {activeStudentId && activeStudent && (
+      {activeStudentId && activeStudent && createPortal(
         <StudentDetailModal
           student={activeStudent}
           onClose={() => setActiveStudentId(null)}
@@ -3684,11 +3693,12 @@ const App = () => {
           program={program}
           isLeadMode={isLeadMode}
           darkMode={darkMode}
-        />
+        />,
+        document.body
       )}
 
-      {showLeaderDashboard && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#0f172a', zIndex: 2000 }}>
+      {showLeaderDashboard && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
           <LeaderDashboard
             students={students}
             staffList={staffList}
@@ -3708,7 +3718,8 @@ const App = () => {
             setDefaultBatchTime={setDefaultBatchTime}
             scheduledBatchCheckoutTime={scheduledBatchCheckoutTime}
           />
-        </div>
+        </div>,
+        document.body
       )}
 
       {reportData && (
