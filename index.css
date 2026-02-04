@@ -59,14 +59,16 @@
   --bg-app: #0f172a;
   --bg-card: #1e293b;
   --bg-header: #0f172a;
-  --bg-input: #1e293b;
-  --bg-hover: #1e293b;
+  --bg-input: #0f172a;
+  /* Darker background for inputs on cards */
+  --bg-hover: #334155;
 
   --text-main: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
 
-  --border-subtle: #1e293b;
+  --border-subtle: rgba(255, 255, 255, 0.2);
+  /* Visible white border */
   --border-focus: #3b82f6;
 
   --color-sunrise: #fbbf24;
@@ -129,7 +131,7 @@ html {
   position: sticky !important;
   top: 0 !important;
   z-index: 900 !important;
-  background-color: #0f172a !important;
+  background-color: var(--bg-header) !important;
   width: 100% !important;
   max-width: 100% !important;
   box-sizing: border-box !important;

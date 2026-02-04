@@ -667,7 +667,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
           onChange={(e) => setWitnessText(e.target.value)}
           disabled={witnessDone}
           placeholder="Describe how the injury occurred..."
-          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '14px', minHeight: '80px', fontFamily: 'inherit', outline: 'none' }}
+          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', minHeight: '80px', fontFamily: 'inherit', outline: 'none' }}
         />
         {!witnessDone && (
           <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
@@ -1380,7 +1380,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                             value={editedStudent.behaviorDescription || ''}
                             onChange={e => setEditedStudent({ ...editedStudent, behaviorDescription: e.target.value })}
                             placeholder="Tell us what happened. Please include all of the important details and context."
-                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', minHeight: '100px', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.5', fontSize: '14px' }}
+                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', minHeight: '100px', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.5', fontSize: '14px' }}
                           />
 
                           <div style={{ display: 'flex', gap: '12px' }}>
@@ -1891,23 +1891,23 @@ const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]
 
         {/* Student Check-in Info */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginBottom: '8px' }}>
-          <input placeholder="First Name" value={manualStudent.firstName} onChange={e => setManualStudent({ ...manualStudent, firstName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
-          <input placeholder="Last Name" value={manualStudent.lastName} onChange={e => setManualStudent({ ...manualStudent, lastName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
+          <input placeholder="First Name" value={manualStudent.firstName} onChange={e => setManualStudent({ ...manualStudent, firstName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)' }} />
+          <input placeholder="Last Name" value={manualStudent.lastName} onChange={e => setManualStudent({ ...manualStudent, lastName: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)' }} />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginBottom: '16px' }}>
           <input
             placeholder="ELOP ID"
             value={manualStudent.elopId}
             onChange={e => setManualStudent({ ...manualStudent, elopId: e.target.value })}
-            style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}
+            style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)' }}
           />
           <input
             placeholder="ASES ID"
             value={manualStudent.asesId}
             onChange={e => setManualStudent({ ...manualStudent, asesId: e.target.value })}
-            style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}
+            style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)' }}
           />
-          <select title="Select Grade" value={manualStudent.grade} onChange={e => setManualStudent({ ...manualStudent, grade: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }}>
+          <select title="Select Grade" value={manualStudent.grade} onChange={e => setManualStudent({ ...manualStudent, grade: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)' }}>
             <option value="Grade">Grade</option>
             {GRADES.filter(g => g !== 'All').map(g => <option key={g} value={g}>{g}</option>)}
           </select>
@@ -1938,14 +1938,14 @@ const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]
           </div>
           <div style={{ display: 'grid', gap: '8px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <input placeholder="First Name" value={manualStudent.guardians[activeGuardianTab].firstName} onChange={(e) => handleGuardianChange('firstName', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
-              <input placeholder="Last Name" value={manualStudent.guardians[activeGuardianTab].lastName} onChange={(e) => handleGuardianChange('lastName', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
+              <input placeholder="First Name" value={manualStudent.guardians[activeGuardianTab].firstName} onChange={(e) => handleGuardianChange('firstName', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)' }} />
+              <input placeholder="Last Name" value={manualStudent.guardians[activeGuardianTab].lastName} onChange={(e) => handleGuardianChange('lastName', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)' }} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <input placeholder="Phone" value={manualStudent.guardians[activeGuardianTab].phone} onChange={(e) => handleGuardianChange('phone', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
-              <input placeholder="Email" value={manualStudent.guardians[activeGuardianTab].email} onChange={(e) => handleGuardianChange('email', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
+              <input placeholder="Phone" value={manualStudent.guardians[activeGuardianTab].phone} onChange={(e) => handleGuardianChange('phone', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)' }} />
+              <input placeholder="Email" value={manualStudent.guardians[activeGuardianTab].email} onChange={(e) => handleGuardianChange('email', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)' }} />
             </div>
-            <input placeholder="Relationship (e.g. Parent, Aunt)" value={manualStudent.guardians[activeGuardianTab].relationship || ''} onChange={(e) => handleGuardianChange('relationship', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)' }} />
+            <input placeholder="Relationship (e.g. Parent, Aunt)" value={manualStudent.guardians[activeGuardianTab].relationship || ''} onChange={(e) => handleGuardianChange('relationship', e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', width: '100%', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)' }} />
           </div>
         </div>
 
@@ -1998,19 +1998,36 @@ const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]
   );
 };
 
+
+interface ParentReport {
+  id: string;
+  studentId: string;
+  studentName: string;
+  type: 'injury' | 'behavior';
+  behaviorLevel?: 'green' | 'yellow' | 'red';
+  message: string;
+  method: 'email' | 'sms' | 'both';
+  status: 'draft' | 'sent';
+  createdAt: string;
+}
+
 const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateStaff, onUpdateStudent, staffList, parentReports, biometricLogs, isInline, onUpdateReport, onScheduleBatchCheckout, showToast, isBatchDefaultEnabled, setIsBatchDefaultEnabled, defaultBatchTime, setDefaultBatchTime, scheduledBatchCheckoutTime }: { students: Student[], onClose: () => void, onImport: (students: Student[]) => void, onAddStudent: (s: Student) => void, onUpdateStaff: (staff: Staff[]) => void, onUpdateStudent: (s: Student) => void, staffList: Staff[], parentReports: ParentReport[], biometricLogs: BiometricLog[], isInline?: boolean, onUpdateReport?: (report: ParentReport) => void, onScheduleBatchCheckout: (time: string | null) => void, showToast: (msg: string, type: any) => void, isBatchDefaultEnabled: boolean, setIsBatchDefaultEnabled: (v: boolean) => void, defaultBatchTime: string, setDefaultBatchTime: (v: string) => void, scheduledBatchCheckoutTime: string | null }) => {
-  // Ensure the component has a solid background to cover the underlying app when used in a Portal
+  // Ensure the component has a solid background and sits UNDER the global header
+  // Header height is approx 80px (including safe area potentially). 
+  // We use padding-top to ensure content isn't hidden.
   const containerStyle: React.CSSProperties = {
     backgroundColor: 'var(--bg-app)',
-    width: '100%', // Ensure full width
-    height: '100%', // Ensure full height
+    width: '100%',
+    height: '100%',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
-    position: 'relative'
+    position: 'relative',
+    paddingTop: isInline ? 0 : '100px' // Offset for Global Header (approx 72px-80px + spacing)
   };
 
-  const [activeTab, setActiveTab] = useState<'roster' | 'permissions' | 'batch' | 'blocking' | 'reports' | 'biometric'>('roster');
+  const [activeSection, setActiveSection] = useState<'roster' | 'permissions' | 'batch' | 'blocking' | 'reports' | 'biometric' | null>(null);
+
   const [localStaff, setLocalStaff] = useState<Staff[]>(staffList);
   const [sunriseBatchTime, setSunriseBatchTime] = useState(defaultBatchTime || '08:00');
   const [showScheduleConfirm, setShowScheduleConfirm] = useState(false);
@@ -2018,6 +2035,16 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
   const [selectedDraft, setSelectedDraft] = useState<ParentReport | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [selectedAccessGrade, setSelectedAccessGrade] = useState<string | null>(null);
+
+  // Menu Options Configuration
+  const menuOptions = [
+    { id: 'roster', label: 'Roster Management', icon: 'groups', color: '#3b82f6', bg: '#dbeafe' },
+    { id: 'reports', label: `Parent Reports (${parentReports.length})`, icon: 'assignment', color: '#f59e0b', bg: '#fef3c7' },
+    { id: 'permissions', label: 'Staff Permissions', icon: 'admin_panel_settings', color: '#8b5cf6', bg: '#f3e8ff' },
+    { id: 'blocking', label: 'Student Access', icon: 'block', color: '#ef4444', bg: '#fee2e2' },
+    { id: 'batch', label: 'Batch Operations', icon: 'checklist_rtl', color: '#10b981', bg: '#d1fae5' },
+    { id: 'biometric', label: 'Photo Review', icon: 'face', color: '#6366f1', bg: '#e0e7ff' },
+  ];
 
   useEffect(() => {
     if (!scheduledBatchCheckoutTime) return;
@@ -2151,440 +2178,494 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
   };
 
   return (
-    <div style={{ position: isInline ? 'relative' : 'absolute', top: 0, left: 0, right: 0, bottom: 0, height: isInline ? 'auto' : '100%', width: '100%', backgroundColor: isInline ? 'transparent' : 'var(--bg-app)', zIndex: isInline ? 1 : 'auto', display: 'flex', flexDirection: 'column', borderRadius: isInline ? '16px' : 0, border: isInline ? '1px solid var(--border-subtle)' : 'none', marginBottom: isInline ? '16px' : 0 }}>
-      {!isInline && (
-        <div style={{
-          padding: '20px',
-          paddingTop: 'calc(20px + env(safe-area-inset-top))',
-          borderBottom: '1px solid var(--border-subtle)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backgroundColor: 'var(--bg-card)'
-        }}>
-          <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className="material-icons-round">dashboard</span> Leader Dashboard
-          </h2>
-          <button onClick={onClose} style={{ padding: '10px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', cursor: 'pointer', fontWeight: '600', color: 'var(--text-main)' }}>Back</button>
+    <div style={containerStyle}>
+      {/* Menu View */}
+      {!activeSection && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span className="material-icons-round" style={{ fontSize: '32px' }}>dashboard</span> Leader Dashboard
+            </h2>
+            <button
+              onClick={onClose}
+              style={{ width: '40px', height: '40px', borderRadius: '50%', border: 'none', backgroundColor: 'var(--bg-hover)', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Close Dashboard"
+            >
+              <span className="material-icons-round" style={{ fontSize: '24px' }}>close</span>
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
+            {menuOptions.map(option => (
+              <button
+                key={option.id}
+                onClick={() => setActiveSection(option.id as any)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '24px',
+                  borderRadius: '16px',
+                  backgroundColor: 'var(--bg-card)',
+                  border: '1px solid var(--border-subtle)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  boxShadow: 'var(--shadow-sm)',
+                  transition: 'transform 0.1s, box-shadow 0.1s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div style={{ width: '56px', height: '56px', borderRadius: '12px', backgroundColor: option.bg, color: option.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span className="material-icons-round" style={{ fontSize: '28px' }}>{option.icon}</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>{option.label}</div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Tap to open</div>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', padding: isInline ? '0 16px' : '0 20px', overflowX: 'auto' }}>
-        {[
-          { id: 'permissions', label: 'Permissions' },
-          { id: 'blocking', label: 'Access' },
-          { id: 'biometric', label: 'Photo Review' },
-          { id: 'reports', label: `Reports (${parentReports.length})` },
-          { id: 'batch', label: 'Batch Ops' },
-          { id: 'roster', label: 'Roster' }
-        ].map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} style={{ padding: isInline ? '12px 16px' : '16px 24px', border: 'none', background: 'none', borderBottom: activeTab === tab.id ? '3px solid #8b5cf6' : '3px solid transparent', fontWeight: '700', color: activeTab === tab.id ? 'var(--text-main)' : 'var(--text-secondary)', cursor: 'pointer', fontSize: isInline ? '13px' : '15px', whiteSpace: 'nowrap' }}>{tab.label}</button>
-        ))}
-      </div>
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        {activeTab === 'roster' && (
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            <RosterManager onImport={onImport} onAdd={onAddStudent} showToast={showToast} />
+      {/* Active Section View */}
+      {activeSection && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+          {/* Section Header */}
+          <div style={{
+            padding: '20px',
+            borderBottom: '1px solid var(--border-subtle)',
+            backgroundColor: 'var(--bg-card)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexShrink: 0
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ padding: '8px', borderRadius: '8px', backgroundColor: menuOptions.find(o => o.id === activeSection)?.bg, color: menuOptions.find(o => o.id === activeSection)?.color }}>
+                <span className="material-icons-round">{menuOptions.find(o => o.id === activeSection)?.icon}</span>
+              </div>
+              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>
+                {menuOptions.find(o => o.id === activeSection)?.label}
+              </h2>
+            </div>
+            <button
+              onClick={() => setActiveSection(null)}
+              style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', backgroundColor: 'var(--bg-hover)', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Back to Menu"
+            >
+              <span className="material-icons-round">close</span>
+            </button>
           </div>
-        )}
 
-        {activeTab === 'permissions' && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: isInline ? '16px' : '20px' }}>
-            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Staff Permissions</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {localStaff.map(staff => (
-                  <div key={staff.id} style={{ backgroundColor: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                      <div>
-                        <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)' }}>{staff.name}</div>
-                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{staff.role} • {staff.organization}</div>
-                      </div>
-                      {staff.id !== 's1' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '180px' }}>
-                            <span style={{ fontSize: '13px', fontWeight: '600' }}>Can Check In</span>
-                            <button title="Toggle Check-In Permission" onClick={() => toggleStaffCheckIn(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckIn ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
-                              <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckIn ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+          {/* Section Content */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '0' }}>
+            {activeSection === 'roster' && (
+              <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+                <RosterManager onImport={onImport} onAdd={onAddStudent} showToast={showToast} />
+              </div>
+            )}
+
+            {activeSection === 'permissions' && (
+              <div style={{ padding: '20px' }}>
+                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Staff Permissions</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {localStaff.map(staff => (
+                      <div key={staff.id} style={{ backgroundColor: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+
+                          <div>
+                            <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)' }}>{staff.name}</div>
+                            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{staff.role} • {staff.organization}</div>
+                          </div>
+                          {staff.id !== 's1' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '180px' }}>
+                                <span style={{ fontSize: '13px', fontWeight: '600' }}>Can Check In</span>
+                                <button title="Toggle Check-In Permission" onClick={() => toggleStaffCheckIn(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckIn ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckIn ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                                </button>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '180px' }}>
+                                  <span style={{ fontSize: '13px', fontWeight: '600' }}>Admin Tasks</span>
+                                  <button title="Toggle Admin Tasks Permission" onClick={() => toggleStaffAdminTasks(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canAdminTasks ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canAdminTasks ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                                  </button>
+                                </div>
+                                {staff.canAdminTasks && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingLeft: '16px', borderLeft: '2px solid var(--border-subtle)', marginLeft: '8px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '160px' }}>
+                                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Check Out</span>
+                                      <button title="Toggle Check-Out Permission" onClick={() => toggleStaffCheckOut(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckOut ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckOut ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                                      </button>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '160px' }}>
+                                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>HIR Quest.</span>
+                                      <button title="Toggle HIR Permission" onClick={() => toggleStaffHir(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canHir ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canHir ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ margin: '12px 0' }}>
+                          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>Assigned Grades</div>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {GRADES.filter(g => g !== 'All').map(g => (
+                              <button key={g} onClick={() => toggleGradeAssignment(staff.id, g)} style={{ padding: '6px 12px', borderRadius: '8px', border: (staff.assignedGrades || []).includes(g) ? '1px solid var(--text-main)' : '1px solid var(--border-subtle)', backgroundColor: (staff.assignedGrades || []).includes(g) ? 'var(--text-main)' : 'transparent', color: (staff.assignedGrades || []).includes(g) ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                                {g}
+                              </button>
+                            ))}
+                            <button onClick={() => toggleAllGrades(staff.id)} style={{ padding: '6px 12px', borderRadius: '8px', border: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? '1px solid var(--text-main)' : '1px solid var(--border-subtle)', backgroundColor: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? 'var(--text-main)' : 'transparent', color: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                              All
                             </button>
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '180px' }}>
-                              <span style={{ fontSize: '13px', fontWeight: '600' }}>Admin Tasks</span>
-                              <button title="Toggle Admin Tasks Permission" onClick={() => toggleStaffAdminTasks(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canAdminTasks ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canAdminTasks ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
-                              </button>
-                            </div>
-                            {staff.canAdminTasks && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingLeft: '16px', borderLeft: '2px solid var(--border-subtle)', marginLeft: '8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '160px' }}>
-                                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Check Out</span>
-                                  <button title="Toggle Check-Out Permission" onClick={() => toggleStaffCheckOut(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckOut ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckOut ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
-                                  </button>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '160px' }}>
-                                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>HIR Quest.</span>
-                                  <button title="Toggle HIR Permission" onClick={() => toggleStaffHir(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canHir ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canHir ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
                         </div>
-                      )}
-                    </div>
-
-                    <div style={{ margin: '12px 0' }}>
-                      <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>Assigned Grades</div>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {GRADES.filter(g => g !== 'All').map(g => (
-                          <button key={g} onClick={() => toggleGradeAssignment(staff.id, g)} style={{ padding: '6px 12px', borderRadius: '8px', border: (staff.assignedGrades || []).includes(g) ? '1px solid var(--text-main)' : '1px solid var(--border-subtle)', backgroundColor: (staff.assignedGrades || []).includes(g) ? 'var(--text-main)' : 'transparent', color: (staff.assignedGrades || []).includes(g) ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-                            {g}
-                          </button>
-                        ))}
-                        <button onClick={() => toggleAllGrades(staff.id)} style={{ padding: '6px 12px', borderRadius: '8px', border: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? '1px solid var(--text-main)' : '1px solid var(--border-subtle)', backgroundColor: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? 'var(--text-main)' : 'transparent', color: (staff.assignedGrades || []).length === GRADES.filter(g => g !== 'All').length ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-                          All
-                        </button>
                       </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'batch' && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: isInline ? '16px' : '24px' }}>
-            <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-              <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '24px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-lg)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                  <div style={{ padding: '12px', borderRadius: '12px', backgroundColor: 'var(--color-sunrise)', color: 'white' }}>
-                    <span className="material-icons-round">wb_sunny</span>
-                  </div>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>Sunrise Batch Checkout</h3>
+                    ))}
                   </div>
                 </div>
+              </div>
+            )}
 
-                <div style={{ margin: '24px 0', padding: '20px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>Checkout Time</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)' }}>Set as Default</span>
-                      <button title="Set current time as default" onClick={() => setIsBatchDefaultEnabled(!isBatchDefaultEnabled)} style={{ width: '36px', height: '20px', borderRadius: '10px', backgroundColor: isBatchDefaultEnabled ? 'var(--color-success)' : '#d1d5db', position: 'relative', border: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '1px', left: isBatchDefaultEnabled ? '18px' : '1px', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Hour</div>
-                      <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
-                        {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
-                          <div key={h} onClick={() => {
-                            const [_, m] = sunriseBatchTime.split(':');
-                            setSunriseBatchTime(`${String(h)}:${m || '00'}`);
-                          }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[0] === String(h) ? '800' : '600', color: sunriseBatchTime.split(':')[0] === String(h) ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
-                            {h}
-                          </div>
-                        ))}
+            {activeSection === 'batch' && (
+              <div style={{ flex: 1, overflowY: 'auto', padding: isInline ? '16px' : '24px' }}>
+                <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+                  <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '24px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-lg)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                      <div style={{ padding: '12px', borderRadius: '12px', backgroundColor: 'var(--color-sunrise)', color: 'white' }}>
+                        <span className="material-icons-round">wb_sunny</span>
+                      </div>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>Sunrise Batch Checkout</h3>
                       </div>
                     </div>
 
-                    <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-muted)', marginTop: '12px' }}>:</div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Min</div>
-                      <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
-                        {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(m => (
-                          <div key={m} onClick={() => {
-                            const [h, _] = sunriseBatchTime.split(':');
-                            setSunriseBatchTime(`${h || '8'}:${m}`);
-                          }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[1] === m ? '800' : '600', color: sunriseBatchTime.split(':')[1] === m ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
-                            {m}
-                          </div>
-                        ))}
+                    <div style={{ margin: '24px 0', padding: '20px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                        <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>Checkout Time</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)' }}>Set as Default</span>
+                          <button title="Set current time as default" onClick={() => setIsBatchDefaultEnabled(!isBatchDefaultEnabled)} style={{ width: '36px', height: '20px', borderRadius: '10px', backgroundColor: isBatchDefaultEnabled ? 'var(--color-success)' : '#d1d5db', position: 'relative', border: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '1px', left: isBatchDefaultEnabled ? '18px' : '1px', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', borderRadius: '12px', backgroundColor: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', marginTop: '12px' }}>
-                      <span className="material-icons-round" style={{ fontSize: '20px' }}>wb_sunny</span>
-                      <span style={{ fontWeight: '800', fontSize: '15px' }}>AM</span>
-                    </div>
-                  </div>
-                  <style>{`
+                      <div style={{ display: 'flex', gap: '20px', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Hour</div>
+                          <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                              <div key={h} onClick={() => {
+                                const [_, m] = sunriseBatchTime.split(':');
+                                setSunriseBatchTime(`${String(h)}:${m || '00'}`);
+                              }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[0] === String(h) ? '800' : '600', color: sunriseBatchTime.split(':')[0] === String(h) ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
+                                {h}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-muted)', marginTop: '12px' }}>:</div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Min</div>
+                          <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
+                            {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(m => (
+                              <div key={m} onClick={() => {
+                                const [h, _] = sunriseBatchTime.split(':');
+                                setSunriseBatchTime(`${h || '8'}:${m}`);
+                              }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[1] === m ? '800' : '600', color: sunriseBatchTime.split(':')[1] === m ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
+                                {m}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', borderRadius: '12px', backgroundColor: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', marginTop: '12px' }}>
+                          <span className="material-icons-round" style={{ fontSize: '20px' }}>wb_sunny</span>
+                          <span style={{ fontWeight: '800', fontSize: '15px' }}>AM</span>
+                        </div>
+                      </div>
+                      <style>{`
                   .hide-scrollbar::-webkit-scrollbar { display: none; }
                   .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
                 `}</style>
-                </div>
+                    </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0', fontSize: '14px' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Students Eligible:</span>
-                  <span style={{ fontWeight: '800', fontSize: '18px', color: '#8b5cf6' }}>{students.filter(s => s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent').length}</span>
-                </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0', fontSize: '14px' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Students Eligible:</span>
+                      <span style={{ fontWeight: '800', fontSize: '18px', color: '#8b5cf6' }}>{students.filter(s => s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent').length}</span>
+                    </div>
 
-                {scheduledBatchCheckoutTime ? (
-                  <div style={{ textAlign: 'center', padding: '24px', backgroundColor: 'rgba(139,92,246,0.1)', borderRadius: '16px', border: '2px dashed #8b5cf6' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#8b5cf6', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '1px' }}>Executing in</div>
-                    <div style={{ fontSize: '36px', fontWeight: '900', color: 'var(--text-main)', fontFamily: 'monospace' }}>{countdown}</div>
-                    <button onClick={() => onScheduleBatchCheckout(null)} style={{ marginTop: '16px', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Cancel Schedule</button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={() => setSunriseBatchTime('')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                    <button onClick={handleSunriseBatchCheckout} disabled={!isFutureTime()} style={{ flex: 2, padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '16px', cursor: 'pointer', opacity: isFutureTime() ? 1 : 0.5 }}>
-                      Run Batch Checkout
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'blocking' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, backgroundColor: 'var(--bg-app)', position: 'relative' }}>
-            {/* Header Container - Static Flex Item */}
-            <div style={{
-              zIndex: 10,
-              backgroundColor: 'var(--bg-header)',
-              boxShadow: 'var(--shadow-sm)',
-              borderBottom: '1px solid var(--border-subtle)',
-              display: 'flex',
-              flexDirection: 'column',
-              flexShrink: 0
-            }}>
-              <header style={{
-                padding: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-                width: '100%'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }}>
-                    <span className="material-icons-round" style={{ fontSize: '20px' }}>admin_panel_settings</span>
-                  </div>
-                  <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Student Check-In Access</h3>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>Administrative Control</div>
-                  </div>
-                </div>
-              </header>
-
-              <div style={{ padding: '0 16px 16px 16px' }}>
-                <div style={{ position: 'relative', marginBottom: '16px', width: '100%' }}>
-                  <span className="material-icons-round" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '20px' }}>search</span>
-                  <input
-                    type="text"
-                    placeholder="Search student to manage access..."
-                    value={blockSearch}
-                    onChange={(e) => setBlockSearch(e.target.value)}
-                    style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-input)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
-                  />
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => setSelectedAccessGrade(prev => prev === 'All' ? null : 'All')}
-                    style={{
-                      padding: '10px 16px',
-                      borderRadius: '12px',
-                      border: 'none',
-                      backgroundColor: selectedAccessGrade === 'All' ? '#f8fafc' : 'var(--bg-input)',
-                      color: selectedAccessGrade === 'All' ? '#0f172a' : 'var(--text-main)',
-                      fontWeight: '800',
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      minWidth: '48px'
-                    }}
-                  >
-                    All
-                  </button>
-                  {GRADES.map(g => (
-                    <button
-                      key={g}
-                      onClick={() => setSelectedAccessGrade(prev => prev === g ? null : g)}
-                      style={{
-                        padding: '10px 16px',
-                        borderRadius: '12px',
-                        border: 'none',
-                        backgroundColor: selectedAccessGrade === g ? '#f8fafc' : 'var(--bg-input)',
-                        color: selectedAccessGrade === g ? '#0f172a' : 'var(--text-main)',
-                        fontWeight: '800',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        minWidth: '48px'
-                      }}
-                    >
-                      {g}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto', overscrollBehaviorY: 'none', padding: '24px' }}>
-              <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {students
-                    .filter(s => (s.firstName.toLowerCase() + ' ' + s.lastName.toLowerCase()).includes(blockSearch.toLowerCase()))
-                    .filter(s => !selectedAccessGrade || selectedAccessGrade === 'All' || s.grade === selectedAccessGrade)
-                    .map(student => (
-                      <div key={student.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', opacity: student.isCheckInBlocked ? 0.8 : 1, borderLeft: student.isCheckInBlocked ? '4px solid var(--color-danger)' : '1px solid var(--border-subtle)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>{student.grade}</div>
-                          <div>
-                            <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>{student.firstName} {student.lastName}</div>
-                            <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                              {student.programs.includes('ELOP') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: '700' }}>ELOP</span>}
-                              {student.programs.includes('ASES') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8', fontWeight: '700' }}>ASES</span>}
-                            </div>
-                          </div>
-                        </div>
-                        <button onClick={() => toggleStudentBlock(student)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: student.isCheckInBlocked ? 'var(--color-danger-bg)' : 'var(--bg-hover)', color: student.isCheckInBlocked ? 'var(--color-danger)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-                          {student.isCheckInBlocked ? 'No Check-In' : 'Active'}
+                    {scheduledBatchCheckoutTime ? (
+                      <div style={{ textAlign: 'center', padding: '24px', backgroundColor: 'rgba(139,92,246,0.1)', borderRadius: '16px', border: '2px dashed #8b5cf6' }}>
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#8b5cf6', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '1px' }}>Executing in</div>
+                        <div style={{ fontSize: '36px', fontWeight: '900', color: 'var(--text-main)', fontFamily: 'monospace' }}>{countdown}</div>
+                        <button onClick={() => onScheduleBatchCheckout(null)} style={{ marginTop: '16px', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Cancel Schedule</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <button onClick={() => setSunriseBatchTime('')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                        <button onClick={handleSunriseBatchCheckout} disabled={!isFutureTime()} style={{ flex: 2, padding: '16px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '16px', cursor: 'pointer', opacity: isFutureTime() ? 1 : 0.5 }}>
+                          Run Batch Checkout
                         </button>
                       </div>
-                    ))}
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {activeTab === 'biometric' && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: isInline ? '16px' : '24px' }}>
-            <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="material-icons-round">face</span> Photo Verification Review
-              </h3>
-
-              {biometricLogs.length === 0 ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
-                  <span className="material-icons-round" style={{ fontSize: '48px', marginBottom: '12px' }}>no_photography</span>
-                  <div style={{ fontWeight: '600' }}>No verification logs yet</div>
-                  <div style={{ fontSize: '14px' }}>Logs will appear here after student check-ins</div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {biometricLogs.map(log => (
-                    <div key={log.id} style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '20px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-md)', borderLeft: log.anomalyDetected ? '6px solid #f97316' : '1px solid var(--border-subtle)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                        <div>
-                          <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            {log.studentName}
-                            {log.anomalyDetected && (
-                              <span style={{ padding: '4px 12px', borderRadius: '20px', backgroundColor: '#fff7ed', color: '#ea580c', fontSize: '11px', fontWeight: '800', border: '1px solid #ffedd5', textTransform: 'uppercase' }}>
-                                Visual Anomaly Detected
-                              </span>
-                            )}
-                          </div>
-                          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                            Log ID: {log.id} • {log.timestamp}
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Identity Match</div>
-                          <div style={{ fontSize: '20px', fontWeight: '900', color: 'var(--color-success)' }}>{(log.matchScore * 100).toFixed(0)}%</div>
-                        </div>
+            {activeSection === 'blocking' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, backgroundColor: 'var(--bg-app)', position: 'relative' }}>
+                {/* Header Container - Static Flex Item */}
+                <div style={{
+                  zIndex: 10,
+                  backgroundColor: 'var(--bg-header)',
+                  boxShadow: 'var(--shadow-sm)',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  flexShrink: 0
+                }}>
+                  <header style={{
+                    padding: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    width: '100%'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }}>
+                        <span className="material-icons-round" style={{ fontSize: '20px' }}>admin_panel_settings</span>
                       </div>
+                      <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Student Check-In Access</h3>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500' }}>Administrative Control</div>
+                      </div>
+                    </div>
+                  </header>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ height: '140px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border-subtle)', marginBottom: '8px' }}>
-                            <img src={log.yearbookPhoto} alt="Yearbook" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          </div>
-                          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Yearbook</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ height: '140px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border-subtle)', marginBottom: '8px' }}>
-                            <img src={log.previousPhoto} alt="Previous Day" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          </div>
-                          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Previous Day</div>
-                        </div>
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ height: '140px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', overflow: 'hidden', border: `3px solid ${log.anomalyDetected ? '#f97316' : '#8b5cf6'}`, marginBottom: '8px' }}>
-                            {log.livePhoto ? (
-                              <img src={log.livePhoto} alt="Live Capture" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
-                                <span className="material-icons-round" style={{ color: 'white' }}>no_photography</span>
+                  <div style={{ padding: '0 16px 16px 16px' }}>
+                    <div style={{ position: 'relative', marginBottom: '16px', width: '100%' }}>
+                      <span className="material-icons-round" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '20px' }}>search</span>
+                      <input
+                        type="text"
+                        placeholder="Search student to manage access..."
+                        value={blockSearch}
+                        onChange={(e) => setBlockSearch(e.target.value)}
+                        style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-input)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => setSelectedAccessGrade(prev => prev === 'All' ? null : 'All')}
+                        style={{
+                          padding: '10px 16px',
+                          borderRadius: '12px',
+                          border: 'none',
+                          backgroundColor: selectedAccessGrade === 'All' ? '#f8fafc' : 'var(--bg-input)',
+                          color: selectedAccessGrade === 'All' ? '#0f172a' : 'var(--text-main)',
+                          fontWeight: '800',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          minWidth: '48px'
+                        }}
+                      >
+                        All
+                      </button>
+                      {GRADES.map(g => (
+                        <button
+                          key={g}
+                          onClick={() => setSelectedAccessGrade(prev => prev === g ? null : g)}
+                          style={{
+                            padding: '10px 16px',
+                            borderRadius: '12px',
+                            border: 'none',
+                            backgroundColor: selectedAccessGrade === g ? '#f8fafc' : 'var(--bg-input)',
+                            color: selectedAccessGrade === g ? '#0f172a' : 'var(--text-main)',
+                            fontWeight: '800',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            minWidth: '48px'
+                          }}
+                        >
+                          {g}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ flex: 1, overflowY: 'auto', overscrollBehaviorY: 'none', padding: '24px' }}>
+                  <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {students
+                        .filter(s => (s.firstName.toLowerCase() + ' ' + s.lastName.toLowerCase()).includes(blockSearch.toLowerCase()))
+                        .filter(s => !selectedAccessGrade || selectedAccessGrade === 'All' || s.grade === selectedAccessGrade)
+                        .map(student => (
+                          <div key={student.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', opacity: student.isCheckInBlocked ? 0.8 : 1, borderLeft: student.isCheckInBlocked ? '4px solid var(--color-danger)' : '1px solid var(--border-subtle)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>{student.grade}</div>
+                              <div>
+                                <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>{student.firstName} {student.lastName}</div>
+                                <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                                  {student.programs.includes('ELOP') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: '700' }}>ELOP</span>}
+                                  {student.programs.includes('ASES') && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#f3e8ff', color: '#6b21a8', fontWeight: '700' }}>ASES</span>}
+                                </div>
                               </div>
-                            )}
+                            </div>
+                            <button onClick={() => toggleStudentBlock(student)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: student.isCheckInBlocked ? 'var(--color-danger-bg)' : 'var(--bg-hover)', color: student.isCheckInBlocked ? 'var(--color-danger)' : 'var(--text-main)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                              {student.isCheckInBlocked ? 'No Check-In' : 'Active'}
+                            </button>
                           </div>
-                          <div style={{ fontSize: '11px', fontWeight: '800', color: log.anomalyDetected ? '#ea580c' : '#8b5cf6', textTransform: 'uppercase' }}>Check-In Capture</div>
-                        </div>
-                      </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
-                      {log.anomalyDetected && (
-                        <div style={{ marginTop: '20px', padding: '12px', backgroundColor: '#fff7ed', borderRadius: '12px', border: '1px solid #ffedd5', fontSize: '13px', color: '#9a3412', display: 'flex', gap: '10px' }}>
-                          <span className="material-icons-round" style={{ fontSize: '18px' }}>warning</span>
-                          <div>
-                            <strong>Anomaly Detected:</strong> This student's current appearance significantly deviates from their previous check-in (Variance: {(log.anomalyScore * 100).toFixed(1)}%). Review for potental injury or unverified identity.
+            {activeSection === 'biometric' && (
+              <div style={{ flex: 1, overflowY: 'auto', padding: isInline ? '16px' : '24px' }}>
+                <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="material-icons-round">face</span> Photo Verification Review
+                  </h3>
+
+                  {biometricLogs.length === 0 ? (
+                    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
+                      <span className="material-icons-round" style={{ fontSize: '48px', marginBottom: '12px' }}>no_photography</span>
+                      <div style={{ fontWeight: '600' }}>No verification logs yet</div>
+                      <div style={{ fontSize: '14px' }}>Logs will appear here after student check-ins</div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      {biometricLogs.map(log => (
+                        <div key={log.id} style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '20px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-md)', borderLeft: log.anomalyDetected ? '6px solid #f97316' : '1px solid var(--border-subtle)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                            <div>
+                              <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                {log.studentName}
+                                {log.anomalyDetected && (
+                                  <span style={{ padding: '4px 12px', borderRadius: '20px', backgroundColor: '#fff7ed', color: '#ea580c', fontSize: '11px', fontWeight: '800', border: '1px solid #ffedd5', textTransform: 'uppercase' }}>
+                                    Visual Anomaly Detected
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                                Log ID: {log.id} • {log.timestamp}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Identity Match</div>
+                              <div style={{ fontSize: '20px', fontWeight: '900', color: 'var(--color-success)' }}>{(log.matchScore * 100).toFixed(0)}%</div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ height: '140px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border-subtle)', marginBottom: '8px' }}>
+                                <img src={log.yearbookPhoto} alt="Yearbook" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              </div>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Yearbook</div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ height: '140px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border-subtle)', marginBottom: '8px' }}>
+                                <img src={log.previousPhoto} alt="Previous Day" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              </div>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Previous Day</div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ height: '140px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', overflow: 'hidden', border: `3px solid ${log.anomalyDetected ? '#f97316' : '#8b5cf6'}`, marginBottom: '8px' }}>
+                                {log.livePhoto ? (
+                                  <img src={log.livePhoto} alt="Live Capture" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
+                                    <span className="material-icons-round" style={{ color: 'white' }}>no_photography</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{ fontSize: '11px', fontWeight: '800', color: log.anomalyDetected ? '#ea580c' : '#8b5cf6', textTransform: 'uppercase' }}>Check-In Capture</div>
+                            </div>
+                          </div>
+
+                          {log.anomalyDetected && (
+                            <div style={{ marginTop: '20px', padding: '12px', backgroundColor: '#fff7ed', borderRadius: '12px', border: '1px solid #ffedd5', fontSize: '13px', color: '#9a3412', display: 'flex', gap: '10px' }}>
+                              <span className="material-icons-round" style={{ fontSize: '18px' }}>warning</span>
+                              <div>
+                                <strong>Anomaly Detected:</strong> This student's current appearance significantly deviates from their previous check-in (Variance: {(log.anomalyScore * 100).toFixed(1)}%). Review for potental injury or unverified identity.
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'reports' && (
+              <div style={{ flex: 1, overflowY: 'auto', padding: isInline ? '16px' : '24px' }}>
+                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Parent Reports</h3>
+                  {parentReports.length === 0 ? (
+                    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
+                      <span className="material-icons-round" style={{ fontSize: '48px', marginBottom: '12px' }}>description</span>
+                      <div style={{ fontWeight: '600' }}>No reports yet</div>
+                      <div style={{ fontSize: '14px' }}>Reports will appear here when created from incidents</div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {parentReports.map(report => (
+                        <div
+                          key={report.id}
+                          style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', borderLeft: `4px solid ${report.status === 'sent' ? '#6b7280' : '#f59e0b'}`, cursor: 'pointer', transition: 'transform 0.15s' }}
+                          onClick={() => setSelectedDraft(report)}
+                          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.01)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>{report.studentName}</div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: report.type === 'injury' ? '#fef2f2' : report.behaviorLevel === 'red' ? '#fef2f2' : report.behaviorLevel === 'yellow' ? '#fefce8' : '#dcfce7', color: report.type === 'injury' ? '#dc2626' : report.behaviorLevel === 'red' ? '#dc2626' : report.behaviorLevel === 'yellow' ? '#ca8a04' : '#16a34a' }}>
+                                {report.type === 'injury' ? 'Injury' : report.behaviorLevel ? `${report.behaviorLevel.charAt(0).toUpperCase() + report.behaviorLevel.slice(1)} Ticket` : 'Behavior'}
+                              </span>
+                              <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: report.status === 'sent' ? '#f3f4f6' : '#fef3c7', color: report.status === 'sent' ? '#4b5563' : '#d97706' }}>
+                                {report.status === 'sent' ? '✓ Sent' : 'Draft'}
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                            via {report.method === 'both' ? '📧+💬 Both' : report.method === 'email' ? '📧 Email' : '💬 SMS'} • {new Date(report.createdAt).toLocaleString()}
+                          </div>
+                          <div style={{ fontSize: '13px', color: 'var(--text-main)', whiteSpace: 'pre-wrap', maxHeight: '80px', overflow: 'hidden', background: 'var(--bg-input)', padding: '8px', borderRadius: '8px' }}>
+                            {report.message.substring(0, 150)}...
                           </div>
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        )}
-
-        {activeTab === 'reports' && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: isInline ? '16px' : '24px' }}>
-            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Parent Reports</h3>
-              {parentReports.length === 0 ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
-                  <span className="material-icons-round" style={{ fontSize: '48px', marginBottom: '12px' }}>description</span>
-                  <div style={{ fontWeight: '600' }}>No reports yet</div>
-                  <div style={{ fontSize: '14px' }}>Reports will appear here when created from incidents</div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {parentReports.map(report => (
-                    <div
-                      key={report.id}
-                      style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', borderLeft: `4px solid ${report.status === 'sent' ? '#6b7280' : '#f59e0b'}`, cursor: 'pointer', transition: 'transform 0.15s' }}
-                      onClick={() => setSelectedDraft(report)}
-                      onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.01)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>{report.studentName}</div>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: report.type === 'injury' ? '#fef2f2' : report.behaviorLevel === 'red' ? '#fef2f2' : report.behaviorLevel === 'yellow' ? '#fefce8' : '#dcfce7', color: report.type === 'injury' ? '#dc2626' : report.behaviorLevel === 'red' ? '#dc2626' : report.behaviorLevel === 'yellow' ? '#ca8a04' : '#16a34a' }}>
-                            {report.type === 'injury' ? 'Injury' : report.behaviorLevel ? `${report.behaviorLevel.charAt(0).toUpperCase() + report.behaviorLevel.slice(1)} Ticket` : 'Behavior'}
-                          </span>
-                          <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: report.status === 'sent' ? '#f3f4f6' : '#fef3c7', color: report.status === 'sent' ? '#4b5563' : '#d97706' }}>
-                            {report.status === 'sent' ? '✓ Sent' : 'Draft'}
-                          </span>
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                        via {report.method === 'both' ? '📧+💬 Both' : report.method === 'email' ? '📧 Email' : '💬 SMS'} • {new Date(report.createdAt).toLocaleString()}
-                      </div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-main)', whiteSpace: 'pre-wrap', maxHeight: '80px', overflow: 'hidden', background: 'var(--bg-input)', padding: '8px', borderRadius: '8px' }}>
-                        {report.message.substring(0, 150)}...
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {showScheduleConfirm && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
@@ -2602,143 +2683,138 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
             </div>
           </div>
         </div>
-      )}
+      )
+      }
 
-      {confirmBlockStudent && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '24px', padding: '24px', width: '90%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>
-              {confirmBlockStudent.isCheckInBlocked ? 'Restore Check-In Access?' : 'Remove Check-In Access?'}
-            </h3>
-            <p style={{ margin: '0 0 24px 0', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-              {confirmBlockStudent.isCheckInBlocked
-                ? `Allow ${confirmBlockStudent.firstName} ${confirmBlockStudent.lastName} to check in again?`
-                : `Prevent ${confirmBlockStudent.firstName} ${confirmBlockStudent.lastName} from checking in?`
-              }
-            </p>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => setConfirmBlockStudent(null)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={handleConfirmBlock} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>
-                {confirmBlockStudent.isCheckInBlocked ? 'Restore Access' : 'Confirm No Check-In'}
-              </button>
+      {
+        confirmBlockStudent && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '24px', padding: '24px', width: '90%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>
+                {confirmBlockStudent.isCheckInBlocked ? 'Restore Check-In Access?' : 'Remove Check-In Access?'}
+              </h3>
+              <p style={{ margin: '0 0 24px 0', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                {confirmBlockStudent.isCheckInBlocked
+                  ? `Allow ${confirmBlockStudent.firstName} ${confirmBlockStudent.lastName} to check in again?`
+                  : `Prevent ${confirmBlockStudent.firstName} ${confirmBlockStudent.lastName} from checking in?`
+                }
+              </p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button onClick={() => setConfirmBlockStudent(null)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={handleConfirmBlock} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>
+                  {confirmBlockStudent.isCheckInBlocked ? 'Restore Access' : 'Confirm No Check-In'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {selectedDraft && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '24px', padding: '24px', width: '90%', maxWidth: '600px', maxHeight: '80vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', border: `3px solid ${selectedDraft.status === 'sent' ? '#6b7280' : '#f59e0b'}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>{selectedDraft.status === 'sent' ? 'Sent Report' : 'Draft Report'}</h3>
-              <span style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', backgroundColor: selectedDraft.status === 'sent' ? '#f3f4f6' : '#fef3c7', color: selectedDraft.status === 'sent' ? '#4b5563' : '#d97706' }}>{selectedDraft.status === 'sent' ? 'Sent' : 'Draft'}</span>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text-main)' }}>{selectedDraft.studentName}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                {selectedDraft.type === 'injury' ? 'Head Injury Report' : 'Behavior Report'} • via {selectedDraft.method === 'both' ? 'Email + SMS' : selectedDraft.method === 'email' ? 'Email' : 'SMS'}
+      {
+        selectedDraft && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '24px', padding: '24px', width: '90%', maxWidth: '600px', maxHeight: '80vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', border: `3px solid ${selectedDraft.status === 'sent' ? '#6b7280' : '#f59e0b'}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>{selectedDraft.status === 'sent' ? 'Sent Report' : 'Draft Report'}</h3>
+                <span style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', backgroundColor: selectedDraft.status === 'sent' ? '#f3f4f6' : '#fef3c7', color: selectedDraft.status === 'sent' ? '#4b5563' : '#d97706' }}>{selectedDraft.status === 'sent' ? 'Sent' : 'Draft'}</span>
               </div>
-            </div>
-            <div style={{ backgroundColor: 'var(--bg-input)', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>Edit Report Message</label>
-              <textarea
-                title="Edit report message"
-                value={selectedDraft.message}
-                onChange={(e) => setSelectedDraft({ ...selectedDraft, message: e.target.value })}
-                disabled={selectedDraft.status === 'sent'}
-                style={{ width: '100%', height: '200px', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '14px', lineHeight: '1.6', resize: 'vertical', fontFamily: 'inherit' }}
-              />
-            </div>
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '600' }}>📧 Email</span>
-                <button
-                  title="Toggle Email"
-                  onClick={() => {
-                    const current = selectedDraft.method;
-                    let next: 'email' | 'sms' | 'both' = 'email';
-                    const isEmailOn = current === 'email' || current === 'both';
-                    if (isEmailOn) {
-                      if (current === 'both') next = 'sms';
-                      else if (current === 'email' && selectedDraft.method !== 'sms') return;
-                      else next = 'sms';
-                    } else {
-                      if (current === 'sms') next = 'both';
-                      else next = 'email';
-                    }
-                    setSelectedDraft({ ...selectedDraft, method: next });
-                  }}
-                  disabled={selectedDraft.status === 'sent' || (selectedDraft.method === 'email' && selectedDraft.method !== 'both')}
-                  style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: (selectedDraft.method === 'email' || selectedDraft.method === 'both') ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: selectedDraft.status === 'sent' || (selectedDraft.method === 'email' && selectedDraft.method !== 'both') ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: selectedDraft.status === 'sent' ? 0.5 : 1 }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: (selectedDraft.method === 'email' || selectedDraft.method === 'both') ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
-                </button>
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text-main)' }}>{selectedDraft.studentName}</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  {selectedDraft.type === 'injury' ? 'Head Injury Report' : 'Behavior Report'} • via {selectedDraft.method === 'both' ? 'Email + SMS' : selectedDraft.method === 'email' ? 'Email' : 'SMS'}
+                </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '600' }}>💬 SMS</span>
-                <button
-                  title="Toggle SMS"
-                  onClick={() => {
-                    const current = selectedDraft.method;
-                    let next: 'email' | 'sms' | 'both' = 'sms';
-                    const isSmsOn = current === 'sms' || current === 'both';
-                    if (isSmsOn) {
-                      if (current === 'both') next = 'email';
-                      else if (current === 'sms' && selectedDraft.method !== 'email') return;
-                      else next = 'email';
-                    } else {
-                      if (current === 'email') next = 'both';
-                      else next = 'sms';
-                    }
-                    setSelectedDraft({ ...selectedDraft, method: next });
-                  }}
-                  disabled={selectedDraft.status === 'sent' || (selectedDraft.method === 'sms' && selectedDraft.method !== 'both')}
-                  style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: (selectedDraft.method === 'sms' || selectedDraft.method === 'both') ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: selectedDraft.status === 'sent' || (selectedDraft.method === 'sms' && selectedDraft.method !== 'both') ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: selectedDraft.status === 'sent' ? 0.5 : 1 }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: (selectedDraft.method === 'sms' || selectedDraft.method === 'both') ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
-                </button>
+              <div style={{ backgroundColor: 'var(--bg-input)', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>Edit Report Message</label>
+                <textarea
+                  title="Edit report message"
+                  value={selectedDraft.message}
+                  onChange={(e) => setSelectedDraft({ ...selectedDraft, message: e.target.value })}
+                  disabled={selectedDraft.status === 'sent'}
+                  style={{ width: '100%', height: '200px', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '14px', lineHeight: '1.6', resize: 'vertical', fontFamily: 'inherit' }}
+                />
               </div>
-              {selectedDraft.status !== 'sent' && (
-                <button
-                  onClick={() => {
-                    setIsRegenerating(true);
-                    setTimeout(() => {
-                      setSelectedDraft({ ...selectedDraft, message: `[Regenerated by Gemini]\nBased on the incident with ${selectedDraft.studentName}, here is a revised report:\n\n${selectedDraft.message}` });
-                      setIsRegenerating(false);
-                    }, 1500);
-                  }}
-                  disabled={isRegenerating}
-                  style={{ marginLeft: 'auto', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-hover)', fontWeight: '600', cursor: isRegenerating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)' }}>
-                  <span className={`material-icons-round ${isRegenerating ? 'spin' : ''}`} style={{ fontSize: '16px' }}>autorenew</span>
-                  {isRegenerating ? 'Regenerating...' : 'Regenerate'}
-                </button>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setSelectedDraft(null)} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'var(--bg-hover)', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>Close</button>
-              {selectedDraft.status === 'draft' && (
-                <>
-                  <button onClick={() => { if (onUpdateReport) onUpdateReport(selectedDraft); setSelectedDraft(null); showToast('Draft saved!', 'success'); }} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '700', cursor: 'pointer' }}>Save Draft</button>
-                  <button onClick={() => { if (onUpdateReport) onUpdateReport({ ...selectedDraft, status: 'sent' }); setSelectedDraft(null); showToast('Report sent!', 'success'); }} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Send</button>
-                </>
-              )}
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '600' }}>📧 Email</span>
+                  <button
+                    title="Toggle Email"
+                    onClick={() => {
+                      const current = selectedDraft.method;
+                      let next: 'email' | 'sms' | 'both' = 'email';
+                      const isEmailOn = current === 'email' || current === 'both';
+                      if (isEmailOn) {
+                        if (current === 'both') next = 'sms';
+                        else if (current === 'email' && selectedDraft.method !== 'sms') return;
+                        else next = 'sms';
+                      } else {
+                        if (current === 'sms') next = 'both';
+                        else next = 'email';
+                      }
+                      setSelectedDraft({ ...selectedDraft, method: next });
+                    }}
+                    disabled={selectedDraft.status === 'sent' || (selectedDraft.method === 'email' && selectedDraft.method !== 'both')}
+                    style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: (selectedDraft.method === 'email' || selectedDraft.method === 'both') ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: selectedDraft.status === 'sent' || (selectedDraft.method === 'email' && selectedDraft.method !== 'both') ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: selectedDraft.status === 'sent' ? 0.5 : 1 }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: (selectedDraft.method === 'email' || selectedDraft.method === 'both') ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                  </button>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '600' }}>💬 SMS</span>
+                  <button
+                    title="Toggle SMS"
+                    onClick={() => {
+                      const current = selectedDraft.method;
+                      let next: 'email' | 'sms' | 'both' = 'sms';
+                      const isSmsOn = current === 'sms' || current === 'both';
+                      if (isSmsOn) {
+                        if (current === 'both') next = 'email';
+                        else if (current === 'sms' && selectedDraft.method !== 'email') return;
+                        else next = 'email';
+                      } else {
+                        if (current === 'email') next = 'both';
+                        else next = 'sms';
+                      }
+                      setSelectedDraft({ ...selectedDraft, method: next });
+                    }}
+                    disabled={selectedDraft.status === 'sent' || (selectedDraft.method === 'sms' && selectedDraft.method !== 'both')}
+                    style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: (selectedDraft.method === 'sms' || selectedDraft.method === 'both') ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: selectedDraft.status === 'sent' || (selectedDraft.method === 'sms' && selectedDraft.method !== 'both') ? 'not-allowed' : 'pointer', transition: 'all 0.2s', opacity: selectedDraft.status === 'sent' ? 0.5 : 1 }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: (selectedDraft.method === 'sms' || selectedDraft.method === 'both') ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                  </button>
+                </div>
+                {selectedDraft.status !== 'sent' && (
+                  <button
+                    onClick={() => {
+                      setIsRegenerating(true);
+                      setTimeout(() => {
+                        setSelectedDraft({ ...selectedDraft, message: `[Regenerated by Gemini]\nBased on the incident with ${selectedDraft.studentName}, here is a revised report:\n\n${selectedDraft.message}` });
+                        setIsRegenerating(false);
+                      }, 1500);
+                    }}
+                    disabled={isRegenerating}
+                    style={{ marginLeft: 'auto', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-hover)', fontWeight: '600', cursor: isRegenerating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)' }}>
+                    <span className={`material-icons-round ${isRegenerating ? 'spin' : ''}`} style={{ fontSize: '16px' }}>autorenew</span>
+                    {isRegenerating ? 'Regenerating...' : 'Regenerate'}
+                  </button>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button onClick={() => setSelectedDraft(null)} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'var(--bg-hover)', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>Close</button>
+                {selectedDraft.status === 'draft' && (
+                  <>
+                    <button onClick={() => { if (onUpdateReport) onUpdateReport(selectedDraft); setSelectedDraft(null); showToast('Draft saved!', 'success'); }} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '700', cursor: 'pointer' }}>Save Draft</button>
+                    <button onClick={() => { if (onUpdateReport) onUpdateReport({ ...selectedDraft, status: 'sent' }); setSelectedDraft(null); showToast('Report sent!', 'success'); }} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Send</button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 
-interface ParentReport {
-  id: string;
-  studentId: string;
-  studentName: string;
-  type: 'injury' | 'behavior';
-  behaviorLevel?: 'green' | 'yellow' | 'red';
-  message: string;
-  method: 'email' | 'sms' | 'both';
-  status: 'draft' | 'sent';
-  createdAt: string;
-}
+
 
 const ParentReportModal = ({ student, type, onClose, onSend, onSaveDraft }: { student: Student, type: 'injury' | 'behavior', onClose: () => void, onSend: (report: ParentReport) => void, onSaveDraft: (report: ParentReport) => void }) => {
   const [method, setMethod] = useState<'email' | 'sms' | 'both'>('both');
@@ -3413,7 +3489,7 @@ const App = () => {
       <div className="sticky-header" style={{
         position: 'sticky',
         top: 0,
-        zIndex: 1000,
+        zIndex: 3000, // Global Header - Most Persistent (Above Leader Dashboard & Modals if desired)
         backgroundColor: 'var(--bg-app)',
         paddingTop: 'env(safe-area-inset-top)',
         display: 'flex',
@@ -3463,17 +3539,30 @@ const App = () => {
               </span>
             </div>
 
-            <button onClick={() => setDarkMode(!darkMode)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}>
-              <span className="material-icons-round" style={{ fontSize: '20px' }}>{darkMode ? 'light_mode' : 'dark_mode'}</span>
+            <button
+              onClick={() => {
+                // Home Button Logic: Return to Main Search
+                setActiveStudentId(null);
+                setShowLeaderDashboard(false);
+                setShowConfirmId(null);
+                setReportData(null);
+              }}
+              style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}
+              title="Home"
+            >
+              <span className="material-icons-round" style={{ fontSize: '20px' }}>home</span>
             </button>
 
             {isLeadMode && (
-              <>
-                <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}>
-                  <span className="material-icons-round" style={{ fontSize: '20px' }}>dashboard</span>
-                </button>
-              </>
+              <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }} title="Dashboard">
+                <span className="material-icons-round" style={{ fontSize: '20px' }}>dashboard</span>
+              </button>
             )}
+
+            <button onClick={() => setDarkMode(!darkMode)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }} title="Toggle Theme">
+              <span className="material-icons-round" style={{ fontSize: '20px' }}>{darkMode ? 'light_mode' : 'dark_mode'}</span>
+            </button>
+
             <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer', flexShrink: 0 }} title="Logout">
               <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
             </button>
