@@ -3945,7 +3945,6 @@ return (
     {toast && <Toast message={toast.msg} type={toast.type} />}
   </>
 );
-};
 
 const root = createRoot(document.getElementById('root')!);
 root.render(<App />);
