@@ -615,7 +615,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
 
     onUpdate({
       headInjury: true,
-      headInjuryTimestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+      headInjuryTimestamp: new Date().toLocaleString([], { month: 'numeric', day: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit' }),
       headInjuryStartTime: startTime
     }, updatedLogs);
   };
@@ -626,7 +626,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
     onUpdate({
       headInjuryWitnessDesc: witnessText,
       headInjuryWitness: currentStaffName,
-      headInjuryTimestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+      headInjuryTimestamp: new Date().toLocaleString([], { month: 'numeric', day: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit' })
     });
   };
 
@@ -1111,7 +1111,7 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
   );
 };
 
-const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff, program, isLeadMode, darkMode, onUpdateReport, showToast }: { student: Student, onClose: () => void, onSave: (s: Student) => void, onCheckOut: (id: string, smsTime: string, checkOutBy?: string) => void, currentStaff: Staff, program: ProgramType, isLeadMode: boolean, darkMode: boolean, onUpdateReport?: (r: ParentReport) => void, showToast?: (m: string, t: any) => void }) => {
+const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff, program, isLeadMode, darkMode, onUpdateReport, showToast, staffList }: { student: Student, onClose: () => void, onSave: (s: Student) => void, onCheckOut: (id: string, smsTime: string, checkOutBy?: string) => void, currentStaff: Staff, program: ProgramType, isLeadMode: boolean, darkMode: boolean, onUpdateReport?: (r: ParentReport) => void, showToast?: (m: string, t: any) => void, staffList: Staff[] }) => {
   const [editedStudent, setEditedStudent] = useState({ ...student });
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [behaviorCollapsed, setBehaviorCollapsed] = useState(student.behavior !== 'none');
@@ -1423,8 +1423,19 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
 
                       {editedStudent.behavior !== 'none' && (
                         <div style={{ animation: 'slideUp 0.2s', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Handling Staff</label>
+                            <select
+                              value={editedStudent.behaviorStaff || currentStaff.name}
+                              onChange={(e) => setEditedStudent({ ...editedStudent, behaviorStaff: e.target.value })}
+                              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
+                            >
+                              {staffList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                            </select>
+                          </div>
+
                           <div style={{ padding: '12px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '12px', lineHeight: '1.5', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
-                            <strong>Handling Staff:</strong><br />
+                            <strong>Role Instructions:</strong><br />
                             {BEHAVIOR_ROLE_DESCRIPTIONS[editedStudent.behavior as 'green' | 'yellow' | 'red']}
                           </div>
 
@@ -2136,13 +2147,13 @@ interface ParentReport {
   createdAt: string;
 }
 
-const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateStaff, onUpdateStudent, staffList, parentReports, biometricLogs, isInline, onUpdateReport, onScheduleBatchCheckout, showToast, isBatchDefaultEnabled, setIsBatchDefaultEnabled, defaultBatchTime, setDefaultBatchTime, scheduledBatchCheckoutTime }: { students: Student[], onClose: () => void, onImport: (students: Student[]) => void, onAddStudent: (s: Student) => void, onUpdateStaff: (staff: Staff[]) => void, onUpdateStudent: (s: Student) => void, staffList: Staff[], parentReports: ParentReport[], biometricLogs: BiometricLog[], isInline?: boolean, onUpdateReport?: (report: ParentReport) => void, onScheduleBatchCheckout: (time: string | null) => void, showToast: (msg: string, type: any) => void, isBatchDefaultEnabled: boolean, setIsBatchDefaultEnabled: (v: boolean) => void, defaultBatchTime: string, setDefaultBatchTime: (v: string) => void, scheduledBatchCheckoutTime: string | null }) => {
+const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateStaff, onUpdateStudent, staffList, parentReports, biometricLogs, isInline, onUpdateReport, onScheduleBatchCheckout, showToast, isBatchDefaultEnabled, setIsBatchDefaultEnabled, defaultBatchTime, setDefaultBatchTime, scheduledBatchCheckoutTime, darkMode }: { students: Student[], onClose: () => void, onImport: (students: Student[]) => void, onAddStudent: (s: Student) => void, onUpdateStaff: (staff: Staff[]) => void, onUpdateStudent: (s: Student) => void, staffList: Staff[], parentReports: ParentReport[], biometricLogs: BiometricLog[], isInline?: boolean, onUpdateReport?: (report: ParentReport) => void, onScheduleBatchCheckout: (time: string | null) => void, showToast: (msg: string, type: any) => void, isBatchDefaultEnabled: boolean, setIsBatchDefaultEnabled: (v: boolean) => void, defaultBatchTime: string, setDefaultBatchTime: (v: string) => void, scheduledBatchCheckoutTime: string | null, darkMode: boolean }) => {
   // Ensure the component has a solid background and sits UNDER the global header
   // Header height is approx 80px (including safe area potentially). 
   // We use padding-top to ensure content isn't hidden.
   const containerStyle: React.CSSProperties = {
     position: 'fixed',
-    top: '72px',
+    top: 0,
     left: 0,
     right: 0,
     bottom: 0,
@@ -2152,7 +2163,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
     flexDirection: 'column',
     overflow: 'hidden',
     paddingBottom: 'env(safe-area-inset-bottom)',
-    paddingTop: '80px' // FIXED: Ensure space for Global Header (zIndex 3000)
+    paddingTop: '80px' // Offset for Global Header (fixed at 80px, zIndex 9999)
   };
 
   const [activeSection, setActiveSection] = useState<'roster' | 'permissions' | 'batch' | 'blocking' | 'reports' | 'biometric' | null>(null);
@@ -2605,7 +2616,16 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                         placeholder="Search student to manage access..."
                         value={blockSearch}
                         onChange={(e) => setBlockSearch(e.target.value)}
-                        style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-input)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
+                        style={{
+                          width: '100%',
+                          padding: '16px 16px 16px 48px',
+                          borderRadius: '16px',
+                          border: darkMode ? '1px solid rgba(255,255,255,0.4)' : 'none',
+                          backgroundColor: 'var(--bg-input)',
+                          fontSize: '16px',
+                          color: 'var(--text-main)',
+                          boxSizing: 'border-box'
+                        }}
                       />
                     </div>
 
@@ -3647,22 +3667,25 @@ const App = () => {
         top: 0,
         left: 0,
         right: 0,
-        zIndex: 9999, // Global Header - Most Persistent
+        height: '80px',
+        zIndex: 9999,
         backgroundColor: 'var(--bg-app)',
         paddingTop: 'env(safe-area-inset-top)',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        borderBottom: '1px solid var(--border-subtle)',
+        boxShadow: 'var(--shadow-sm)'
       }}>
         <header style={{
           backgroundColor: 'var(--bg-header)',
-          padding: '16px',
-          boxShadow: 'var(--shadow-sm)',
+          padding: '12px 16px',
           display: 'flex',
           alignItems: 'center',
           gap: '16px',
           width: '100%',
           maxWidth: '100%',
-          flexShrink: 0
+          flexShrink: 0,
+          flex: 1
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
             <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: program === 'sunrise' ? 'var(--color-sunrise)' : 'var(--color-sunset)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }}>
@@ -3699,7 +3722,6 @@ const App = () => {
 
             <button
               onClick={() => {
-                // Home Button Logic: Return to Main Search
                 setActiveStudentId(null);
                 setShowLeaderDashboard(false);
                 setShowConfirmId(null);
@@ -3731,108 +3753,113 @@ const App = () => {
           </div>
         </header>
 
-        {/* Sync status bar */}
-        {
-          lastSyncTime && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              padding: '6px 16px',
-              backgroundColor: 'var(--bg-header)',
-              borderBottom: '1px solid var(--border-subtle)',
-              fontSize: '11px',
-              color: 'var(--text-muted)'
-            }}>
-              <span className="material-icons-round" style={{ fontSize: '14px' }}>cloud_done</span>
-              Last synced: {lastSyncTime.toLocaleTimeString()}
-            </div>
-          )
-        }
-
-        <div style={{ padding: '16px', backgroundColor: 'var(--bg-header)', borderBottom: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', width: '100%', overflowX: 'auto', paddingBottom: '4px' }} className="hide-scrollbar">
-            {['all', 'checked_in', 'checked_out'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setRosterStatusFilter(tab as any)}
-                style={{
-                  flex: 1,
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  backgroundColor: rosterStatusFilter === tab ? (darkMode ? '#f8fafc' : 'var(--text-main)') : (darkMode ? '#1e293b' : 'var(--bg-input)'),
-                  color: rosterStatusFilter === tab ? (darkMode ? '#0f172a' : 'white') : (darkMode ? '#f8fafc' : 'var(--text-main)'),
-                  fontWeight: '800',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap',
-                  boxShadow: rosterStatusFilter === tab ? '0 4px 12px rgba(0,0,0,0.2)' : 'none'
-                }}
-              >
-                {tab === 'all'
-                  ? (user && user.role !== 'Lead' && user.assignedGrades
-                    ? `All ${user.assignedGrades.join(', ')}`
-                    : 'All Students')
-                  : tab === 'checked_in' ? 'Checked In' : 'Checked Out'}
-              </button>
-            ))}
+        {lastSyncTime && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            padding: '6px 16px',
+            backgroundColor: 'var(--bg-header)',
+            borderBottom: '1px solid var(--border-subtle)',
+            fontSize: '11px',
+            color: 'var(--text-muted)'
+          }}>
+            <span className="material-icons-round" style={{ fontSize: '14px' }}>cloud_done</span>
+            Last synced: {lastSyncTime.toLocaleTimeString()}
           </div>
-
-          <div style={{ position: 'relative', marginBottom: '16px', width: '100%' }}>
-            <span className="material-icons-round" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '20px' }}>search</span>
-            <input
-              type="text"
-              placeholder="Search student..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: 'none', backgroundColor: 'var(--bg-input)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box' }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {/* Render Buttons for Allowed Grades Only */}
-            {GRADES
-              .filter(g => (user.role === 'Lead' || !user.assignedGrades || user.assignedGrades.includes(g)))
-              .map(g => (
-                <button
-                  key={g}
-                  onClick={() => setSelectedGrade(prev => prev === g ? 'All' : g)}
-                  style={{
-                    padding: '10px 16px',
-                    borderRadius: '12px',
-                    border: 'none',
-                    backgroundColor: selectedGrade === g ? (darkMode ? '#f8fafc' : 'var(--text-main)') : (darkMode ? '#1e293b' : 'var(--bg-input)'),
-                    color: selectedGrade === g ? (darkMode ? '#0f172a' : 'white') : (darkMode ? '#f8fafc' : 'var(--text-main)'),
-                    fontWeight: '800',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    minWidth: '48px'
-                  }}
-                >
-                  {g}
-                </button>
-              ))}
-          </div>
-        </div>
+        )}
       </div>
 
       <main
         style={{
-          paddingTop: '72px', // Account for fixed header height
+          paddingTop: '80px',
           flex: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
-          paddingLeft: '16px', // Keep horizontal padding
-          paddingRight: '16px', // Keep horizontal padding
-          paddingBottom: '100px', // Keep bottom padding
+          paddingBottom: '100px',
           height: '100%',
-          overscrollBehavior: 'none'
+          WebkitOverflowScrolling: 'touch' // Enable iOS bounce
         }}
       >
+        {!showLeaderDashboard && (
+          <div style={{ padding: '16px', backgroundColor: 'var(--bg-header)', borderBottom: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', width: '100%', overflowX: 'auto', paddingBottom: '4px' }} className="hide-scrollbar">
+              {['all', 'checked_in', 'checked_out'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setRosterStatusFilter(tab as any)}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    backgroundColor: rosterStatusFilter === tab ? (darkMode ? '#f8fafc' : 'var(--text-main)') : (darkMode ? '#1e293b' : 'var(--bg-input)'),
+                    color: rosterStatusFilter === tab ? (darkMode ? '#0f172a' : 'white') : (darkMode ? '#f8fafc' : 'var(--text-main)'),
+                    fontWeight: '800',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    whiteSpace: 'nowrap',
+                    boxShadow: rosterStatusFilter === tab ? '0 4px 12px rgba(0,0,0,0.2)' : 'none'
+                  }}
+                >
+                  {tab === 'all'
+                    ? (user && user.role !== 'Lead' && user.assignedGrades
+                      ? `All ${user.assignedGrades.join(', ')}`
+                      : 'All Students')
+                    : tab === 'checked_in' ? 'Checked In' : 'Checked Out'}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ position: 'relative', marginBottom: '16px', width: '100%' }}>
+              <span className="material-icons-round" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '20px' }}>search</span>
+              <input
+                type="text"
+                placeholder="Search student..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '16px 16px 16px 48px',
+                  borderRadius: '16px',
+                  border: darkMode ? '1px solid rgba(255,255,255,0.4)' : 'none',
+                  backgroundColor: 'var(--bg-input)',
+                  fontSize: '16px',
+                  color: 'var(--text-main)',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {GRADES
+                .filter(g => (user.role === 'Lead' || !user.assignedGrades || user.assignedGrades.includes(g)))
+                .map(g => (
+                  <button
+                    key={g}
+                    onClick={() => setSelectedGrade(prev => prev === g ? 'All' : g)}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      backgroundColor: selectedGrade === g ? (darkMode ? '#f8fafc' : 'var(--text-main)') : (darkMode ? '#1e293b' : 'var(--bg-input)'),
+                      color: selectedGrade === g ? (darkMode ? '#0f172a' : 'white') : (darkMode ? '#f8fafc' : 'var(--text-main)'),
+                      fontWeight: '800',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      minWidth: '48px'
+                    }}
+                  >
+                    {g}
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
+
         <div style={{ paddingTop: '16px' }}>
           {filteredStudents.length === 0 ? (
             <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -3921,82 +3948,92 @@ const App = () => {
         </div>
       </main>
 
-      {showConfirmId && confirmStudent && createPortal(
-        <ConfirmationModal
-          student={confirmStudent}
-          title="Check In?"
-          message={`Mark ${confirmStudent.firstName} as present?`}
-          onConfirm={(photo, biometricData) => handleCheckIn(confirmStudent.id, photo, biometricData)}
-          onCancel={() => setShowConfirmId(null)}
-          showPhotoOption={true}
-          isDemoMode={isDemoMode}
-          darkMode={darkMode}
-        />,
-        document.body
-      )}
-
-      {activeStudentId && activeStudent && createPortal(
-        <div style={{ position: 'fixed', top: '72px', left: 0, right: 0, bottom: 0, zIndex: 1000, backgroundColor: 'var(--bg-app)', overflowY: 'auto' }}>
-          <StudentDetailModal
-            student={activeStudent}
-            onClose={() => setActiveStudentId(null)}
-            onSave={handleSaveStudent}
-            onCheckOut={handleCheckOut}
-            currentStaff={user}
-            program={program}
-            isLeadMode={isLeadMode}
+      {
+        showConfirmId && confirmStudent && createPortal(
+          <ConfirmationModal
+            student={confirmStudent}
+            title="Check In?"
+            message={`Mark ${confirmStudent.firstName} as present?`}
+            onConfirm={(photo, biometricData) => handleCheckIn(confirmStudent.id, photo, biometricData)}
+            onCancel={() => setShowConfirmId(null)}
+            showPhotoOption={true}
+            isDemoMode={isDemoMode}
             darkMode={darkMode}
-            onUpdateReport={(report) => {
+          />,
+          document.body
+        )
+      }
+
+      {
+        activeStudentId && activeStudent && createPortal(
+          <div style={{ position: 'fixed', top: '80px', left: 0, right: 0, bottom: 0, zIndex: 1000, backgroundColor: 'var(--bg-app)', overflowY: 'auto' }}>
+            <StudentDetailModal
+              student={activeStudent}
+              onClose={() => setActiveStudentId(null)}
+              onSave={handleSaveStudent}
+              onCheckOut={handleCheckOut}
+              currentStaff={user}
+              program={program}
+              isLeadMode={isLeadMode}
+              darkMode={darkMode}
+              onUpdateReport={(report) => {
+                setParentReports(prev => [...prev, report]);
+              }}
+              showToast={showToast}
+              staffList={staffList}
+            />
+          </div>,
+          document.body
+        )
+      }
+
+      {
+        showLeaderDashboard && createPortal(
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
+            <LeaderDashboard
+              students={students}
+              staffList={staffList}
+              parentReports={parentReports}
+              biometricLogs={biometricLogs}
+              onClose={() => setShowLeaderDashboard(false)}
+              onImport={(newStudents) => setStudents([...students, ...newStudents])}
+              onAddStudent={(newStudent) => setStudents([...students, newStudent])}
+              onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)}
+              onUpdateStudent={handleSaveStudent}
+              onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))}
+              onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)}
+              showToast={showToast}
+              isBatchDefaultEnabled={isBatchDefaultEnabled}
+              setIsBatchDefaultEnabled={setIsBatchDefaultEnabled}
+              defaultBatchTime={defaultBatchTime}
+              setDefaultBatchTime={setDefaultBatchTime}
+              scheduledBatchCheckoutTime={scheduledBatchCheckoutTime}
+              darkMode={darkMode}
+            />
+          </div>,
+          document.body
+        )
+      }
+
+      {
+        reportData && (
+          <ParentReportModal
+            student={reportData.student}
+            type={reportData.type}
+            onClose={() => setReportData(null)}
+            onSend={(report) => {
               setParentReports(prev => [...prev, report]);
+              showToast('Report sent to guardian!', 'success');
+              setReportData(null);
             }}
-            showToast={showToast}
+            onSaveDraft={(report) => {
+              setParentReports(prev => [...prev, report]);
+              showToast('Draft saved!', 'info');
+              setReportData(null);
+            }}
           />
-        </div>,
-        document.body
-      )}
-
-      {showLeaderDashboard && createPortal(
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
-          <LeaderDashboard
-            students={students}
-            staffList={staffList}
-            parentReports={parentReports}
-            biometricLogs={biometricLogs}
-            onClose={() => setShowLeaderDashboard(false)}
-            onImport={(newStudents) => setStudents([...students, ...newStudents])}
-            onAddStudent={(newStudent) => setStudents([...students, newStudent])}
-            onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)}
-            onUpdateStudent={handleSaveStudent}
-            onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))}
-            onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)}
-            showToast={showToast}
-            isBatchDefaultEnabled={isBatchDefaultEnabled}
-            setIsBatchDefaultEnabled={setIsBatchDefaultEnabled}
-            defaultBatchTime={defaultBatchTime}
-            setDefaultBatchTime={setDefaultBatchTime}
-            scheduledBatchCheckoutTime={scheduledBatchCheckoutTime}
-          />
-        </div>,
-        document.body
-      )}
-
-      {reportData && (
-        <ParentReportModal
-          student={reportData.student}
-          type={reportData.type}
-          onClose={() => setReportData(null)}
-          onSend={(report) => {
-            setParentReports(prev => [...prev, report]);
-            showToast('Report sent to guardian!', 'success');
-            setReportData(null);
-          }}
-          onSaveDraft={(report) => {
-            setParentReports(prev => [...prev, report]);
-            showToast('Draft saved!', 'info');
-            setReportData(null);
-          }}
-        />
-      )}
+        )
+      }
 
       {toast && <Toast message={toast.msg} type={toast.type} />}
     </>
