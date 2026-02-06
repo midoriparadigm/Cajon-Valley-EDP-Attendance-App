@@ -1114,6 +1114,8 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
   const [weCareCollapsed, setWeCareCollapsed] = useState(!!student.weCareTimestamp);
   const [checkoutBy, setCheckoutBy] = useState<'Contact 1' | 'Contact 2' | 'Contact 3' | 'Contact 4' | 'Contact 5'>('Contact 1');
   const [filedReportType, setFiledReportType] = useState<'behavior' | 'wecare' | null>(null);
+  const [isEditingWeCare, setIsEditingWeCare] = useState(false);
+  const [isEditingBehavior, setIsEditingBehavior] = useState(false);
 
   // Guardian Management V2 State
   const [editingGuardianIndex, setEditingGuardianIndex] = useState<number | null>(null);
@@ -1432,7 +1434,9 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                       <div style={{ width: '100%', height: '1px', backgroundColor: 'var(--border-subtle)', margin: '4px 0' }} />
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>Check-Out SMS Sent:</span>
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>{editedStudent.smsSentTime || '--:--'}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span className="material-icons-round" style={{ fontSize: '14px' }}>done_all</span> {editedStudent.smsSentTime || '--:--'}
+                        </span>
                       </div>
                     </>
                   )}
@@ -1459,17 +1463,13 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
             </div>
 
             <div style={{ padding: '20px', backgroundColor: 'var(--bg-app)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="material-icons-round" style={{ color: 'var(--color-success)', fontSize: '20px' }}>traffic</span>
-                  <span style={{ fontWeight: '800', color: 'var(--text-main)', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Behavior Ticket</span>
-                </div>
-                {filedReportType === 'behavior' && (
+              {filedReportType === 'behavior' && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
                   <div style={{ padding: '4px 12px', backgroundColor: '#dcfce7', color: '#166534', borderRadius: '20px', fontSize: '12px', fontWeight: '700', border: '1px solid #bbf7d0' }}>
                     FILED SUCCESSFULLY
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {filedReportType === 'behavior' ? (
                 <div style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '2px dashed var(--color-success)', textAlign: 'center' }}>
@@ -1488,94 +1488,107 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                         if (dailyLimit) {
                           if (showToast) showToast('Daily Behavior Ticket limit reached (1/day)', 'error');
                         } else {
+                          setEditedStudent(prev => ({ ...prev, behavior: 'green' }));
                           setShowTicketOptions(true);
+                          setIsEditingBehavior(true);
                         }
                       }}
                       style={{ width: '100%', padding: '12px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                     >
-                      <span className="material-icons-round">add_circle</span> New Ticket
+                      <span className="material-icons-round">add_circle</span> Start Green Ticket
                     </button>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      {editedStudent.behavior === 'none' ? (
-                        <div style={{ padding: '12px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
-                          <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '8px' }}>You are starting a <strong>GREEN</strong> Behavior Ticket.</div>
-                          <button onClick={() => setBehavior('green')} style={{ width: '100%', padding: '12px', borderRadius: '8px', backgroundColor: 'var(--color-success)', color: 'white', fontWeight: '800', border: 'none', cursor: 'pointer' }}>START GREEN TICKET</button>
-                        </div>
-                      ) : null}
-
                       {editedStudent.behavior !== 'none' && (
                         <div style={{ animation: 'slideUp 0.2s', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                          <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Handling Staff</label>
-                            <select
-                              value={editedStudent.behaviorStaff || currentStaff.name}
-                              onChange={(e) => setEditedStudent({ ...editedStudent, behaviorStaff: e.target.value })}
-                              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
-                            >
-                              {staffList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                            </select>
-                          </div>
-
-                          <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Staff Closest to the Situation</label>
-                            <select
-                              value={editedStudent.behaviorStaffSupport || ''}
-                              onChange={(e) => setEditedStudent({ ...editedStudent, behaviorStaffSupport: e.target.value })}
-                              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
-                            >
-                              <option value="">Choose Staff...</option>
-                              {staffList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                            </select>
-                          </div>
-
-                          <div style={{ padding: '12px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '12px', lineHeight: '1.5', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
-                            <strong>Behavior Guidelines:</strong><br />
-                            Please fill out the following behavior ticket per student/behavior as detailed as possible.
-                          </div>
-
-                          <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Behaviors</label>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              {BEHAVIOR_CHECKLISTS[editedStudent.behavior as 'green'].map((item) => (
-                                <label key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-main)', padding: '4px 0', borderBottom: '1px solid var(--bg-app)', cursor: 'pointer' }}>
-                                  <input type="checkbox" checked={editedStudent.behaviorIssues?.includes(item) || false} onChange={() => {
-                                    const issues = editedStudent.behaviorIssues.includes(item) ? editedStudent.behaviorIssues.filter(i => i !== item) : [...editedStudent.behaviorIssues, item];
-                                    setEditedStudent({ ...editedStudent, behaviorIssues: issues });
-                                  }} style={{ transform: 'scale(1.2)' }} />
-                                  {item}
-                                </label>
-                              ))}
+                          {/* Behavior stamped view vs edit view */}
+                          {!isEditingBehavior && student.behaviorTimestamp ? (
+                            <div style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+                              <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>Behavior Ticket Filed</div>
+                              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>{student.behaviorTimestamp} by {student.behaviorStaff}</div>
+                              <button onClick={() => setIsEditingBehavior(true)} style={{ padding: '8px 16px', borderRadius: '8px', backgroundColor: 'var(--bg-app)', border: '1px solid var(--border-subtle)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>EDIT TICKET</button>
                             </div>
-                          </div>
+                          ) : (
+                            <>
+                              {/* The existing form logic */}
+                              <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Handling Staff</label>
+                                <select
+                                  value={editedStudent.behaviorStaff || currentStaff.name}
+                                  onChange={(e) => setEditedStudent({ ...editedStudent, behaviorStaff: e.target.value })}
+                                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
+                                >
+                                  {staffList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                                </select>
+                              </div>
 
-                          <textarea
-                            value={editedStudent.behaviorDescription || ''}
-                            onChange={e => setEditedStudent({ ...editedStudent, behaviorDescription: e.target.value })}
-                            placeholder="Details of the incident..."
-                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', minHeight: '80px', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.5', fontSize: '14px' }}
-                          />
+                              <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Staff Closest to the Situation</label>
+                                <select
+                                  value={editedStudent.behaviorStaffSupport || ''}
+                                  onChange={(e) => setEditedStudent({ ...editedStudent, behaviorStaffSupport: e.target.value })}
+                                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
+                                >
+                                  <option value="">Choose Staff...</option>
+                                  {staffList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                                </select>
+                              </div>
 
-                          <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Consequence/ Actions taken by staff</label>
-                            <textarea
-                              value={editedStudent.behaviorActions || ''}
-                              onChange={e => setEditedStudent({ ...editedStudent, behaviorActions: e.target.value })}
-                              placeholder="Describe actions taken..."
-                              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', minHeight: '60px', outline: 'none' }}
-                            />
-                          </div>
+                              <div style={{ padding: '12px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '12px', lineHeight: '1.5', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
+                                <strong>Behavior Guidelines:</strong><br />
+                                Please fill out the following behavior ticket per student/behavior as detailed as possible.
+                              </div>
 
-                          <div style={{ display: 'flex', gap: '12px' }}>
-                            <button onClick={cancelTicket} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                            <button onClick={() => { saveBehavior(); setFiledReportType('behavior'); }} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Submit</button>
-                          </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>ID: {student.id} | Stamped: {editedStudent.behaviorTimestamp} by {editedStudent.behaviorStaff}</div>
+                              <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Behaviors</label>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  {BEHAVIOR_CHECKLISTS[editedStudent.behavior as 'green'].map((item) => (
+                                    <label key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-main)', padding: '4px 0', borderBottom: '1px solid var(--bg-app)', cursor: 'pointer' }}>
+                                      <input type="checkbox" checked={editedStudent.behaviorIssues?.includes(item) || false} onChange={() => {
+                                        const issues = editedStudent.behaviorIssues.includes(item) ? editedStudent.behaviorIssues.filter(i => i !== item) : [...editedStudent.behaviorIssues, item];
+                                        setEditedStudent({ ...editedStudent, behaviorIssues: issues });
+                                      }} style={{ transform: 'scale(1.2)' }} />
+                                      {item}
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Details of the Incident</label>
+                                <textarea
+                                  value={editedStudent.behaviorDescription || ''}
+                                  onChange={e => setEditedStudent({ ...editedStudent, behaviorDescription: e.target.value })}
+                                  placeholder="Describe the details of the incident..."
+                                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', minHeight: '80px', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.5', fontSize: '14px' }}
+                                />
+                                {editedStudent.behaviorTimestamp && (
+                                  <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--color-warning)', fontWeight: '600' }}>Limit: 1 edit per day</div>
+                                )}
+                              </div>
+
+                              <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Consequence/ Actions taken by staff</label>
+                                <textarea
+                                  value={editedStudent.behaviorActions || ''}
+                                  onChange={e => setEditedStudent({ ...editedStudent, behaviorActions: e.target.value })}
+                                  placeholder="Describe actions taken..."
+                                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', minHeight: '60px', outline: 'none', fontFamily: 'inherit' }}
+                                />
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '12px' }}>
+                                <button onClick={cancelTicket} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                                <button onClick={() => { saveBehavior(); setFiledReportType('behavior'); }} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Submit</button>
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>ID: {student.id} | Stamped: {editedStudent.behaviorTimestamp} by {editedStudent.behaviorStaff}</div>
+                            </>
+                          )}
+
+                          {editedStudent.behavior === 'none' && showTicketOptions && (
+                            <button onClick={() => setShowTicketOptions(false)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                          )}
                         </div>
-                      )}
-
-                      {editedStudent.behavior === 'none' && showTicketOptions && (
-                        <button onClick={() => setShowTicketOptions(false)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
                       )}
                     </div>
                   )}
@@ -1590,17 +1603,13 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
               <span style={{ fontWeight: '800', color: 'var(--text-main)', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>We Care Report</span>
             </div>
             <div style={{ padding: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="material-icons-round" style={{ color: '#ec4899', fontSize: '20px' }}>medication</span>
-                  <span style={{ fontWeight: '800', color: 'var(--text-main)', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>We Care Report</span>
-                </div>
-                {filedReportType === 'wecare' && (
+              {filedReportType === 'wecare' && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
                   <div style={{ padding: '4px 12px', backgroundColor: '#fce7f3', color: '#9d174d', borderRadius: '20px', fontSize: '12px', fontWeight: '700', border: '1px solid #fbcfe8' }}>
                     FILED SUCCESSFULLY
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {filedReportType === 'wecare' ? (
                 <div style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '2px dashed #ec4899', textAlign: 'center' }}>
@@ -1609,21 +1618,32 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>Draft is available in Leader Dashboard</div>
                   <button onClick={() => setFiledReportType(null)} style={{ marginTop: '12px', padding: '8px 16px', borderRadius: '8px', backgroundColor: 'var(--bg-app)', border: '1px solid var(--border-subtle)', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>FILE ANOTHER</button>
                 </div>
-              ) : !showWeCareOptions && !editedStudent.weCareTimestamp ? (
-                <button
-                  onClick={() => {
-                    const today = new Date().toLocaleDateString();
-                    const dailyLimit = parentReports.some(r => r.studentId === student.id && r.type === 'wecare' && new Date(r.createdAt).toLocaleDateString() === today);
-                    if (dailyLimit) {
-                      if (showToast) showToast('Daily We Care Report limit reached (1/day)', 'error');
-                    } else {
-                      setShowWeCareOptions(true);
-                    }
-                  }}
-                  style={{ width: '100%', padding: '12px', backgroundColor: '#ec4899', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                >
-                  <span className="material-icons-round">add_circle</span> New Report
-                </button>
+              ) : (!showWeCareOptions && !editedStudent.weCareTimestamp) || (!isEditingWeCare && editedStudent.weCareTimestamp) ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {!editedStudent.weCareTimestamp ? (
+                    <button
+                      onClick={() => {
+                        const today = new Date().toLocaleDateString();
+                        const dailyLimit = parentReports.some(r => r.studentId === student.id && r.type === 'wecare' && new Date(r.createdAt).toLocaleDateString() === today);
+                        if (dailyLimit) {
+                          if (showToast) showToast('Daily We Care Report limit reached (1/day)', 'error');
+                        } else {
+                          setShowWeCareOptions(true);
+                          setIsEditingWeCare(true);
+                        }
+                      }}
+                      style={{ width: '100%', padding: '12px', backgroundColor: '#ec4899', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                    >
+                      <span className="material-icons-round">add_circle</span> Start We Care Report
+                    </button>
+                  ) : (
+                    <div style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>We Care Report Filed</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>{editedStudent.weCareTimestamp} by {editedStudent.weCareStaff}</div>
+                      <button onClick={() => setIsEditingWeCare(true)} style={{ padding: '8px 16px', borderRadius: '8px', backgroundColor: 'var(--bg-app)', border: '1px solid var(--border-subtle)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>EDIT REPORT</button>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <WeCareReportForm
@@ -1631,7 +1651,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                     currentStaffName={currentStaff.name}
                     onSave={(reportData) => {
                       const now = new Date();
-                      const stamp = now.toLocaleString([], { month: 'numeric', day: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+                      const stamp = now.toLocaleString([], { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                       const weCareReport: ParentReport = {
                         id: Date.now().toString(),
                         studentId: editedStudent.id,
@@ -1650,6 +1670,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                         weCareStaff: currentStaff.name
                       });
                       setShowWeCareOptions(false);
+                      setIsEditingWeCare(false);
                       handleSectionSave({
                         ...editedStudent,
                         weCareTimestamp: stamp,
@@ -1658,9 +1679,11 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                       if (onUpdateReport) onUpdateReport(weCareReport);
                       if (showToast) showToast('Draft saved! (We Care Report)', 'success');
                       setFiledReportType('wecare');
-                      setShowWeCareOptions(false);
                     }}
-                    onCancel={() => setShowWeCareOptions(false)}
+                    onCancel={() => {
+                      setShowWeCareOptions(false);
+                      setIsEditingWeCare(false);
+                    }}
                     darkMode={darkMode}
                   />
                   {editedStudent.weCareTimestamp && (
@@ -3787,6 +3810,39 @@ const App = () => {
     }, 5000);
   };
 
+  const onUpdateReport = (report: ParentReport) => {
+    setParentReports(prev => {
+      // Find if there's an existing draft for this student/type/staff TODAY
+      const reportDate = new Date(report.createdAt).toLocaleDateString();
+      const existingDraftIndex = prev.findIndex(r =>
+        r.status === 'draft' &&
+        r.studentId === report.studentId &&
+        r.type === report.type &&
+        r.staffId === report.staffId &&
+        new Date(r.createdAt).toLocaleDateString() === reportDate
+      );
+
+      if (existingDraftIndex >= 0) {
+        // Enforce 1-edit limit
+        const existing = prev[existingDraftIndex];
+        const editCount = (existing.editLogs || []).length;
+        if (editCount >= 1) {
+          if (showToast) showToast('Edit limit reached (1/day)', 'error');
+          return prev;
+        }
+
+        const updated = [...prev];
+        updated[existingDraftIndex] = {
+          ...report,
+          id: existing.id, // Keep original ID
+          editLogs: [...(existing.editLogs || []), `Edited at ${new Date().toLocaleTimeString()} by ${user?.name || 'Staff'}`]
+        };
+        return updated;
+      }
+      return [...prev, report];
+    });
+  };
+
   const handleSaveStudent = async (updatedStudent: Student) => {
     const oldStudent = students.find(s => s.id === updatedStudent.id);
 
@@ -3838,7 +3894,7 @@ const App = () => {
     }
     // Behavior tickets create draft silently - accessible in Lead Dashboard
     else if (oldStudent && oldStudent.behavior === 'none' && updatedStudent.behavior !== 'none' && oldStudent.behavior !== updatedStudent.behavior) {
-      const behaviorLevel: 'green' | 'yellow' | 'red' | undefined = updatedStudent.behavior === 'green' || updatedStudent.behavior === 'yellow' || updatedStudent.behavior === 'red' ? updatedStudent.behavior : undefined;
+      const behaviorLevel: 'green' | undefined = updatedStudent.behavior === 'green' ? updatedStudent.behavior : undefined;
       const behaviorReport: ParentReport = {
         id: Date.now().toString(),
         studentId: updatedStudent.id,
@@ -3861,7 +3917,7 @@ const App = () => {
   const generateBehaviorMessage = (student: Student) => {
     const date = new Date().toLocaleDateString();
     const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    const ticketLevel = student.behavior === 'red' ? 'Level 3 (Red)' : student.behavior === 'yellow' ? 'Level 2 (Yellow)' : 'Level 1 (Green)';
+    const ticketLevel = 'Level 1 (Green)';
     const behaviorList = student.behaviorIssues.length > 0
       ? student.behaviorIssues.map(b => `• ${b}`).join('\n')
       : '• General behavior concern';
@@ -4159,7 +4215,7 @@ const App = () => {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {student.headInjury && <span className="material-icons-round" style={{ color: '#ef4444' }}>personal_injury</span>}
-                    {student.behavior !== 'none' && <span className="material-icons-round" style={{ color: student.behavior === 'red' ? '#ef4444' : student.behavior === 'yellow' ? '#f59e0b' : '#10b981' }}>warning</span>}
+                    {student.behavior !== 'none' && <span className="material-icons-round" style={{ color: '#10b981' }}>warning</span>}
 
                     {status === 'absent' ? (
                       <span className="material-icons-round" style={{ color: 'var(--border-subtle)' }}>radio_button_unchecked</span>
