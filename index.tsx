@@ -137,13 +137,17 @@ interface Student {
   headInjuryLogs: HeadInjuryLog[];
   headInjuryStartTime?: number;
   smsSentTime?: string;
+  checkInSmsSent?: boolean;
+  checkInSmsTime?: string;
   lastCheckOutBy?: string;
+  sunriseCheckoutBy?: string;
+  sunsetCheckoutBy?: string;
   weCareTimestamp?: string;
   weCareStaff?: string;
 }
 
 interface GuardianContact {
-  type: 'Primary' | 'Secondary' | 'Additional';
+  type: 'Contact 1' | 'Contact 2' | 'Contact 3' | 'Contact 4' | 'Contact 5';
   firstName: string;
   lastName: string;
   phone: string;
@@ -424,7 +428,7 @@ const GENERATE_MOCK_STUDENTS = () => {
         lastName,
         grade: grade as any,
         guardians: [{
-          type: 'Primary',
+          type: 'Contact 1',
           firstName: guardianFirstName,
           lastName,
           phone: `619-555-${String(Math.floor(Math.random() * 9000) + 1000)}`,
@@ -980,7 +984,7 @@ const ConfirmationModal = ({ student, onConfirm, onCancel, title, message, showP
 };
 
 const GuardianAddForm = ({ onSave, onCancel, onDelete, initialContact, unavailableTypes = [], darkMode }: { onSave: (g: GuardianContact) => void, onCancel: () => void, onDelete?: () => void, initialContact?: GuardianContact, unavailableTypes?: string[], key?: any, darkMode: boolean }) => {
-  const [type, setType] = useState<'Primary' | 'Secondary' | 'Additional'>((initialContact?.type as any) || 'Secondary');
+  const [type, setType] = useState<'Contact 1' | 'Contact 2' | 'Contact 3' | 'Contact 4' | 'Contact 5'>((initialContact?.type as any) || 'Contact 2');
   const [first, setFirst] = useState(initialContact?.firstName || '');
   const [last, setLast] = useState(initialContact?.lastName || '');
   const [phone, setPhone] = useState(initialContact?.phone || '');
@@ -989,7 +993,7 @@ const GuardianAddForm = ({ onSave, onCancel, onDelete, initialContact, unavailab
   const [notifyEmail, setNotifyEmail] = useState(initialContact?.notifyEmail || false);
 
   // Available types: The current type (if editing) OR types not in unavailableTypes
-  const availableTypes = ['Primary', 'Secondary', 'Additional'].filter(t => t === initialContact?.type || !unavailableTypes.includes(t));
+  const availableTypes = ['Contact 1', 'Contact 2', 'Contact 3', 'Contact 4', 'Contact 5'].filter(t => t === initialContact?.type || !unavailableTypes.includes(t));
 
   // If the current 'type' state is no longer valid (e.g. switching from new to edit context?), ensure it selects a valid one.
   // Ideally, when opening 'New', type defaults to the first available.
@@ -1058,6 +1062,15 @@ const GuardianAddForm = ({ onSave, onCancel, onDelete, initialContact, unavailab
         </div>
       </div>
 
+      {type !== 'Contact 1' && (
+        <div style={{ padding: '12px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', border: '1px solid var(--border-subtle)', display: 'flex', gap: '8px', marginBottom: '8px' }}>
+          <span className="material-icons-round" style={{ color: 'var(--color-info)', fontSize: '20px' }}>info</span>
+          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+            <strong>Authorization Required:</strong> Adding a contact (2-5) requires explicit approval from <strong>Contact 1</strong>. Adding this contact will trigger an authorization request SMS.
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
         <button onClick={onCancel} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
         {initialContact && onDelete && (
@@ -1103,9 +1116,13 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
         <textarea placeholder="Details about the incident..." value={info} onChange={e => setInfo(e.target.value)} style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
       </div>
 
+
+
+
+
       <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-        <button onClick={onCancel} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-        <button onClick={() => onSave({ activity, info, firstAid })} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: '#ec4899', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Report</button>
+        <button onClick={(e) => { e.stopPropagation(); onCancel(); }} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+        <button onClick={(e) => { e.stopPropagation(); onSave({ activity, info, firstAid }); }} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: '#ec4899', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Report</button>
       </div>
     </div>
   );
@@ -1118,7 +1135,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
   const [showTicketOptions, setShowTicketOptions] = useState(false);
   const [showWeCareOptions, setShowWeCareOptions] = useState(false);
   const [weCareCollapsed, setWeCareCollapsed] = useState(!!student.weCareTimestamp);
-  const [checkoutBy, setCheckoutBy] = useState<'Primary' | 'Secondary' | 'Additional'>('Primary');
+  const [checkoutBy, setCheckoutBy] = useState<'Contact 1' | 'Contact 2' | 'Contact 3' | 'Contact 4' | 'Contact 5'>('Contact 1');
 
   // Guardian Management V2 State
   const [editingGuardianIndex, setEditingGuardianIndex] = useState<number | null>(null);
@@ -1137,9 +1154,9 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
       setEditingGuardianIndex(null);
     } else {
       // Add new
-      // Add Authorization Metadata if Secondary/Additional
-      if (contact.type !== 'Primary') {
-        const primary = updatedGuardians.find(g => g.type === 'Primary');
+      // Add Authorization Metadata if Not Contact 1
+      if (contact.type !== 'Contact 1') {
+        const primary = updatedGuardians.find(g => g.type === 'Contact 1');
         if (primary) {
           contact.authorizedBy = `${primary.firstName} ${primary.lastName}`;
           contact.authDate = new Date().toLocaleDateString();
@@ -1264,7 +1281,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
   };
 
   // --- Notification Logic ---
-  const sendSmsMock = (phone: string, templateType: 'pickup_notification' | 'auth_request', data: any) => {
+  const sendSmsMock = (phone: string, templateType: 'pickup_notification' | 'auth_request' | 'checkin_notification', data: any) => {
     let message = "";
     if (templateType === 'pickup_notification') {
       const { guardian_name, school_name, time, date, student_names } = data;
@@ -1272,8 +1289,12 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
     } else if (templateType === 'auth_request') {
       const { guardian_name, role_type, student_names } = data;
       message = `Do you authorize ${guardian_name} to be the ${role_type} Guardian who is allowed to pickup ${student_names}?`;
+    } else if (templateType === 'checkin_notification') {
+      const { student_name, time, program } = data;
+      message = `[${program}] ${student_name} has arrived and is checked in at ${time}.`;
     }
-    console.log(`[MOCK SMS] To: ${phone} | Body: "${message}"`);
+
+    console.log(`[SMS Mock] To: ${phone} | ${message}`);
   };
 
   const handleLocalCheckOut = () => {
@@ -1296,8 +1317,8 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
     });
 
     // 2. Cascade Alert if Non-Primary
-    if (checkoutBy !== 'Primary') {
-      const primary = student.guardians?.find(g => g.type === 'Primary');
+    if (checkoutBy !== 'Contact 1') {
+      const primary = student.guardians?.find(g => g.type === 'Contact 1');
       if (primary && primary.phone && primary.phone !== activePhone) {
         console.log(`[Cascade Alert] Sending SMS to Primary ${primary.firstName} because checkout was by ${checkoutBy}`);
         sendSmsMock(primary.phone, 'pickup_notification', {
@@ -1323,15 +1344,45 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
   const isPresent = currentStatus === 'present';
 
   return (
-
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 2100, backgroundColor: 'var(--modal-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-      <div style={{ backgroundColor: 'var(--bg-card)', width: '100%', maxWidth: '600px', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
-          <div><h2 style={{ margin: 0, fontSize: '22px', fontWeight: '800', color: 'var(--text-main)' }}>{student.firstName} {student.lastName}</h2><div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Grade {student.grade}</div></div>
-          <button onClick={onClose} style={{ background: 'var(--bg-hover)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span className="material-icons-round">close</span></button>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: 'var(--bg-app)' }}>
+      {/* Title Bar - Dashboard Style */}
+      <div style={{
+        padding: '16px 20px',
+        backgroundColor: 'var(--bg-header)',
+        borderBottom: '1px solid var(--border-subtle)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)' }}>
+            {student.yearbookPhotoUrl ? (
+              <img src={student.yearbookPhotoUrl} alt={student.firstName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-hover)', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: '800' }}>
+                {student.firstName.charAt(0)}{student.lastName.charAt(0)}
+              </div>
+            )}
+          </div>
+          <div>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0, color: 'var(--text-main)' }}>{student.firstName} {student.lastName}</h2>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '600' }}>Grade {student.grade} • ID: {student.id}</div>
+          </div>
         </div>
+        <button
+          onClick={onClose}
+          style={{ background: 'var(--bg-hover)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-main)' }}
+          title="Close"
+        >
+          <span className="material-icons-round">close</span>
+        </button>
+      </div>
 
-        <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px', paddingBottom: '100px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
           {/* 1. Attendance Record (AT THE TOP) */}
           <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
@@ -1373,29 +1424,50 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
               )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: '500' }}>Checked-In:</span>
-                  <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)' }}>
-                    {program === 'sunrise' ? editedStudent.sunriseTime : editedStudent.sunsetTime || '--:--'} by {program === 'sunrise' ? (editedStudent.sunriseStaff || 'Staff') : (editedStudent.sunsetStaff || 'Staff')}
-                  </span>
+                <div style={{ width: '100%', height: '1px', backgroundColor: 'var(--border-subtle)', margin: '4px 0' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', backgroundColor: 'var(--bg-app)', borderRadius: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>Check-In:</span>
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>
+                      {program === 'sunrise' ? editedStudent.sunriseTime : editedStudent.sunsetTime || '--:--'}
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500', marginLeft: '4px' }}>
+                        by {program === 'sunrise' ? editedStudent.sunriseStaff : editedStudent.sunsetStaff}
+                      </span>
+                    </span>
+                  </div>
+                  {editedStudent.checkInSmsSent && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>Check-In SMS Sent:</span>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span className="material-icons-round" style={{ fontSize: '14px' }}>done_all</span> {editedStudent.checkInSmsTime}
+                      </span>
+                    </div>
+                  )}
+                  {(currentStatus === 'pending_parent' || currentStatus === 'checked_out') && (
+                    <>
+                      <div style={{ width: '100%', height: '1px', backgroundColor: 'var(--border-subtle)', margin: '4px 0' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>Check-Out SMS Sent:</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>{editedStudent.smsSentTime || '--:--'}</span>
+                      </div>
+                    </>
+                  )}
+                  {currentStatus === 'checked_out' && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>Checked-Out:</span>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>
+                        {program === 'sunrise' ? editedStudent.sunriseCheckOutTime : editedStudent.sunsetCheckOutTime || '--:--'}
+                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500', marginLeft: '4px' }}>
+                          by {program === 'sunrise' ? editedStudent.sunriseCheckoutBy : editedStudent.sunsetCheckoutBy}
+                        </span>
+                      </span>
+                    </div>
+                  )}
                 </div>
-                {(currentStatus === 'pending_parent' || currentStatus === 'checked_out') &&
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: '500' }}>Check-Out SMS Sent:</span>
-                    <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)' }}>{editedStudent.smsSentTime || '--:--'}</span>
-                  </div>
-                }
-                {currentStatus === 'checked_out' &&
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: '500' }}>Checked-Out:</span>
-                    <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)' }}>{program === 'sunrise' ? editedStudent.sunriseCheckOutTime : editedStudent.sunsetCheckOutTime || '--:--'}</span>
-                  </div>
-                }
               </div>
             </div>
           </section>
 
-          {/* 2. Behavior Ticket */}
           <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
             <div style={{ padding: '16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="material-icons-round" style={{ color: 'var(--color-warning)', fontSize: '20px' }}>traffic</span>
@@ -1479,7 +1551,6 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
             </div>
           </section>
 
-          {/* We Care Report (Non-Head Injury) */}
           <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)', marginBottom: '16px' }}>
             <div style={{ padding: '16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="material-icons-round" style={{ color: '#ec4899', fontSize: '20px' }}>medication</span>
@@ -1521,7 +1592,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                         weCareStaff: currentStaff.name
                       });
                       if (onUpdateReport) onUpdateReport(weCareReport);
-                      if (showToast) showToast('We Care Report draft created', 'success');
+                      if (showToast) showToast('Draft saved! (We Care Report)', 'success');
                     }}
                     onCancel={() => setShowWeCareOptions(false)}
                     darkMode={darkMode}
@@ -1534,7 +1605,6 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
             </div>
           </section>
 
-          {/* 3. Head Injury Report */}
           <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
             <div style={{ padding: '16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="material-icons-round" style={{ color: 'var(--color-danger)', fontSize: '20px' }}>personal_injury</span>
@@ -1598,7 +1668,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ fontSize: '11px', fontWeight: '800', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{guardian.type} Contact</span>
-                            {guardian.type === 'Primary' && <span className="material-icons-round" style={{ fontSize: '14px', color: '#6b7280' }}>star</span>}
+                            {guardian.type === 'Contact 1' && <span className="material-icons-round" style={{ fontSize: '14px', color: '#6b7280' }}>star</span>}
                           </div>
                           <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)', marginTop: '4px' }}>
                             {guardian.firstName} {guardian.lastName}
@@ -2000,7 +2070,7 @@ const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const newStudents: Student[] = [
-        { id: 'new1', elopId: '9001', firstName: 'New', lastName: 'Student', grade: '1', guardians: [{ type: 'Primary', firstName: 'Guardian', lastName: 'Name', phone: '', email: '' }], programs: ['ELOP'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [] }
+        { id: 'new1', elopId: '9001', firstName: 'New', lastName: 'Student', grade: '1', guardians: [{ type: 'Contact 1', firstName: 'Guardian', lastName: 'Name', phone: '', email: '' }], programs: ['ELOP'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [] }
       ];
       onImport(newStudents);
       alert('Roster Imported Successfully');
@@ -2053,7 +2123,7 @@ const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]
         <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '600' }}>Guardian Information</label>
           <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', borderBottom: '1px solid var(--border-subtle)' }}>
-            {['Primary', 'Secondary', 'Additional'].map((t, i) => (
+            {['Contact 1', 'Contact 2', 'Contact 3', 'Contact 4', 'Contact 5'].map((t, i) => (
               <button
                 key={t}
                 onClick={() => setActiveGuardianTab(i)}
@@ -2120,9 +2190,9 @@ const RosterManager = ({ onImport, onAdd, showToast }: { onImport: (s: Student[]
             setManualStudent({
               firstName: '', lastName: '', grade: 'Grade', elopId: '', asesId: '',
               guardians: [
-                { type: 'Primary', firstName: '', lastName: '', phone: '', email: '', relationship: 'Parent' },
-                { type: 'Secondary', firstName: '', lastName: '', phone: '', email: '', relationship: '' },
-                { type: 'Additional', firstName: '', lastName: '', phone: '', email: '', relationship: '' }
+                { type: 'Contact 1', firstName: '', lastName: '', phone: '', email: '', relationship: 'Parent' },
+                { type: 'Contact 2', firstName: '', lastName: '', phone: '', email: '', relationship: '' },
+                { type: 'Contact 3', firstName: '', lastName: '', phone: '', email: '', relationship: '' }
               ]
             });
             setActiveGuardianTab(0);
@@ -2173,6 +2243,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
   const [showScheduleConfirm, setShowScheduleConfirm] = useState(false);
   const [countdown, setCountdown] = useState<string>('00:00:00:00');
   const [selectedDraft, setSelectedDraft] = useState<ParentReport | null>(null);
+  const [selectedReportStudentId, setSelectedReportStudentId] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [selectedAccessGrade, setSelectedAccessGrade] = useState<string | null>(null);
 
@@ -2496,9 +2567,7 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                       <div style={{ padding: '12px', borderRadius: '12px', backgroundColor: 'var(--color-sunrise)', color: 'white' }}>
                         <span className="material-icons-round">wb_sunny</span>
                       </div>
-                      <div>
-                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>Sunrise Batch Checkout</h3>
-                      </div>
+                      <div />
                     </div>
 
                     <div style={{ margin: '24px 0', padding: '20px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
@@ -2636,8 +2705,8 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                           padding: '10px 16px',
                           borderRadius: '12px',
                           border: 'none',
-                          backgroundColor: selectedAccessGrade === 'All' ? '#f8fafc' : 'var(--bg-input)',
-                          color: selectedAccessGrade === 'All' ? '#0f172a' : 'var(--text-main)',
+                          backgroundColor: selectedAccessGrade === 'All' ? (darkMode ? '#f8fafc' : 'var(--text-main)') : (darkMode ? '#1e293b' : 'var(--bg-input)'),
+                          color: selectedAccessGrade === 'All' ? (darkMode ? '#0f172a' : 'white') : (darkMode ? '#f8fafc' : 'var(--text-main)'),
                           fontWeight: '800',
                           fontSize: '14px',
                           cursor: 'pointer',
@@ -2655,8 +2724,8 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                             padding: '10px 16px',
                             borderRadius: '12px',
                             border: 'none',
-                            backgroundColor: selectedAccessGrade === g ? '#f8fafc' : 'var(--bg-input)',
-                            color: selectedAccessGrade === g ? '#0f172a' : 'var(--text-main)',
+                            backgroundColor: selectedAccessGrade === g ? (darkMode ? '#f8fafc' : 'var(--text-main)') : (darkMode ? '#1e293b' : 'var(--bg-input)'),
+                            color: selectedAccessGrade === g ? (darkMode ? '#0f172a' : 'white') : (darkMode ? '#f8fafc' : 'var(--text-main)'),
                             fontWeight: '800',
                             fontSize: '14px',
                             cursor: 'pointer',
@@ -2792,33 +2861,101 @@ const LeaderDashboard = ({ students, onClose, onImport, onAddStudent, onUpdateSt
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {parentReports.map(report => (
-                        <div
-                          key={report.id}
-                          style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', borderLeft: `4px solid ${report.status === 'sent' ? '#6b7280' : '#f59e0b'}`, cursor: 'pointer', transition: 'transform 0.15s' }}
-                          onClick={() => setSelectedDraft(report)}
-                          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.01)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>{report.studentName}</div>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: report.type === 'injury' ? '#fef2f2' : report.behaviorLevel === 'red' ? '#fef2f2' : report.behaviorLevel === 'yellow' ? '#fefce8' : '#dcfce7', color: report.type === 'injury' ? '#dc2626' : report.behaviorLevel === 'red' ? '#dc2626' : report.behaviorLevel === 'yellow' ? '#ca8a04' : '#16a34a' }}>
-                                {report.type === 'injury' ? 'Injury' : report.behaviorLevel ? `${report.behaviorLevel.charAt(0).toUpperCase() + report.behaviorLevel.slice(1)} Ticket` : 'Behavior'}
-                              </span>
-                              <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: report.status === 'sent' ? '#f3f4f6' : '#fef3c7', color: report.status === 'sent' ? '#4b5563' : '#d97706' }}>
-                                {report.status === 'sent' ? '✓ Sent' : 'Draft'}
-                              </span>
+                      {selectedReportStudentId ? (
+                        <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                          <div style={{ padding: '16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <button onClick={() => setSelectedReportStudentId(null)} style={{ background: 'var(--bg-hover)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-main)' }}>
+                              <span className="material-icons-round">arrow_back</span>
+                            </button>
+                            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>{parentReports.find(r => r.studentId === selectedReportStudentId)?.studentName}</h4>
+                          </div>
+
+                          <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                              {['behavior', 'injury', 'wecare'].map(type => {
+                                const filtered = parentReports.filter(r => r.studentId === selectedReportStudentId && r.type === type);
+                                if (filtered.length === 0) return null;
+
+                                return (
+                                  <div key={type}>
+                                    <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span className="material-icons-round" style={{ fontSize: '16px' }}>{type === 'behavior' ? 'traffic' : type === 'injury' ? 'personal_injury' : 'medication'}</span>
+                                      {type === 'behavior' ? 'Behavior Tickets' : type === 'injury' ? 'Head Injury Reports' : 'We Care Reports'}
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                      {filtered.map(report => (
+                                        <div key={report.id} style={{ padding: '12px', backgroundColor: 'var(--bg-input)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>{new Date(report.createdAt).toLocaleDateString()}</div>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{report.status === 'sent' ? '✓ Sent' : 'Draft'}</div>
+                                          </div>
+                                          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{report.message}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+
+                              <button
+                                onClick={() => {
+                                  const sReports = parentReports.filter(r => r.studentId === selectedReportStudentId);
+                                  const compiler = `COMPREHENSIVE DAILY REPORT - ${sReports[0].studentName}\n\n` +
+                                    sReports.map(r => `[${r.type.toUpperCase()}] ${new Date(r.createdAt).toLocaleDateString()}\n${r.message.split('\n').filter(line => line.length > 0).slice(0, 3).join('\n')}...`).join('\n\n');
+
+                                  const comprehensiveReport: ParentReport = {
+                                    id: `comp-${Date.now()}`,
+                                    studentId: selectedReportStudentId,
+                                    studentName: sReports[0].studentName,
+                                    type: 'behavior', // generic
+                                    message: compiler,
+                                    method: 'both',
+                                    status: 'draft',
+                                    createdAt: new Date().toISOString()
+                                  };
+                                  if (onUpdateReport) onUpdateReport(comprehensiveReport);
+                                  showToast('Comprehensive draft compiled!', 'success');
+                                }}
+                                style={{ width: '100%', padding: '14px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px' }}
+                              >
+                                <span className="material-icons-round">auto_fix_high</span> COMPILE COMPREHENSIVE DRAFT
+                              </button>
                             </div>
                           </div>
-                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                            via {report.method === 'both' ? '📧+💬 Both' : report.method === 'email' ? '📧 Email' : '💬 SMS'} • {new Date(report.createdAt).toLocaleString()}
-                          </div>
-                          <div style={{ fontSize: '13px', color: 'var(--text-main)', whiteSpace: 'pre-wrap', maxHeight: '80px', overflow: 'hidden', background: 'var(--bg-input)', padding: '8px', borderRadius: '8px' }}>
-                            {report.message.substring(0, 150)}...
-                          </div>
                         </div>
-                      ))}
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {Array.from(new Set(parentReports.map(r => r.studentId))).map(sid => {
+                            const studentReports = parentReports.filter(r => r.studentId === sid);
+                            const sName = studentReports[0].studentName;
+                            const hasDrafts = studentReports.some(r => r.status === 'draft');
+
+                            return (
+                              <div
+                                key={sid}
+                                style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'all 0.2s' }}
+                                onClick={() => setSelectedReportStudentId(sid)}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color: 'var(--text-main)', border: '1px solid var(--border-subtle)' }}>
+                                      {sName.charAt(0)}
+                                    </div>
+                                    <div>
+                                      <div style={{ fontWeight: '800', fontSize: '16px', color: 'var(--text-main)' }}>{sName}</div>
+                                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{studentReports.length} Report{studentReports.length > 1 ? 's' : ''}</div>
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {hasDrafts && <span style={{ padding: '4px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: '800', backgroundColor: '#fef3c7', color: '#d97706', textTransform: 'uppercase' }}>Drafts Pending</span>}
+                                    <span className="material-icons-round" style={{ color: 'var(--text-muted)' }}>chevron_right</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -3135,6 +3272,7 @@ const App = () => {
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
   const [showConfirmId, setShowConfirmId] = useState<string | null>(null);
   const [showLeaderDashboard, setShowLeaderDashboard] = useState(false);
+  const [dashboardKey, setDashboardKey] = useState(0);
   const [inlineDashboardExpanded, setInlineDashboardExpanded] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
   const [darkMode, setDarkMode] = useState(false);
@@ -3461,6 +3599,28 @@ const App = () => {
           checkin_photo: photo
         };
 
+      // Send Check-In SMS to Contact 1
+      const student = students.find(s => s.id === studentId);
+      if (student) {
+        const contact1 = student.guardians.find(g => g.type === 'Contact 1');
+        if (contact1 && contact1.phone) {
+          sendSmsMock(contact1.phone, 'checkin_notification', {
+            student_name: student.firstName,
+            time: timeString,
+            staff_name: staffName,
+            program: program.charAt(0).toUpperCase() + program.slice(1)
+          });
+
+          // Update local state with SMS status
+          setStudents(prev => prev.map(s => {
+            if (s.id === studentId) {
+              return { ...s, checkInSmsSent: true, checkInSmsTime: timeString };
+            }
+            return s;
+          }));
+        }
+      }
+
       // Merge biometric data if present
       // Note: In a real schema, we might put biometric logs in a separate table, 
       // but here we just update student record or separate log table. 
@@ -3734,7 +3894,16 @@ const App = () => {
             </button>
 
             {isLeadMode && (
-              <button onClick={() => setShowLeaderDashboard(true)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }} title="Dashboard">
+              <button
+                onClick={() => {
+                  setShowLeaderDashboard(true);
+                  setDashboardKey(prev => prev + 1);
+                  // This will be handled by passing a key or resetting state if we have access
+                  // For now, at least ensure the overlay is shown.
+                }}
+                style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}
+                title="Dashboard"
+              >
                 <span className="material-icons-round" style={{ fontSize: '20px' }}>dashboard</span>
               </button>
             )}
@@ -3989,7 +4158,7 @@ const App = () => {
 
       {
         showLeaderDashboard && createPortal(
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
+          <div key={dashboardKey} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
             <LeaderDashboard
               students={students}
               staffList={staffList}
