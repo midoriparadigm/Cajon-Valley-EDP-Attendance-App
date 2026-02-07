@@ -3,6 +3,16 @@ import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
 
+// --- Extracted Components ---
+import Toast from './src/components/Toast';
+import CollapsedBehaviorView from './src/components/CollapsedBehaviorView';
+import CollapsedHeadInjuryView from './src/components/CollapsedHeadInjuryView';
+import HeadInjuryChecklist from './src/components/HeadInjuryChecklist';
+import GuardianAddForm from './src/components/GuardianAddForm';
+import WeCareReportForm from './src/components/WeCareReportForm';
+import ConfirmationModal from './src/components/ConfirmationModal';
+
+
 // --- Supabase Config ---
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -679,26 +689,27 @@ const HEAD_INJURY_SYMPTOMS = {
   emotional: ["Irritable", "Sad", "More emotional than usual", "Nervous"]
 };
 
-// --- Components ---
+// --- Components (imported from src/components/) ---
+// Toast, CollapsedBehaviorView, CollapsedHeadInjuryView, HeadInjuryChecklist,
+// ConfirmationModal, GuardianAddForm, WeCareReportForm
 
-const Toast = ({ message, type }: { message: string, type: 'success' | 'info' | 'warning' | 'error' }) => {
-  let bgColor = 'var(--text-secondary)';
-  let icon = 'info';
-  if (type === 'success') { bgColor = 'var(--color-success)'; icon = 'check_circle'; }
-  else if (type === 'warning') { bgColor = 'var(--color-warning)'; icon = 'warning'; }
-  else if (type === 'error') { bgColor = 'var(--color-danger)'; icon = 'error'; }
 
-  return (
-    <div style={{
-      position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)',
-      backgroundColor: bgColor, color: 'white', padding: '12px 24px', borderRadius: '30px',
-      boxShadow: 'var(--shadow-lg)', fontWeight: '600', fontSize: '14px', zIndex: 350,
-      display: 'flex', alignItems: 'center', gap: '8px', animation: 'slideUp 0.3s ease-out'
-    }}>
-      <span className="material-icons-round" style={{ fontSize: '18px' }}>{icon}</span>
-      {message}
-    </div>
-  );
+let icon = 'info';
+if (type === 'success') { bgColor = 'var(--color-success)'; icon = 'check_circle'; }
+else if (type === 'warning') { bgColor = 'var(--color-warning)'; icon = 'warning'; }
+else if (type === 'error') { bgColor = 'var(--color-danger)'; icon = 'error'; }
+
+return (
+  <div style={{
+    position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)',
+    backgroundColor: bgColor, color: 'white', padding: '12px 24px', borderRadius: '30px',
+    boxShadow: 'var(--shadow-lg)', fontWeight: '600', fontSize: '14px', zIndex: 350,
+    display: 'flex', alignItems: 'center', gap: '8px', animation: 'slideUp 0.3s ease-out'
+  }}>
+    <span className="material-icons-round" style={{ fontSize: '18px' }}>{icon}</span>
+    {message}
+  </div>
+);
 };
 
 const CollapsedBehaviorView = ({ student, onClick }: { student: Student, onClick: () => void }) => {
