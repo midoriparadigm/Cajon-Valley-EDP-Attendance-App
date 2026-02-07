@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { Student, Staff, GuardianContact, HeadInjuryLog, ParentReport, ProgramType, BiometricLog, BehaviorStatus, AttendanceStatus } from '../types';
 import { BEHAVIOR_CHECKLISTS, BEHAVIOR_ROLE_DESCRIPTIONS } from '../constants';
 import { sendSmsMock } from '../utils/sms';
-import { MockDatabase, playAlarm } from '../utils/mock';
+import { MockDatabase } from '../utils/mock';
+import { playAlarm } from '../utils/helpers';
 import HeadInjuryChecklist from './HeadInjuryChecklist';
 import CollapsedBehaviorView from './CollapsedBehaviorView';
 import CollapsedHeadInjuryView from './CollapsedHeadInjuryView';
@@ -632,15 +633,16 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                             .filter((_, i) => i !== idx)
                                             .map(g => g.type);
                                         return (
-                                            <GuardianAddForm
-                                                key={idx}
-                                                initialContact={guardian}
-                                                unavailableTypes={unavailableTypes}
-                                                onSave={handleSaveGuardian}
-                                                onCancel={() => setEditingGuardianIndex(null)}
-                                                onDelete={handleDeleteGuardian}
-                                                darkMode={darkMode}
-                                            />
+                                            <React.Fragment key={idx}>
+                                                <GuardianAddForm
+                                                    initialContact={guardian}
+                                                    unavailableTypes={unavailableTypes}
+                                                    onSave={handleSaveGuardian}
+                                                    onCancel={() => setEditingGuardianIndex(null)}
+                                                    onDelete={handleDeleteGuardian}
+                                                    darkMode={darkMode}
+                                                />
+                                            </React.Fragment>
                                         );
                                     }
 

@@ -6,7 +6,8 @@ import type { Student, Staff, ParentReport, BiometricLog, ProgramType, Attendanc
 import { GRADES } from './constants';
 import { INITIAL_STAFF, INITIAL_STUDENTS } from './utils/mockData';
 import { sendSmsMock } from './utils/sms';
-import { MockDatabase, PasskeyService, playAlarm } from './utils/mock';
+import { MockDatabase, PasskeyService } from './utils/mock';
+import { playAlarm } from './utils/helpers';
 import Toast from './components/Toast';
 import StaffLogin from './components/StaffLogin';
 import StudentDetailModal from './components/StudentDetailModal';
