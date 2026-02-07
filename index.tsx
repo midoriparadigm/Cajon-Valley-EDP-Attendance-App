@@ -8,7 +8,195 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// =============================================================================
+// DATABASE-ALIGNED INTERFACES (matches Supabase schema)
+// =============================================================================
+
+/**
+ * StudentRecord - matches public.students table
+ */
+interface StudentRecord {
+  id: string;                    // uuid
+  first_name: string;
+  last_name: string;
+  grade: string;
+  parent_name: string;
+  parent_phone?: string;
+  parent_email?: string;
+  elop_id: string;
+  ases_id?: string;
+  programs: string[];            // text[]
+  has_snack: boolean;
+  created_at: string;            // timestamp with time zone
+}
+
+/**
+ * AttendanceRecord - matches public.daily_attendance table
+ */
+interface AttendanceRecord {
+  id: string;                    // uuid
+  student_id: string;            // uuid FK → students
+  date: string;                  // date (ISO format)
+  program: 'sunrise' | 'sunset';
+  status: 'absent' | 'present' | 'checked_out' | 'pending_parent';
+  check_in_time?: string;        // time
+  check_out_time?: string;       // time
+  staff_id?: string;             // uuid FK → staff
+  created_at: string;
+}
+
+/**
+ * BehaviorLogDB - matches public.behavior_logs table
+ */
+interface BehaviorLogDB {
+  id: string;                    // uuid
+  student_id: string;            // uuid FK → students
+  level: 'green' | 'yellow' | 'red';
+  issues: string[];              // text[]
+  description?: string;
+  staff_id?: string;             // uuid FK → staff
+  created_at: string;
+}
+
+/**
+ * HeadInjuryLogDB - matches public.head_injury_logs table
+ */
+interface HeadInjuryLogDB {
+  id: string;                    // uuid
+  student_id: string;            // uuid FK → students
+  stage: '0min' | '15min' | '30min';
+  symptoms: Record<string, boolean>; // jsonb
+  notes?: string;
+  staff_id?: string;             // uuid FK → staff
+  created_at: string;
+}
+
+/**
+ * CompositeStudent - joins all relations for UI usage
+ */
+interface CompositeStudent extends StudentRecord {
+  // Joined from daily_attendance (today's records)
+  sunrise_attendance?: AttendanceRecord;
+  sunset_attendance?: AttendanceRecord;
+
+  // Joined from behavior_logs (today's records)
+  behavior_logs_db: BehaviorLogDB[];
+
+  // Joined from head_injury_logs (today's records)
+  head_injury_logs_db: HeadInjuryLogDB[];
+
+  // === LOCAL-ONLY STATE (not in any DB table) ===
+  guardians?: GuardianContact[];       // local: managed separately
+  is_checkin_blocked?: boolean;        // local: runtime flag
+  checkin_photo?: string;              // local: camera capture
+  we_care_timestamp?: string;          // local: session-only
+  visual_anomaly_detected?: boolean;   // local: biometric check result
+  anomaly_score?: number;              // local: biometric match score
+}
+
+// =============================================================================
+// DATA FETCHING FUNCTIONS (Supabase v2 patterns)
+// =============================================================================
+
+/**
+ * Fetches a single student with all related records for today
+ */
+async function fetchStudentWithRelations(
+  studentId: string,
+  date: string = new Date().toISOString().split('T')[0]
+): Promise<CompositeStudent | null> {
+  // 1. Fetch student record
+  const { data: student, error: studentError } = await supabase
+    .from('students')
+    .select('*')
+    .eq('id', studentId)
+    .single();
+
+  if (studentError || !student) return null;
+
+  // 2. Fetch today's attendance records (both programs)
+  const { data: attendance } = await supabase
+    .from('daily_attendance')
+    .select('*')
+    .eq('student_id', studentId)
+    .eq('date', date);
+
+  // 3. Fetch today's behavior logs
+  const { data: behaviorLogs } = await supabase
+    .from('behavior_logs')
+    .select('*')
+    .eq('student_id', studentId)
+    .gte('created_at', `${date}T00:00:00`)
+    .lte('created_at', `${date}T23:59:59`);
+
+  // 4. Fetch today's head injury logs
+  const { data: headInjuryLogs } = await supabase
+    .from('head_injury_logs')
+    .select('*')
+    .eq('student_id', studentId)
+    .gte('created_at', `${date}T00:00:00`)
+    .lte('created_at', `${date}T23:59:59`);
+
+  // 5. Compose the result
+  return {
+    ...student,
+    sunrise_attendance: attendance?.find((a: AttendanceRecord) => a.program === 'sunrise'),
+    sunset_attendance: attendance?.find((a: AttendanceRecord) => a.program === 'sunset'),
+    behavior_logs_db: behaviorLogs ?? [],
+    head_injury_logs_db: headInjuryLogs ?? [],
+  };
+}
+
+/**
+ * Fetches all students with their related records for today (batch for roster)
+ */
+async function fetchAllStudentsWithRelations(
+  date: string = new Date().toISOString().split('T')[0]
+): Promise<CompositeStudent[]> {
+  // Fetch all students
+  const { data: students, error } = await supabase
+    .from('students')
+    .select('*')
+    .order('last_name');
+
+  if (error || !students) return [];
+
+  // Fetch all today's attendance
+  const { data: attendance } = await supabase
+    .from('daily_attendance')
+    .select('*')
+    .eq('date', date);
+
+  // Fetch all today's behavior logs
+  const { data: behaviorLogs } = await supabase
+    .from('behavior_logs')
+    .select('*')
+    .gte('created_at', `${date}T00:00:00`)
+    .lte('created_at', `${date}T23:59:59`);
+
+  // Fetch all today's head injury logs
+  const { data: headInjuryLogs } = await supabase
+    .from('head_injury_logs')
+    .select('*')
+    .gte('created_at', `${date}T00:00:00`)
+    .lte('created_at', `${date}T23:59:59`);
+
+  // Map and compose
+  return students.map((student: StudentRecord) => ({
+    ...student,
+    sunrise_attendance: attendance?.find(
+      (a: AttendanceRecord) => a.student_id === student.id && a.program === 'sunrise'
+    ),
+    sunset_attendance: attendance?.find(
+      (a: AttendanceRecord) => a.student_id === student.id && a.program === 'sunset'
+    ),
+    behavior_logs_db: behaviorLogs?.filter((b: BehaviorLogDB) => b.student_id === student.id) ?? [],
+    head_injury_logs_db: headInjuryLogs?.filter((h: HeadInjuryLogDB) => h.student_id === student.id) ?? [],
+  }));
+}
+
 // --- Types ---
+
 
 type ProgramType = 'sunrise' | 'sunset';
 type AttendanceStatus = 'absent' | 'present' | 'checked_out' | 'pending_parent';
@@ -41,12 +229,32 @@ const BEHAVIOR_ROLE_DESCRIPTIONS = {
 };
 
 // --- SMS Utilities (Mock) ---
-const sendSmsMock = (phone: string, templateType: 'pickup_notification' | 'auth_request' | 'checkin_notification', data: any) => {
-  console.log(`[SMS MOCK] Sending ${templateType} to ${phone}`, data);
-  if (templateType === 'checkin_notification') {
-    return `[SMS] ${data.student_names} has been checked in by ${data.staff_name} at ${data.time}.`;
+const sendSmsMock = async (
+  phone: string,
+  templateType: 'pickup_notification' | 'auth_request' | 'checkin_notification',
+  data: any
+): Promise<{ success: boolean; mock: boolean; message: string }> => {
+  let message = "";
+
+  if (templateType === 'pickup_notification') {
+    const { guardian_name, school_name, time, date, student_names } = data;
+    message = `The following student(s) has/have been picked up by ${guardian_name} from ${school_name} at ${time} on ${date}: ${student_names}`;
+  } else if (templateType === 'auth_request') {
+    const { guardian_name, role_type, student_names } = data;
+    message = `Do you authorize ${guardian_name} to be the ${role_type} Guardian who is allowed to pickup ${student_names}?`;
+  } else if (templateType === 'checkin_notification') {
+    const { student_name, student_names, time, program, staff_name } = data;
+    message = program
+      ? `[${program}] ${student_name || student_names} has arrived and is checked in at ${time}.`
+      : `${student_names} has been checked in by ${staff_name} at ${time}.`;
   }
-  return `[SMS] Message sent to ${phone}`;
+
+  console.log(`[SMS Mock] To: ${phone} | ${message}`);
+
+  // Simulate async network delay
+  return new Promise((resolve) => {
+    setTimeout(() => resolve({ success: true, mock: true, message }), 500);
+  });
 };
 
 interface HeadInjuryLog {
@@ -1260,22 +1468,7 @@ const StudentDetailModal = ({ student, onClose, onSave, onCheckOut, currentStaff
     setShowTicketOptions(true);
   };
 
-  // --- Notification Logic ---
-  const sendSmsMock = (phone: string, templateType: 'pickup_notification' | 'auth_request' | 'checkin_notification', data: any) => {
-    let message = "";
-    if (templateType === 'pickup_notification') {
-      const { guardian_name, school_name, time, date, student_names } = data;
-      message = `The following student(s) has/have been picked up by ${guardian_name} from ${school_name} at ${time} on ${date}: ${student_names}`;
-    } else if (templateType === 'auth_request') {
-      const { guardian_name, role_type, student_names } = data;
-      message = `Do you authorize ${guardian_name} to be the ${role_type} Guardian who is allowed to pickup ${student_names}?`;
-    } else if (templateType === 'checkin_notification') {
-      const { student_name, time, program } = data;
-      message = `[${program}] ${student_name} has arrived and is checked in at ${time}.`;
-    }
-
-    console.log(`[SMS Mock] To: ${phone} | ${message}`);
-  };
+  // --- Notification Logic (uses module-level sendSmsMock) ---
 
   const handleLocalCheckOut = () => {
     const now = new Date();
@@ -3875,9 +4068,8 @@ const App = () => {
       showToast('Failed to save changes to DB', 'error');
     }
 
-    if (oldStudent) {
-      // Head injury still shows modal for immediate parent contact
-      // Create Head Injury Draft Silently
+    // Head injury report - create draft when head injury is newly detected
+    if (oldStudent && !oldStudent.headInjury && updatedStudent.headInjury) {
       const headInjuryReport: ParentReport = {
         id: Date.now().toString(),
         studentId: updatedStudent.id,
@@ -3892,8 +4084,9 @@ const App = () => {
       setParentReports(prev => [...prev, headInjuryReport]);
       showToast('Head Injury draft created', 'info');
     }
-    // Behavior tickets create draft silently - accessible in Lead Dashboard
-    else if (oldStudent && oldStudent.behavior === 'none' && updatedStudent.behavior !== 'none' && oldStudent.behavior !== updatedStudent.behavior) {
+
+    // Behavior tickets - create draft when behavior changes from 'none' to a ticket level
+    if (oldStudent && oldStudent.behavior === 'none' && updatedStudent.behavior !== 'none') {
       const behaviorLevel: 'green' | undefined = updatedStudent.behavior === 'green' ? updatedStudent.behavior : undefined;
       const behaviorReport: ParentReport = {
         id: Date.now().toString(),
@@ -3905,7 +4098,7 @@ const App = () => {
         method: 'both',
         status: 'draft',
         createdAt: new Date().toISOString(),
-        staffId: user?.id || 'unknown' // Assuming user is always defined here or provide a fallback
+        staffId: user?.id || 'unknown'
       };
       setParentReports(prev => [...prev, behaviorReport]);
       showToast('Behavior report draft created', 'info');
@@ -3921,8 +4114,6 @@ const App = () => {
     const behaviorList = student.behaviorIssues.length > 0
       ? student.behaviorIssues.map(b => `• ${b}`).join('\n')
       : '• General behavior concern';
-
-    return `PARENT COMMUNICATION\n\nSite: EDP\nDate: ${date}\nStudent: ${student.firstName} ${student.lastName}\n\nThis is what happened today:\n${behaviorList}\n\n${student.behaviorDescription || ''}`;
 
     return `Dear ${(student.guardians?.[0]?.firstName || 'Unknown')} ${(student.guardians?.[0]?.lastName || '')},
 
