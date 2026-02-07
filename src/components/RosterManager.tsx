@@ -24,9 +24,11 @@ const RosterManager = ({ onImport, onAdd, showToast }: RosterManagerProps) => {
         elopId: '',
         asesId: '',
         guardians: [
-            { type: 'Primary', firstName: '', lastName: '', phone: '', email: '', relationship: 'Parent' },
-            { type: 'Secondary', firstName: '', lastName: '', phone: '', email: '', relationship: '' },
-            { type: 'Additional', firstName: '', lastName: '', phone: '', email: '', relationship: '' }
+            { type: 'Contact 1', firstName: '', lastName: '', phone: '', email: '', relationship: 'Parent' },
+            { type: 'Contact 2', firstName: '', lastName: '', phone: '', email: '', relationship: '' },
+            { type: 'Contact 3', firstName: '', lastName: '', phone: '', email: '', relationship: '' },
+            { type: 'Contact 4', firstName: '', lastName: '', phone: '', email: '', relationship: '' },
+            { type: 'Contact 5', firstName: '', lastName: '', phone: '', email: '', relationship: '' }
         ]
     });
     const [activeGuardianTab, setActiveGuardianTab] = useState<number>(0);
@@ -156,7 +158,9 @@ const RosterManager = ({ onImport, onAdd, showToast }: RosterManagerProps) => {
                             guardians: [
                                 { type: 'Contact 1', firstName: '', lastName: '', phone: '', email: '', relationship: 'Parent' },
                                 { type: 'Contact 2', firstName: '', lastName: '', phone: '', email: '', relationship: '' },
-                                { type: 'Contact 3', firstName: '', lastName: '', phone: '', email: '', relationship: '' }
+                                { type: 'Contact 3', firstName: '', lastName: '', phone: '', email: '', relationship: '' },
+                                { type: 'Contact 4', firstName: '', lastName: '', phone: '', email: '', relationship: '' },
+                                { type: 'Contact 5', firstName: '', lastName: '', phone: '', email: '', relationship: '' }
                             ]
                         });
                         setActiveGuardianTab(0);
