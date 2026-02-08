@@ -89,7 +89,7 @@ const GuardianAddForm = ({ onSave, onCancel, onDelete, initialContact, unavailab
                 <div style={{ padding: '12px', backgroundColor: 'var(--bg-app)', borderRadius: '12px', border: '1px solid var(--border-subtle)', display: 'flex', gap: '8px', marginBottom: '8px' }}>
                     <span className="material-icons-round" style={{ color: 'var(--color-info)', fontSize: '20px' }}>info</span>
                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                        <strong>Authorization Required:</strong> Adding a contact (2-5) requires explicit approval from <strong>the Primary Contact</strong>. Adding this contact will trigger an authorization request SMS.
+                        <strong>Authorization Required:</strong> Adding a contact (2-5) requires explicit approval from the <strong>Primary Contact</strong>. Adding this contact will trigger an authorization request SMS.
                     </div>
                 </div>
             )}

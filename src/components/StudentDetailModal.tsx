@@ -221,11 +221,24 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
     const currentStatus = program === 'sunrise' ? editedStudent.sunriseStatus : editedStudent.sunsetStatus;
     const isPresent = currentStatus === 'present';
 
+    const HeadInjuryIcon = ({ size = 28, color = 'currentColor' }: { size?: number; color?: string }) => (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C8.5 2 6 4.5 6 7.5C6 8.5 6 10 6 11C5 11.5 4 12.5 4 14C4 16 5.5 17 6 17L6.5 21C6.5 21.5 7 22 7.5 22H12" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <path d="M12 2C13.5 2 15 2.8 16 4C17 5.2 17.5 6.5 17.5 7.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" fill="none" />
+            <circle cx="16.5" cy="6" r="2.5" fill={color} opacity="0.3" stroke={color} strokeWidth="1.2" />
+            <line x1="16" y1="1.5" x2="15.5" y2="3" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="18.5" y1="2.5" x2="17.5" y2="3.8" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="20" y1="5" x2="18.5" y2="5.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+            <circle cx="9" cy="10" r="0.8" fill={color} />
+            <path d="M8 14C8 14 9 15 10.5 14" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+    );
+
     const studentMenuOptions = [
         { id: 'attendance', label: 'Attendance Record', icon: 'schedule', color: '#3b82f6', bg: '#dbeafe' },
-        { id: 'behavior', label: 'Behavior Ticket', icon: 'traffic', color: '#f59e0b', bg: '#fef3c7' },
+        { id: 'behavior', label: 'Green Card Behavior Ticket', icon: 'warning', color: '#16a34a', bg: '#dcfce7' },
         { id: 'wecare', label: 'We Care Report', icon: 'medication', color: '#ec4899', bg: '#fce7f3' },
-        { id: 'injury', label: 'Head Injury Report', icon: 'personal_injury', color: '#ef4444', bg: '#fee2e2' },
+        { id: 'injury', label: 'Head Injury Report', icon: 'head_injury_custom', color: '#ef4444', bg: '#fee2e2' },
         ...(isLead ? [{ id: 'guardians', label: 'Guardian Contacts', icon: 'contact_phone', color: '#6366f1', bg: '#e0e7ff' }] : []),
     ];
 
@@ -281,7 +294,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                             {studentMenuOptions.map(option => (
                                 <button key={option.id} onClick={() => setActiveSection(option.id as any)} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '24px', borderRadius: '16px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-subtle)', cursor: 'pointer', textAlign: 'left', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.1s, box-shadow 0.1s' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
                                     <div style={{ width: '56px', height: '56px', borderRadius: '12px', backgroundColor: option.bg, color: option.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <span className="material-icons-round" style={{ fontSize: '28px' }}>{option.icon}</span>
+                                        {option.icon === 'head_injury_custom' ? <HeadInjuryIcon size={28} color={option.color} /> : <span className="material-icons-round" style={{ fontSize: '28px' }}>{option.icon}</span>}
                                     </div>
                                     <div>
                                         <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>{option.label}</div>
@@ -299,14 +312,14 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
                     <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <button onClick={() => setActiveSection(null)} style={{ background: 'var(--bg-hover)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-main)' }}>
-                                <span className="material-icons-round">arrow_back</span>
-                            </button>
                             <div style={{ padding: '8px', borderRadius: '8px', backgroundColor: studentMenuOptions.find(o => o.id === activeSection)?.bg, color: studentMenuOptions.find(o => o.id === activeSection)?.color }}>
-                                <span className="material-icons-round">{studentMenuOptions.find(o => o.id === activeSection)?.icon}</span>
+                                {studentMenuOptions.find(o => o.id === activeSection)?.icon === 'head_injury_custom' ? <HeadInjuryIcon size={24} color={studentMenuOptions.find(o => o.id === activeSection)?.color} /> : <span className="material-icons-round">{studentMenuOptions.find(o => o.id === activeSection)?.icon}</span>}
                             </div>
                             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>{studentMenuOptions.find(o => o.id === activeSection)?.label}</h3>
                         </div>
+                        <button onClick={() => setActiveSection(null)} style={{ background: 'var(--bg-hover)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-main)' }}>
+                            <span className="material-icons-round">arrow_back</span>
+                        </button>
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '24px', paddingBottom: '100px' }}>
                         <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -316,13 +329,13 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                     <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                         {isPresent && !showCheckOutConfirm && isLead && (
                                             <button onClick={() => setShowCheckOutConfirm(true)} style={{ width: '100%', backgroundColor: 'var(--color-sunset)', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '16px' }}>
-                                                <span className="material-icons-round">logout</span> CHECK OUT
+                                                <span className="material-icons-round">logout</span> CHECK-OUT
                                             </button>
                                         )}
 
                                         {showCheckOutConfirm && (
                                             <div style={{ backgroundColor: 'var(--bg-card)', padding: '16px', borderRadius: '12px', textAlign: 'center', border: '1px solid var(--border-subtle)', animation: 'slideUp 0.2s' }}>
-                                                <div style={{ marginBottom: '12px', fontWeight: '700', color: 'var(--text-main)' }}>Confirm Check out?</div>
+                                                <div style={{ marginBottom: '12px', fontWeight: '700', color: 'var(--text-main)' }}>Confirm Check-Out?</div>
                                                 <div style={{ marginBottom: '16px', textAlign: 'left' }}>
                                                     <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px' }}>Checkout By:</label>
                                                     <select title="Select Guardian" value={checkoutBy} onChange={(e) => setCheckoutBy(e.target.value as any)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}>
@@ -344,7 +357,8 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', backgroundColor: 'var(--bg-app)', borderRadius: '10px' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>Check-In:</span>
-                                                    <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>
+                                                    <span style={{ fontSize: '13px', fontWeight: '700', color: isPresent ? 'var(--color-success)' : 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        {isPresent && <span className="material-icons-round" style={{ fontSize: '14px' }}>check_circle</span>}
                                                         {program === 'sunrise' ? editedStudent.sunriseTime : editedStudent.sunsetTime || '--:--'}
                                                         <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500', marginLeft: '4px' }}>
                                                             by {program === 'sunrise' ? editedStudent.sunriseStaff : editedStudent.sunsetStaff}
@@ -373,7 +387,8 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                 {currentStatus === 'checked_out' && (
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                         <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>Checked-Out:</span>
-                                                        <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>
+                                                        <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                            <span className="material-icons-round" style={{ fontSize: '14px' }}>check_circle</span>
                                                             {program === 'sunrise' ? editedStudent.sunriseCheckOutTime : editedStudent.sunsetCheckOutTime || '--:--'}
                                                             <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500', marginLeft: '4px' }}>
                                                                 by {program === 'sunrise' ? editedStudent.sunriseCheckoutBy : editedStudent.sunsetCheckoutBy}
@@ -460,7 +475,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                         </div>
 
                                                                         <div style={{ padding: '12px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '12px', lineHeight: '1.5', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
-                                                                            <strong>Behavior Guidelines:</strong><br />
+                                                                            <strong>BEHAVIOR GUIDELINES:</strong><br />
                                                                             Please fill out the following behavior ticket per student/behavior as detailed as possible.
                                                                         </div>
 

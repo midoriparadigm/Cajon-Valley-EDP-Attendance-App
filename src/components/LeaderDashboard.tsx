@@ -257,7 +257,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                                                     {staff.id !== 's1' && (
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '180px' }}>
-                                                                <span style={{ fontSize: '13px', fontWeight: '600' }}>Can Check In</span>
+                                                                <span style={{ fontSize: '13px', fontWeight: '600' }}>Can Check-In</span>
                                                                 <button title="Toggle Check-In Permission" onClick={() => toggleStaffCheckIn(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckIn ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
                                                                     <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckIn ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
                                                                 </button>
@@ -458,11 +458,11 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                             {selectedReportStudentId ? (
                                                 <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                                    <div style={{ padding: '16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <div style={{ padding: '16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>{parentReports.find(r => r.studentId === selectedReportStudentId)?.studentName}</h4>
                                                         <button onClick={() => setSelectedReportStudentId(null)} style={{ background: 'var(--bg-hover)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-main)' }}>
                                                             <span className="material-icons-round">arrow_back</span>
                                                         </button>
-                                                        <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>{parentReports.find(r => r.studentId === selectedReportStudentId)?.studentName}</h4>
                                                     </div>
                                                     <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -500,7 +500,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                                                                 style={{ width: '100%', padding: '14px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px' }}
                                                             >
                                                                 <span className="material-icons-round">auto_fix_high</span>
-                                                                GENERATE DRAFT
+                                                                GENERATE COMPREHENSIVE DRAFT
                                                             </button>
                                                         </div>
                                                     </div>
