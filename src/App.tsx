@@ -463,13 +463,32 @@ const App = () => {
                                             <span className="material-icons-round" style={{ color: 'var(--border-subtle)' }}>radio_button_unchecked</span>
                                         ) : (
                                             <div style={{ textAlign: 'right' }}>
-                                                <div style={{ fontSize: '12px', fontWeight: '700', color: status === 'checked_out' ? '#9ca3af' : '#10b981', textTransform: 'uppercase' }}>{status === 'checked_out' ? 'CHECKED-OUT' : 'CHECKED-IN'}</div>
-                                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{program === 'sunrise' ? student.sunriseTime : student.sunsetTime}</div>
+                                                <div style={{ fontSize: '12px', fontWeight: '700', color: status === 'checked_out' ? '#9ca3af' : status === 'pending_parent' ? '#8b5cf6' : '#10b981', textTransform: 'uppercase' }}>
+                                                    {status === 'checked_out' ? 'CHECKED-OUT' : status === 'pending_parent' ? 'WAITING' : 'CHECKED-IN'}
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                                    {status === 'checked_out'
+                                                        ? `${program === 'sunrise' ? student.sunriseCheckOutTime : student.sunsetCheckOutTime} by ${program === 'sunrise' ? (student.sunriseStaff || 'Staff') : (student.sunsetStaff || 'Staff')}`
+                                                        : `${program === 'sunrise' ? student.sunriseTime : student.sunsetTime} by ${program === 'sunrise' ? (student.sunriseStaff || 'Staff') : (student.sunsetStaff || 'Staff')}`
+                                                    }
+                                                </div>
                                             </div>
                                         )}
-                                        <button onClick={(e) => { e.stopPropagation(); handleStudentAction(student); }} style={{ background: 'none', border: 'none', padding: '8px', cursor: 'pointer', color: 'var(--text-secondary)', borderRadius: '50%' }}>
-                                            <span className="material-icons-round">more_vert</span>
-                                        </button>
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                            {(isPresent || isCheckedOut) && (
+                                                <>
+                                                    {student.checkInPhoto && (
+                                                        <img src={student.checkInPhoto} alt="Check-in" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #8b5cf6', objectFit: 'cover' }} />
+                                                    )}
+                                                    {student.yearbookPhotoUrl && (
+                                                        <img src={student.yearbookPhotoUrl} alt="Yearbook" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--border-subtle)', objectFit: 'cover' }} />
+                                                    )}
+                                                </>
+                                            )}
+                                            <button onClick={(e) => { e.stopPropagation(); handleStudentAction(student); }} style={{ background: 'none', border: 'none', padding: '8px', cursor: 'pointer', color: 'var(--text-secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <span className="material-icons-round">more_vert</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             );
