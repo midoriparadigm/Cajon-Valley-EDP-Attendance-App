@@ -16,7 +16,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
     const [currentSymptoms, setCurrentSymptoms] = useState<Record<string, boolean>>({});
     const [notes, setNotes] = useState('');
     const [surveyCompleted, setSurveyCompleted] = useState(false);
-    const [showNewReportForm, setShowNewReportForm] = useState(false);
+    const [showNewReportForm, setShowNewReportForm] = useState(!student.headInjury);
     const [witnessText, setWitnessText] = useState('');
     const [witnessDone, setWitnessDone] = useState(false);
 
@@ -102,13 +102,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
     const isReadOnly = !!student.headInjuryLogs.find(l => l.stage === activeTab);
     const hasYesSymptoms = Object.values(currentSymptoms).some(val => val === true);
 
-    if (!showNewReportForm && !student.headInjury) {
-        return (
-            <button onClick={() => setShowNewReportForm(true)} style={{ width: '100%', padding: '12px', backgroundColor: 'var(--color-danger)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <span className="material-icons-round">add_circle</span> New Report
-            </button>
-        );
-    }
+
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

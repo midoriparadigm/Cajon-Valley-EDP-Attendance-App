@@ -490,8 +490,8 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                     </div>
                                                                 </div>
 
-                                                                {/* Textarea Grid - 2 columns on desktop */}
-                                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '12px' }}>
+                                                                {/* Textarea Stack - full width */}
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                                                     <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                                                                         <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Details of the Incident</label>
                                                                         <textarea
