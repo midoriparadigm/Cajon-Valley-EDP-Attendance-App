@@ -9,11 +9,12 @@ interface ParentReportModalProps {
     onSend: (report: ParentReport) => void;
     onSaveDraft: (report: ParentReport) => void;
     staffId: string;
+    existingReport?: ParentReport;
 }
 
 const ParentReportModal = (props: ParentReportModalProps) => {
-    const { student, type, onClose, onSend, onSaveDraft, staffId } = props;
-    const [method, setMethod] = useState<'email' | 'sms' | 'both'>('both');
+    const { student, type, onClose, onSend, onSaveDraft, staffId, existingReport } = props;
+    const [method, setMethod] = useState<'email' | 'sms' | 'both'>(existingReport?.method || 'both');
 
     // Generate detailed message based on incident type
     const generateMessage = () => {
@@ -70,10 +71,10 @@ const ParentReportModal = (props: ParentReportModalProps) => {
         }
     };
 
-    const [message, setMessage] = useState(generateMessage());
+    const [message, setMessage] = useState(existingReport?.message || generateMessage());
 
     const createReport = (status: 'draft' | 'sent'): ParentReport => ({
-        id: Date.now().toString(),
+        id: existingReport?.id || Date.now().toString(),
         studentId: student.id,
         studentName: `${student.firstName} ${student.lastName}`,
         type,
@@ -81,7 +82,7 @@ const ParentReportModal = (props: ParentReportModalProps) => {
         message,
         method,
         status,
-        createdAt: new Date().toISOString(),
+        createdAt: existingReport?.createdAt || new Date().toISOString(),
         staffId: staffId || 'unknown'
     });
 

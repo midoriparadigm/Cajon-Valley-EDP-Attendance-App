@@ -3,6 +3,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import type { Student, Staff, ParentReport, BiometricLog, ProgramType } from '../types';
 import { GRADES } from '../constants';
 import RosterManager from './RosterManager';
+import ParentReportModal from './ParentReportModal';
 
 interface LeaderDashboardProps {
     user: Staff;
@@ -17,6 +18,7 @@ interface LeaderDashboardProps {
     biometricLogs: BiometricLog[];
     isInline?: boolean;
     onUpdateReport?: (report: ParentReport) => void;
+    onDeleteReport?: (reportId: string) => void;
     onScheduleBatchCheckout: (time: string | null) => void;
     showToast: (msg: string, type: any) => void;
     isBatchDefaultEnabled: boolean;
@@ -28,7 +30,7 @@ interface LeaderDashboardProps {
 }
 
 const LeaderDashboard = (props: LeaderDashboardProps) => {
-    const { user, students, onClose, onImport, onAddStudent, onUpdateStaff, onUpdateStudent, staffList, parentReports, biometricLogs, isInline, onUpdateReport, onScheduleBatchCheckout, showToast, isBatchDefaultEnabled, setIsBatchDefaultEnabled, defaultBatchTime, setDefaultBatchTime, scheduledBatchCheckoutTime, darkMode } = props;
+    const { user, students, onClose, onImport, onAddStudent, onUpdateStaff, onUpdateStudent, staffList, parentReports, biometricLogs, isInline, onUpdateReport, onDeleteReport, onScheduleBatchCheckout, showToast, isBatchDefaultEnabled, setIsBatchDefaultEnabled, defaultBatchTime, setDefaultBatchTime, scheduledBatchCheckoutTime, darkMode } = props;
 
     const containerStyle: React.CSSProperties = {
         position: 'fixed',
@@ -54,10 +56,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
     const [selectedReportStudentId, setSelectedReportStudentId] = useState<string | null>(null);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [selectedAccessGrade, setSelectedAccessGrade] = useState<string | null>(null);
-    const [editingReport, setEditingReport] = useState<ParentReport | null>(null);
-    const [editingReportText, setEditingReportText] = useState('');
-    const [sendViaEmail, setSendViaEmail] = useState(true);
-    const [sendViaSms, setSendViaSms] = useState(true);
+    const [reportModalData, setReportModalData] = useState<{ report: ParentReport; student: Student } | null>(null);
 
     const menuOptions = [
         { id: 'roster', label: 'Roster Management', icon: 'groups', color: '#3b82f6', bg: '#dbeafe' },
@@ -498,38 +497,12 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                                                                 const sReports = parentReports.filter(r => r.studentId === selectedReportStudentId);
                                                                 if (sReports.length === 1) {
                                                                     const report = sReports[0];
-                                                                    return editingReport?.id === report.id ? (
-                                                                        <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', backgroundColor: 'var(--bg-input)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
-                                                                            <label style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Edit Report Message</label>
-                                                                            <textarea
-                                                                                value={editingReportText}
-                                                                                onChange={(e) => setEditingReportText(e.target.value)}
-                                                                                style={{ width: '100%', minHeight: '120px', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontFamily: 'inherit', fontSize: '13px', lineHeight: '1.5', resize: 'vertical' }}
-                                                                                placeholder="Edit the report message..."
-                                                                            />
-                                                                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                                                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                                                                    <input type="checkbox" checked={sendViaEmail} onChange={(e) => setSendViaEmail(e.target.checked)} style={{ width: '18px', height: '18px' }} />
-                                                                                    <span style={{ fontSize: '13px', color: 'var(--text-main)' }}>Email</span>
-                                                                                </label>
-                                                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                                                                    <input type="checkbox" checked={sendViaSms} onChange={(e) => setSendViaSms(e.target.checked)} style={{ width: '18px', height: '18px' }} />
-                                                                                    <span style={{ fontSize: '13px', color: 'var(--text-main)' }}>SMS</span>
-                                                                                </label>
-                                                                            </div>
-                                                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                                                <button onClick={() => setEditingReport(null)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                                                                                <button onClick={() => {
-                                                                                    const updatedReport = { ...report, message: editingReportText, method: (sendViaEmail && sendViaSms) ? 'both' : sendViaEmail ? 'email' : 'sms' };
-                                                                                    if (onUpdateReport) onUpdateReport(updatedReport as ParentReport);
-                                                                                    setEditingReport(null);
-                                                                                    showToast('Report updated!', 'success');
-                                                                                }} style={{ flex: 1, padding: '12px', borderRadius: '8px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', fontWeight: '700', cursor: 'pointer' }}>Save Changes</button>
-                                                                            </div>
-                                                                        </div>
-                                                                    ) : (
+                                                                    const reportStudent = students.find(s => s.id === report.studentId);
+                                                                    if (!reportStudent) return null;
+
+                                                                    return (
                                                                         <button
-                                                                            onClick={() => { setEditingReport(report); setEditingReportText(report.message); }}
+                                                                            onClick={() => setReportModalData({ report, student: reportStudent })}
                                                                             style={{ width: '100%', padding: '14px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px' }}
                                                                         >
                                                                             <span className="material-icons-round">edit_note</span>
@@ -540,8 +513,51 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                                                                     return (
                                                                         <button
                                                                             onClick={() => {
-                                                                                const compiler = `COMPREHENSIVE DAILY REPORT - ${sReports[0].studentName}\n\n` + sReports.map(r => `[${r.type.toUpperCase()}] ${new Date(r.createdAt).toLocaleDateString()}\n${r.message.split('\n').filter(line => line.length > 0).slice(0, 3).join('\n')}...`).join('\n\n');
-                                                                                const comprehensiveReport: ParentReport = { id: `comp-${Date.now()}`, studentId: selectedReportStudentId, studentName: sReports[0].studentName, type: 'behavior', message: compiler, method: 'both', status: 'draft', createdAt: new Date().toISOString(), staffId: user.id };
+                                                                                // Generate comprehensive summary
+                                                                                const studentName = sReports[0].studentName;
+                                                                                const date = new Date().toLocaleDateString();
+
+                                                                                let summary = `Dear Parent/Guardian,\n\nThis is a comprehensive daily report for ${studentName} (${date}).\n\n`;
+
+                                                                                // Group by type
+                                                                                const byType = sReports.reduce((acc, r) => {
+                                                                                    acc[r.type] = acc[r.type] || [];
+                                                                                    acc[r.type].push(r);
+                                                                                    return acc;
+                                                                                }, {} as Record<string, ParentReport[]>);
+
+                                                                                // Add sections for each type
+                                                                                Object.entries(byType).forEach(([type, typeReports]) => {
+                                                                                    summary += `**${type.toUpperCase()} REPORTS (${typeReports.length})**\n`;
+                                                                                    typeReports.forEach((r, i) => {
+                                                                                        const lines = r.message.split('\n').filter(line => line.trim().length > 0);
+                                                                                        const preview = lines.slice(0, 3).join('\n');
+                                                                                        summary += `\n${i + 1}. ${new Date(r.createdAt).toLocaleTimeString()}:\n${preview}\n`;
+                                                                                    });
+                                                                                    summary += '\n';
+                                                                                });
+
+                                                                                summary += 'Please contact us if you have any questions.\n\nBest regards,\nEDP Team - Cajon Valley School District';
+
+                                                                                // Create comprehensive report
+                                                                                const comprehensiveReport: ParentReport = {
+                                                                                    id: `comp-${Date.now()}`,
+                                                                                    studentId: selectedReportStudentId || '',
+                                                                                    studentName: sReports[0].studentName,
+                                                                                    type: 'behavior',
+                                                                                    message: summary,
+                                                                                    method: 'both',
+                                                                                    status: 'draft',
+                                                                                    createdAt: new Date().toISOString(),
+                                                                                    staffId: user.id
+                                                                                };
+
+                                                                                // Delete old individual reports
+                                                                                if (onDeleteReport) {
+                                                                                    sReports.forEach(r => onDeleteReport(r.id));
+                                                                                }
+
+                                                                                // Add comprehensive report
                                                                                 if (onUpdateReport) onUpdateReport(comprehensiveReport);
                                                                                 showToast('Comprehensive draft generated!', 'success');
                                                                             }}
@@ -707,6 +723,26 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {reportModalData && (
+                <ParentReportModal
+                    student={reportModalData.student}
+                    type={reportModalData.report.type === 'injury' ? 'injury' : 'behavior'}
+                    existingReport={reportModalData.report}
+                    onClose={() => setReportModalData(null)}
+                    onSend={(report) => {
+                        if (onUpdateReport) onUpdateReport(report);
+                        showToast('Report sent!', 'success');
+                        setReportModalData(null);
+                    }}
+                    onSaveDraft={(report) => {
+                        if (onUpdateReport) onUpdateReport(report);
+                        showToast('Draft saved!', 'info');
+                        setReportModalData(null);
+                    }}
+                    staffId={user.id}
+                />
             )}
         </div>
     );
