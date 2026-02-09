@@ -412,21 +412,21 @@ const App = () => {
 
             <main style={{ paddingTop: '80px', flex: 1, overflowY: 'auto', paddingBottom: '100px', height: '100%' }}>
                 {!showLeaderDashboard && (
-                    <div style={{ padding: '16px', backgroundColor: '#0f172a', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '16px', position: 'sticky', top: 0, zIndex: 900 }}>
+                    <div style={{ padding: '16px', backgroundColor: 'var(--bg-header)', borderBottom: '1px solid var(--border-subtle)', marginBottom: '16px', position: 'sticky', top: 0, zIndex: 900 }}>
                         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
                             {['all', 'checked_in', 'checked_out'].map(tab => (
-                                <button key={tab} onClick={() => setRosterStatusFilter(tab as any)} style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: 'none', backgroundColor: rosterStatusFilter === tab ? 'white' : 'rgba(255,255,255,0.1)', color: rosterStatusFilter === tab ? '#0f172a' : 'rgba(255,255,255,0.7)', fontWeight: '800', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                <button key={tab} onClick={() => setRosterStatusFilter(tab as any)} style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: 'none', backgroundColor: rosterStatusFilter === tab ? 'var(--text-main)' : (darkMode ? 'var(--bg-input)' : '#e5e7eb'), color: rosterStatusFilter === tab ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '800', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s' }}>
                                     {tab === 'all' ? 'All Students' : tab === 'checked_in' ? 'Checked-In' : 'Checked-Out'}
                                 </button>
                             ))}
                         </div>
                         <div style={{ position: 'relative', marginBottom: '16px' }}>
-                            <span className="material-icons-round" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.5)', fontSize: '20px' }}>search</span>
-                            <input type="text" placeholder="Search student..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: 'none', backgroundColor: 'rgba(255,255,255,0.1)', fontSize: '16px', color: 'white', boxSizing: 'border-box', outline: 'none' }} />
+                            <span className="material-icons-round" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '20px' }}>search</span>
+                            <input type="text" placeholder="Search student..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '16px 16px 16px 48px', borderRadius: '16px', border: darkMode ? '1px solid rgba(255,255,255,0.4)' : 'none', backgroundColor: 'var(--bg-input)', fontSize: '16px', color: 'var(--text-main)', boxSizing: 'border-box', outline: 'none' }} />
                         </div>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                             {GRADES.map(g => (
-                                <button key={g} onClick={() => setSelectedGrade(prev => prev === g ? 'All' : g)} style={{ padding: '10px 16px', borderRadius: '12px', border: 'none', backgroundColor: selectedGrade === g ? 'white' : 'rgba(255,255,255,0.1)', color: selectedGrade === g ? '#0f172a' : 'rgba(255,255,255,0.7)', fontWeight: '800', fontSize: '14px', cursor: 'pointer', minWidth: '48px', transition: 'all 0.2s' }}>{g}</button>
+                                <button key={g} onClick={() => setSelectedGrade(prev => prev === g ? 'All' : g)} style={{ padding: '10px 16px', borderRadius: '12px', border: 'none', backgroundColor: selectedGrade === g ? 'var(--text-main)' : (darkMode ? 'var(--bg-input)' : '#e5e7eb'), color: selectedGrade === g ? 'var(--bg-card)' : 'var(--text-main)', fontWeight: '800', fontSize: '14px', cursor: 'pointer', minWidth: '48px', transition: 'all 0.2s' }}>{g}</button>
                             ))}
                         </div>
                     </div>
