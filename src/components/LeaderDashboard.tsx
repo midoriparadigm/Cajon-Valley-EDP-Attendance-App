@@ -54,6 +54,10 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
     const [selectedReportStudentId, setSelectedReportStudentId] = useState<string | null>(null);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [selectedAccessGrade, setSelectedAccessGrade] = useState<string | null>(null);
+    const [editingReport, setEditingReport] = useState<ParentReport | null>(null);
+    const [editingReportText, setEditingReportText] = useState('');
+    const [sendViaEmail, setSendViaEmail] = useState(true);
+    const [sendViaSms, setSendViaSms] = useState(true);
 
     const menuOptions = [
         { id: 'roster', label: 'Roster Management', icon: 'groups', color: '#3b82f6', bg: '#dbeafe' },
@@ -272,7 +276,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                                                                 {staff.canAdminTasks && (
                                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingLeft: '16px', borderLeft: '2px solid var(--border-subtle)', marginLeft: '8px' }}>
                                                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '160px' }}>
-                                                                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Check Out</span>
+                                                                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Check-Out</span>
                                                                             <button title="Toggle Check-Out Permission" onClick={() => toggleStaffCheckOut(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckOut ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
                                                                                 <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckOut ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
                                                                             </button>
@@ -489,19 +493,66 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                                                                     </div>
                                                                 );
                                                             })}
-                                                            <button
-                                                                onClick={() => {
-                                                                    const sReports = parentReports.filter(r => r.studentId === selectedReportStudentId);
-                                                                    const compiler = `COMPREHENSIVE DAILY REPORT - ${sReports[0].studentName}\n\n` + sReports.map(r => `[${r.type.toUpperCase()}] ${new Date(r.createdAt).toLocaleDateString()}\n${r.message.split('\n').filter(line => line.length > 0).slice(0, 3).join('\n')}...`).join('\n\n');
-                                                                    const comprehensiveReport: ParentReport = { id: `comp-${Date.now()}`, studentId: selectedReportStudentId, studentName: sReports[0].studentName, type: 'behavior', message: compiler, method: 'both', status: 'draft', createdAt: new Date().toISOString(), staffId: user.id };
-                                                                    if (onUpdateReport) onUpdateReport(comprehensiveReport);
-                                                                    showToast('Comprehensive draft generated!', 'success');
-                                                                }}
-                                                                style={{ width: '100%', padding: '14px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px' }}
-                                                            >
-                                                                <span className="material-icons-round">auto_fix_high</span>
-                                                                GENERATE COMPREHENSIVE DRAFT
-                                                            </button>
+                                                            {/* Conditional button logic: 1 report = Edit/Generate, 2+ = Comprehensive Draft */}
+                                                            {(() => {
+                                                                const sReports = parentReports.filter(r => r.studentId === selectedReportStudentId);
+                                                                if (sReports.length === 1) {
+                                                                    const report = sReports[0];
+                                                                    return editingReport?.id === report.id ? (
+                                                                        <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', backgroundColor: 'var(--bg-input)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                                                                            <label style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Edit Report Message</label>
+                                                                            <textarea
+                                                                                value={editingReportText}
+                                                                                onChange={(e) => setEditingReportText(e.target.value)}
+                                                                                style={{ width: '100%', minHeight: '120px', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontFamily: 'inherit', fontSize: '13px', lineHeight: '1.5', resize: 'vertical' }}
+                                                                                placeholder="Edit the report message..."
+                                                                            />
+                                                                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                                                                    <input type="checkbox" checked={sendViaEmail} onChange={(e) => setSendViaEmail(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+                                                                                    <span style={{ fontSize: '13px', color: 'var(--text-main)' }}>Email</span>
+                                                                                </label>
+                                                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                                                                    <input type="checkbox" checked={sendViaSms} onChange={(e) => setSendViaSms(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+                                                                                    <span style={{ fontSize: '13px', color: 'var(--text-main)' }}>SMS</span>
+                                                                                </label>
+                                                                            </div>
+                                                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                                                <button onClick={() => setEditingReport(null)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                                                                                <button onClick={() => {
+                                                                                    const updatedReport = { ...report, message: editingReportText, method: (sendViaEmail && sendViaSms) ? 'both' : sendViaEmail ? 'email' : 'sms' };
+                                                                                    if (onUpdateReport) onUpdateReport(updatedReport as ParentReport);
+                                                                                    setEditingReport(null);
+                                                                                    showToast('Report updated!', 'success');
+                                                                                }} style={{ flex: 1, padding: '12px', borderRadius: '8px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', fontWeight: '700', cursor: 'pointer' }}>Save Changes</button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <button
+                                                                            onClick={() => { setEditingReport(report); setEditingReportText(report.message); }}
+                                                                            style={{ width: '100%', padding: '14px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px' }}
+                                                                        >
+                                                                            <span className="material-icons-round">edit_note</span>
+                                                                            EDIT / GENERATE
+                                                                        </button>
+                                                                    );
+                                                                } else {
+                                                                    return (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const compiler = `COMPREHENSIVE DAILY REPORT - ${sReports[0].studentName}\n\n` + sReports.map(r => `[${r.type.toUpperCase()}] ${new Date(r.createdAt).toLocaleDateString()}\n${r.message.split('\n').filter(line => line.length > 0).slice(0, 3).join('\n')}...`).join('\n\n');
+                                                                                const comprehensiveReport: ParentReport = { id: `comp-${Date.now()}`, studentId: selectedReportStudentId, studentName: sReports[0].studentName, type: 'behavior', message: compiler, method: 'both', status: 'draft', createdAt: new Date().toISOString(), staffId: user.id };
+                                                                                if (onUpdateReport) onUpdateReport(comprehensiveReport);
+                                                                                showToast('Comprehensive draft generated!', 'success');
+                                                                            }}
+                                                                            style={{ width: '100%', padding: '14px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px' }}
+                                                                        >
+                                                                            <span className="material-icons-round">auto_fix_high</span>
+                                                                            GENERATE COMPREHENSIVE DRAFT
+                                                                        </button>
+                                                                    );
+                                                                }
+                                                            })()}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -644,8 +695,8 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                         </h3>
                         <p style={{ margin: '0 0 24px 0', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
                             {confirmBlockStudent.isCheckInBlocked
-                                ? `Allow ${confirmBlockStudent.firstName} ${confirmBlockStudent.lastName} to check in again?`
-                                : `Prevent ${confirmBlockStudent.firstName} ${confirmBlockStudent.lastName} from checking in?`
+                                ? `Allow ${confirmBlockStudent.firstName} ${confirmBlockStudent.lastName} to check-in again?`
+                                : `Prevent ${confirmBlockStudent.firstName} ${confirmBlockStudent.lastName} from checking-in?`
                             }
                         </p>
                         <div style={{ display: 'flex', gap: '12px' }}>

@@ -190,7 +190,7 @@ const App = () => {
         if (user && user.role !== 'Lead') {
             const staffMember = staffList.find(s => s.id === user.id);
             if (staffMember?.canCheckIn === false) {
-                showToast("You do not have permission to check in students.", "error");
+                showToast("You do not have permission to check-in students.", "error");
                 return;
             }
         }
@@ -243,7 +243,7 @@ const App = () => {
 
         const student = students.find(s => s.id === studentId);
         if (student) {
-            showToast(`Checked In: ${student.firstName}`, 'success');
+            showToast(`Checked-In: ${student.firstName}`, 'success');
             if (biometricData) {
                 const mockPhotos = MockDatabase.getPhotosForStudent(student);
                 const newLog: BiometricLog = {
@@ -416,7 +416,7 @@ const App = () => {
                         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
                             {['all', 'checked_in', 'checked_out'].map(tab => (
                                 <button key={tab} onClick={() => setRosterStatusFilter(tab as any)} style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: 'none', backgroundColor: rosterStatusFilter === tab ? 'var(--text-main)' : 'var(--bg-input)', color: rosterStatusFilter === tab ? 'white' : 'var(--text-main)', fontWeight: '800', fontSize: '14px', cursor: 'pointer' }}>
-                                    {tab === 'all' ? 'All Students' : tab === 'checked_in' ? 'Checked In' : 'Checked Out'}
+                                    {tab === 'all' ? 'All Students' : tab === 'checked_in' ? 'Checked-In' : 'Checked-Out'}
                                 </button>
                             ))}
                         </div>
@@ -498,7 +498,7 @@ const App = () => {
             </main>
 
             {showConfirmId && confirmStudent && createPortal(
-                <ConfirmationModal student={confirmStudent} title="Check In?" message={`Mark ${confirmStudent.firstName} as present?`} onConfirm={(photo, biometricData) => handleCheckIn(confirmStudent.id, photo, biometricData)} onCancel={() => setShowConfirmId(null)} showPhotoOption={true} isDemoMode={isDemoMode} darkMode={darkMode} />,
+                <ConfirmationModal student={confirmStudent} title="Check-In?" message={`Mark ${confirmStudent.firstName} as present?`} onConfirm={(photo, biometricData) => handleCheckIn(confirmStudent.id, photo, biometricData)} onCancel={() => setShowConfirmId(null)} showPhotoOption={true} isDemoMode={isDemoMode} darkMode={darkMode} />,
                 document.body
             )}
 
@@ -511,7 +511,7 @@ const App = () => {
 
             {showLeaderDashboard && createPortal(
                 <div key={dashboardKey} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
-                    <LeaderDashboard user={user} students={students} staffList={staffList} parentReports={parentReports} biometricLogs={biometricLogs} onClose={() => setShowLeaderDashboard(false)} onImport={(newStudents) => setStudents([...students, ...newStudents])} onAddStudent={(newStudent) => setStudents([...students, newStudent])} onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)} onUpdateStudent={handleSaveStudent} onUpdateReport={(updatedReport) => setParentReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r))} onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)} showToast={showToast} isBatchDefaultEnabled={isBatchDefaultEnabled} setIsBatchDefaultEnabled={setIsBatchDefaultEnabled} defaultBatchTime={defaultBatchTime} setDefaultBatchTime={setDefaultBatchTime} scheduledBatchCheckoutTime={scheduledBatchCheckoutTime} darkMode={darkMode} />
+                    <LeaderDashboard user={user} students={students} staffList={staffList} parentReports={parentReports} biometricLogs={biometricLogs} onClose={() => setShowLeaderDashboard(false)} onImport={(newStudents) => setStudents([...students, ...newStudents])} onAddStudent={(newStudent) => setStudents([...students, newStudent])} onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)} onUpdateStudent={handleSaveStudent} onUpdateReport={(updatedReport) => setParentReports(prev => prev.some(r => r.id === updatedReport.id) ? prev.map(r => r.id === updatedReport.id ? updatedReport : r) : [...prev, updatedReport])} onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)} showToast={showToast} isBatchDefaultEnabled={isBatchDefaultEnabled} setIsBatchDefaultEnabled={setIsBatchDefaultEnabled} defaultBatchTime={defaultBatchTime} setDefaultBatchTime={setDefaultBatchTime} scheduledBatchCheckoutTime={scheduledBatchCheckoutTime} darkMode={darkMode} />
                 </div>,
                 document.body
             )}
