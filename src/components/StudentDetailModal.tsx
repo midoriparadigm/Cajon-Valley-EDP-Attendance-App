@@ -444,83 +444,97 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                             </div>
                                                         ) : (
                                                             <>
-                                                                {/* Staff Selection Grid - 2 columns on desktop */}
-                                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
-                                                                    <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                                                                        <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Handling Staff</label>
-                                                                        <select
-                                                                            value={editedStudent.behaviorStaff || currentStaff.name}
-                                                                            onChange={(e) => setEditedStudent({ ...editedStudent, behaviorStaff: e.target.value })}
-                                                                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
-                                                                        >
-                                                                            {staffList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                                                                        </select>
+                                                                {/* Two-column layout for desktop - eliminates scrolling */}
+                                                                <div style={{
+                                                                    display: 'grid',
+                                                                    gridTemplateColumns: 'minmax(400px, 1fr) minmax(380px, 1fr)',
+                                                                    gap: '16px',
+                                                                    '@media (max-width: 900px)': { gridTemplateColumns: '1fr' }
+                                                                }}>
+                                                                    {/* LEFT COLUMN: Staff, Details, Actions, Buttons */}
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                                        {/* Staff Selection - stacked vertically */}
+                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                                                                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Handling Staff</label>
+                                                                            <select
+                                                                                value={editedStudent.behaviorStaff || currentStaff.name}
+                                                                                onChange={(e) => setEditedStudent({ ...editedStudent, behaviorStaff: e.target.value })}
+                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
+                                                                            >
+                                                                                {staffList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                                                                            </select>
+                                                                        </div>
+
+                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                                                                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Staff Closest to Situation</label>
+                                                                            <select
+                                                                                value={editedStudent.behaviorStaffSupport || ''}
+                                                                                onChange={(e) => setEditedStudent({ ...editedStudent, behaviorStaffSupport: e.target.value })}
+                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
+                                                                            >
+                                                                                <option value="">Choose Staff...</option>
+                                                                                {staffList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                                                                            </select>
+                                                                        </div>
+
+                                                                        {/* Details textarea - optimized height */}
+                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flex: '1' }}>
+                                                                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Details of the Incident</label>
+                                                                            <textarea
+                                                                                value={editedStudent.behaviorDescription || ''}
+                                                                                onChange={e => setEditedStudent({ ...editedStudent, behaviorDescription: e.target.value })}
+                                                                                placeholder="Describe the details of the incident..."
+                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', height: 'calc(100% - 40px)', minHeight: '100px', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.4', fontSize: '13px', resize: 'none' }}
+                                                                            />
+                                                                            {editedStudent.behaviorTimestamp && (
+                                                                                <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--color-warning)', fontWeight: '600' }}>Limit: 1 edit per day</div>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* Actions textarea - optimized height */}
+                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flex: '1' }}>
+                                                                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actions Taken by Staff</label>
+                                                                            <textarea
+                                                                                value={editedStudent.behaviorActions || ''}
+                                                                                onChange={e => setEditedStudent({ ...editedStudent, behaviorActions: e.target.value })}
+                                                                                placeholder="Describe actions taken..."
+                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '13px', height: 'calc(100% - 30px)', minHeight: '100px', outline: 'none', fontFamily: 'inherit', resize: 'none' }}
+                                                                            />
+                                                                        </div>
+
+                                                                        {/* Buttons at bottom of left column */}
+                                                                        <div style={{ display: 'flex', gap: '12px' }}>
+                                                                            <button onClick={cancelTicket} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                                                                            <button onClick={() => { saveBehavior(); setFiledReportType('behavior'); }} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Submit</button>
+                                                                        </div>
+                                                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>ID: {student.id} | Stamped: {editedStudent.behaviorTimestamp} by {editedStudent.behaviorStaff}</div>
                                                                     </div>
 
-                                                                    <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                                                                        <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Staff Closest to Situation</label>
-                                                                        <select
-                                                                            value={editedStudent.behaviorStaffSupport || ''}
-                                                                            onChange={(e) => setEditedStudent({ ...editedStudent, behaviorStaffSupport: e.target.value })}
-                                                                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
-                                                                        >
-                                                                            <option value="">Choose Staff...</option>
-                                                                            {staffList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                                                                        </select>
+                                                                    {/* RIGHT COLUMN: Guidelines and Behavior Checklist */}
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
+                                                                        {/* Guidelines box */}
+                                                                        <div style={{ padding: '12px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '12px', lineHeight: '1.5', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
+                                                                            <strong>BEHAVIOR GUIDELINES:</strong><br />
+                                                                            Please fill out the following behavior ticket per student/behavior as detailed as possible.
+                                                                        </div>
+
+                                                                        {/* Behavior checklist - takes remaining height */}
+                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flex: '1', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                                                                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Behaviors</label>
+                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto', flex: '1' }}>
+                                                                                {BEHAVIOR_CHECKLISTS[editedStudent.behavior as 'green']?.map((item) => (
+                                                                                    <label key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-main)', padding: '6px 0', borderBottom: '1px solid var(--bg-app)', cursor: 'pointer', flexShrink: 0 }}>
+                                                                                        <input type="checkbox" checked={editedStudent.behaviorIssues?.includes(item) || false} onChange={() => {
+                                                                                            const issues = editedStudent.behaviorIssues.includes(item) ? editedStudent.behaviorIssues.filter(i => i !== item) : [...editedStudent.behaviorIssues, item];
+                                                                                            setEditedStudent({ ...editedStudent, behaviorIssues: issues });
+                                                                                        }} style={{ transform: 'scale(1.2)', flexShrink: 0 }} />
+                                                                                        {item}
+                                                                                    </label>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-
-                                                                <div style={{ padding: '12px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '12px', lineHeight: '1.5', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
-                                                                    <strong>BEHAVIOR GUIDELINES:</strong><br />
-                                                                    Please fill out the following behavior ticket per student/behavior as detailed as possible.
-                                                                </div>
-
-                                                                <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                                                                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Behaviors</label>
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                                        {BEHAVIOR_CHECKLISTS[editedStudent.behavior as 'green']?.map((item) => (
-                                                                            <label key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-main)', padding: '4px 0', borderBottom: '1px solid var(--bg-app)', cursor: 'pointer' }}>
-                                                                                <input type="checkbox" checked={editedStudent.behaviorIssues?.includes(item) || false} onChange={() => {
-                                                                                    const issues = editedStudent.behaviorIssues.includes(item) ? editedStudent.behaviorIssues.filter(i => i !== item) : [...editedStudent.behaviorIssues, item];
-                                                                                    setEditedStudent({ ...editedStudent, behaviorIssues: issues });
-                                                                                }} style={{ transform: 'scale(1.2)' }} />
-                                                                                {item}
-                                                                            </label>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Textarea Stack - full width */}
-                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                                                    <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                                                                        <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Details of the Incident</label>
-                                                                        <textarea
-                                                                            value={editedStudent.behaviorDescription || ''}
-                                                                            onChange={e => setEditedStudent({ ...editedStudent, behaviorDescription: e.target.value })}
-                                                                            placeholder="Describe the details of the incident..."
-                                                                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', minHeight: '70px', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.4', fontSize: '13px', resize: 'vertical' }}
-                                                                        />
-                                                                        {editedStudent.behaviorTimestamp && (
-                                                                            <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--color-warning)', fontWeight: '600' }}>Limit: 1 edit per day</div>
-                                                                        )}
-                                                                    </div>
-
-                                                                    <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                                                                        <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actions Taken by Staff</label>
-                                                                        <textarea
-                                                                            value={editedStudent.behaviorActions || ''}
-                                                                            onChange={e => setEditedStudent({ ...editedStudent, behaviorActions: e.target.value })}
-                                                                            placeholder="Describe actions taken..."
-                                                                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '13px', minHeight: '70px', outline: 'none', fontFamily: 'inherit', resize: 'vertical' }}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-
-                                                                <div style={{ display: 'flex', gap: '12px' }}>
-                                                                    <button onClick={cancelTicket} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                                                                    <button onClick={() => { saveBehavior(); setFiledReportType('behavior'); }} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Submit</button>
-                                                                </div>
-                                                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>ID: {student.id} | Stamped: {editedStudent.behaviorTimestamp} by {editedStudent.behaviorStaff}</div>
                                                             </>
                                                         )}
 
