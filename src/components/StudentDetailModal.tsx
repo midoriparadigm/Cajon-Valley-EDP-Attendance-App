@@ -334,7 +334,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                         </button>
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '20px', paddingBottom: '40px' }}>
-                        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                             {activeSection === 'attendance' && (
                                 <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
@@ -447,8 +447,8 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                 {/* Two-column layout for desktop - eliminates scrolling */}
                                                                 <div style={{
                                                                     display: 'grid',
-                                                                    gridTemplateColumns: 'minmax(400px, 1fr) minmax(380px, 1fr)',
-                                                                    gap: '16px',
+                                                                    gridTemplateColumns: 'minmax(550px, 1fr) minmax(500px, 1fr)',
+                                                                    gap: '20px',
                                                                     '@media (max-width: 900px)': { gridTemplateColumns: '1fr' }
                                                                 }}>
                                                                     {/* LEFT COLUMN: Staff, Details, Actions, Buttons */}
