@@ -105,28 +105,38 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
 
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '16px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '8px' }}>
-                    Witness Statement {student.headInjuryTimestamp && <span style={{ fontWeight: '400', fontSize: '14px' }}> • Reported by {student.headInjuryWitness || currentStaffName} at {student.headInjuryTimestamp}</span>}
-                </label>
-                <textarea
-                    value={witnessText}
-                    onChange={(e) => setWitnessText(e.target.value)}
-                    disabled={witnessDone}
-                    placeholder="Describe how the injury occurred..."
-                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', minHeight: '80px', fontFamily: 'inherit', outline: 'none' }}
-                />
+        <div style={{
+            display: 'grid',
+            gridTemplateColumns: witnessDone ? 'minmax(550px, 1fr) minmax(500px, 1fr)' : '1fr',
+            gap: '20px'
+        }}>
+            {/* LEFT COLUMN: Witness Statement + Buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: witnessDone ? '100%' : 'auto' }}>
+                <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', flex: witnessDone ? '0 0 auto' : '1' }}>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '8px' }}>
+                        Witness Statement {student.headInjuryTimestamp && <span style={{ fontWeight: '400', fontSize: '13px' }}>• Reported by {student.headInjuryWitness || currentStaffName} at {student.headInjuryTimestamp}</span>}
+                    </label>
+                    <textarea
+                        value={witnessText}
+                        onChange={(e) => setWitnessText(e.target.value)}
+                        disabled={witnessDone}
+                        placeholder="Describe how the injury occurred..."
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', minHeight: witnessDone ? '120px' : '200px', height: witnessDone ? 'auto' : '100%', fontFamily: 'inherit', outline: 'none', resize: 'none' }}
+                    />
+                </div>
+
                 {!witnessDone && (
-                    <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                        <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                        <button onClick={handleWitnessDone} disabled={!witnessText.trim()} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer', opacity: witnessText.trim() ? 1 : 0.5 }}>Done</button>
-                    </div>
+                    <>
+                        <button onClick={handleCancelReport} style={{ padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                        <button onClick={handleWitnessDone} disabled={!witnessText.trim()} style={{ padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--color-danger)', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer', opacity: witnessText.trim() ? 1 : 0.5 }}>Done</button>
+                    </>
                 )}
             </div>
 
+            {/* RIGHT COLUMN: Questionnaire (only shown after witness done) */}
             {witnessDone && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
+                    {/* Time-based tabs */}
                     {isLead && (
                         <div style={{ display: 'flex', backgroundColor: 'var(--color-danger-bg)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
                             {(['0min', '15min', '30min'] as const).map(stage => {
@@ -140,17 +150,18 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                         </div>
                     )}
 
-                    <div style={{ maxHeight: '400px', overflowY: 'auto', opacity: surveyCompleted && !isReadOnly ? 0.6 : 1, pointerEvents: surveyCompleted && !isReadOnly ? 'none' : 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {/* Compact scrollable questionnaire */}
+                    <div style={{ flex: '1', overflowY: 'auto', opacity: surveyCompleted && !isReadOnly ? 0.6 : 1, pointerEvents: surveyCompleted && !isReadOnly ? 'none' : 'auto', display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0 }}>
                         {isLead && Object.entries(HEAD_INJURY_SYMPTOMS).map(([category, symptoms]) => (
-                            <div key={category} style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            <div key={category} style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                     {category} Symptoms
                                 </label>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                     {symptoms.map(symptom => (
-                                        <div key={symptom} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bg-app)' }}>
-                                            <span style={{ fontSize: '13px', color: 'var(--text-main)', flex: 1, paddingRight: '8px', fontWeight: '500' }}>{symptom}</span>
-                                            <div style={{ display: 'flex', gap: '6px' }}>
+                                        <div key={symptom} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid var(--bg-app)' }}>
+                                            <span style={{ fontSize: '13px', color: 'var(--text-main)', flex: 1, paddingRight: '4px', fontWeight: '500' }}>{symptom}</span>
+                                            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                                                 <button
                                                     disabled={isReadOnly}
                                                     onClick={() => setCurrentSymptoms(p => ({ ...p, [symptom]: p[symptom] === true ? undefined : true }))}
@@ -181,22 +192,23 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                         ))}
                     </div>
 
+                    {/* Action buttons at bottom of right column */}
                     {isLead && !isReadOnly && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {!surveyCompleted ? (
                                 <>
                                     {hasYesSymptoms && (
-                                        <button onClick={handleYesDone} style={{ width: '100%', padding: '12px', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Done (Issues Found)</button>
+                                        <button onClick={handleYesDone} style={{ width: '100%', padding: '14px', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Done (Issues Found)</button>
                                     )}
                                     <div style={{ display: 'flex', gap: '12px' }}>
-                                        <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                                        <button onClick={handleNoToAll} style={{ flex: 1, padding: '12px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>"No" to All</button>
+                                        <button onClick={handleCancelReport} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                                        <button onClick={handleNoToAll} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>"No" to All</button>
                                     </div>
                                 </>
                             ) : (
                                 <div style={{ display: 'flex', gap: '12px' }}>
-                                    <button onClick={handleCancelReport} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                                    <button onClick={handleSaveLog} style={{ flex: 1, padding: '12px', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Assessment</button>
+                                    <button onClick={handleCancelReport} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                                    <button onClick={handleSaveLog} style={{ flex: 1, padding: '14px', backgroundColor: darkMode ? '#3b82f6' : 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Assessment</button>
                                 </div>
                             )}
                         </div>
