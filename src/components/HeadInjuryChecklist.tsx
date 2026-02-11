@@ -109,11 +109,12 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
             display: 'grid',
             gridTemplateColumns: witnessDone ? 'minmax(550px, 1fr) minmax(500px, 1fr)' : '1fr',
             gap: '20px',
-            height: '100%'
+            maxHeight: '70vh',
+            height: '70vh'
         }}>
             {/* LEFT COLUMN: Witness Statement + Buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: witnessDone ? '100%' : 'auto' }}>
-                <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', flex: witnessDone ? '0 0 auto' : '1' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column' }}>
                     <label style={{ display: 'block', fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '8px' }}>
                         Witness Statement {student.headInjuryTimestamp && <span style={{ fontWeight: '400', fontSize: '13px' }}>• Reported by {student.headInjuryWitness || currentStaffName} at {student.headInjuryTimestamp}</span>}
                     </label>
@@ -122,7 +123,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                         onChange={(e) => setWitnessText(e.target.value)}
                         disabled={witnessDone}
                         placeholder="Describe how the injury occurred..."
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', minHeight: witnessDone ? '120px' : '200px', height: witnessDone ? 'auto' : '100%', fontFamily: 'inherit', outline: 'none', resize: 'none' }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', minHeight: '120px', fontFamily: 'inherit', outline: 'none', resize: 'none' }}
                     />
                 </div>
 
@@ -133,9 +134,9 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                     </>
                 )}
 
-                {/* Action buttons shown in left column after witness done */}
+                {/* Action buttons shown directly below witness statement */}
                 {witnessDone && isLead && !isReadOnly && (
-                    <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
+                    <div style={{ display: 'flex', gap: '12px' }}>
                         <button onClick={handleCancelReport} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
                         <button onClick={handleNoToAll} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>"No" to All</button>
                     </div>
@@ -144,14 +145,40 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
 
             {/* RIGHT COLUMN: Questionnaire (only shown after witness done) */}
             {witnessDone && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
-                    {/* Time-based tabs */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', overflow: 'hidden' }}>
+                    {/* Time-based pills (like main page filters) */}
                     {isLead && (
-                        <div style={{ display: 'flex', backgroundColor: 'var(--color-danger-bg)', borderRadius: 'var(--radius-md)', overflow: 'hidden', flexShrink: 0 }}>
+                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                             {(['0min', '15min', '30min'] as const).map(stage => {
                                 const isDone = student.headInjuryLogs.some(l => l.stage === stage);
+                                const isActive = activeTab === stage;
                                 return (
-                                    <button key={stage} onClick={() => isDone && setActiveTab(stage)} disabled={!isDone && activeTab !== stage} style={{ flex: 1, padding: '12px 0', border: 'none', background: activeTab === stage ? 'white' : 'transparent', color: activeTab === stage ? 'var(--color-danger)' : isDone ? 'var(--color-success)' : 'var(--text-muted)', fontWeight: '700', cursor: 'pointer', borderBottom: activeTab === stage ? '2px solid var(--color-danger)' : 'none', fontSize: '13px' }}>
+                                    <button
+                                        key={stage}
+                                        onClick={() => {
+                                            if (isDone) {
+                                                setActiveTab(stage);
+                                                const savedLog = student.headInjuryLogs.find(l => l.stage === stage);
+                                                if (savedLog) {
+                                                    setCurrentSymptoms(savedLog.symptoms);
+                                                }
+                                            }
+                                        }}
+                                        disabled={!isDone && activeTab !== stage}
+                                        style={{
+                                            flex: 1,
+                                            padding: '12px 16px',
+                                            borderRadius: '12px',
+                                            border: 'none',
+                                            backgroundColor: isActive ? 'var(--text-main)' : (darkMode ? 'rgba(255,255,255,0.1)' : '#e5e7eb'),
+                                            color: isActive ? 'var(--bg-card)' : (darkMode ? 'rgba(255,255,255,0.7)' : 'var(--text-main)'),
+                                            opacity: (!isDone && activeTab !== stage) ? 0.5 : 1,
+                                            fontWeight: '800',
+                                            fontSize: '14px',
+                                            cursor: (isDone || activeTab === stage) ? 'pointer' : 'not-allowed',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
                                         {stage} {isDone && '✓'}
                                     </button>
                                 );
@@ -159,8 +186,8 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                         </div>
                     )}
 
-                    {/* Compact scrollable questionnaire with visible scrollbar */}
-                    <div style={{ flex: '1', overflowY: 'scroll', opacity: surveyCompleted && !isReadOnly ? 0.6 : 1, pointerEvents: surveyCompleted && !isReadOnly ? 'none' : 'auto', display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0, backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '8px', border: '1px solid var(--border-subtle)' }}>
+                    {/* Scrollable questionnaire with fixed height */}
+                    <div style={{ flex: '1', overflowY: 'scroll', opacity: (surveyCompleted && !isReadOnly) || (activeTab !== '0min' && student.headInjuryLogs.find(l => l.stage === activeTab)) ? 0.6 : 1, pointerEvents: (surveyCompleted && !isReadOnly) || (activeTab !== '0min' && student.headInjuryLogs.find(l => l.stage === activeTab)) ? 'none' : 'auto', display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0, backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '8px', border: '1px solid var(--border-subtle)' }}>
                         {isLead && Object.entries(HEAD_INJURY_SYMPTOMS).map(([category, symptoms]) => (
                             <div key={category} style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -172,7 +199,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                                             <span style={{ fontSize: '13px', color: 'var(--text-main)', flex: 1, paddingRight: '4px', fontWeight: '500' }}>{symptom}</span>
                                             <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                                                 <button
-                                                    disabled={isReadOnly}
+                                                    disabled={isReadOnly || (activeTab !== '0min' && student.headInjuryLogs.find(l => l.stage === activeTab))}
                                                     onClick={() => setCurrentSymptoms(p => ({ ...p, [symptom]: p[symptom] === true ? undefined : true }))}
                                                     style={{
                                                         width: '42px', height: '36px', borderRadius: '8px',
@@ -183,7 +210,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                                                         transition: 'all 0.2s ease'
                                                     }}>Y</button>
                                                 <button
-                                                    disabled={isReadOnly}
+                                                    disabled={isReadOnly || (activeTab !== '0min' && student.headInjuryLogs.find(l => l.stage === activeTab))}
                                                     onClick={() => setCurrentSymptoms(p => ({ ...p, [symptom]: p[symptom] === false ? undefined : false }))}
                                                     style={{
                                                         width: '42px', height: '36px', borderRadius: '8px',
