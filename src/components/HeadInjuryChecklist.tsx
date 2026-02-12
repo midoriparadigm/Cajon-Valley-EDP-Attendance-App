@@ -109,8 +109,8 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
             display: 'grid',
             gridTemplateColumns: witnessDone ? 'minmax(550px, 1fr) minmax(500px, 1fr)' : '1fr',
             gap: '20px',
-            maxHeight: '70vh',
-            height: '70vh'
+            maxHeight: '60vh',
+            height: '60vh'
         }}>
             {/* LEFT COLUMN: Witness Statement + Buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -138,7 +138,11 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                 {witnessDone && isLead && !isReadOnly && (
                     <div style={{ display: 'flex', gap: '12px' }}>
                         <button onClick={handleCancelReport} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                        <button onClick={handleNoToAll} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>"No" to All</button>
+                        {!surveyCompleted ? (
+                            <button onClick={handleNoToAll} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>"No" to All</button>
+                        ) : (
+                            <button onClick={handleSaveLog} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Assessment</button>
+                        )}
                     </div>
                 )}
             </div>
