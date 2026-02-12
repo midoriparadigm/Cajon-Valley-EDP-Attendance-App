@@ -5,9 +5,11 @@ import type { Student } from '../types';
 interface CollapsedBehaviorViewProps {
     student: Student;
     onClick: () => void;
+    canEdit?: boolean;              // Whether editing is allowed
+    editTimeRemaining?: string;     // e.g., "8 min left to edit"
 }
 
-const CollapsedBehaviorView = ({ student, onClick }: CollapsedBehaviorViewProps) => {
+const CollapsedBehaviorView = ({ student, onClick, canEdit = true, editTimeRemaining }: CollapsedBehaviorViewProps) => {
     const colors = {
         green: { bg: 'var(--color-success-bg)', border: 'var(--color-success)', text: '#065f46', level: '1' },
         yellow: { bg: 'var(--color-warning-bg)', border: 'var(--color-warning)', text: '#854d0e', level: '2' },
@@ -17,7 +19,7 @@ const CollapsedBehaviorView = ({ student, onClick }: CollapsedBehaviorViewProps)
     const style = colors[student.behavior] || colors.none;
 
     return (
-        <div onClick={onClick} style={{ backgroundColor: style.bg, borderRadius: '8px', padding: '16px', cursor: 'pointer', border: `1px solid ${style.border}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div onClick={canEdit ? onClick : undefined} style={{ backgroundColor: style.bg, borderRadius: '8px', padding: '16px', cursor: canEdit ? 'pointer' : 'default', border: `1px solid ${style.border}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                     <div style={{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: style.border }}></div>
@@ -39,8 +41,20 @@ const CollapsedBehaviorView = ({ student, onClick }: CollapsedBehaviorViewProps)
                 <div style={{ fontSize: '13px', color: style.text, fontWeight: '500', lineHeight: '1.4' }}>
                     {student.behaviorDescription || 'No additional description provided.'}
                 </div>
+
+                {editTimeRemaining && canEdit && (
+                    <div style={{ marginTop: '8px', fontSize: '11px', color: style.text, fontWeight: '600', opacity: 0.8 }}>
+                        {editTimeRemaining}
+                    </div>
+                )}
             </div>
-            <span className="material-icons-round" style={{ color: style.text }}>edit</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                {canEdit ? (
+                    <span className="material-icons-round" style={{ color: style.text }}>edit</span>
+                ) : (
+                    <span className="material-icons-round" style={{ color: style.text, opacity: 0.3 }}>edit_off</span>
+                )}
+            </div>
         </div>
     );
 };

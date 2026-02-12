@@ -160,6 +160,9 @@ export interface Student {
     behaviorDescription?: string;
     behaviorTimestamp?: string;
     behaviorStaff?: string;
+    behaviorSubmittedAt?: number;        // Unix timestamp of original submission
+    behaviorEditCount?: number;          // Number of times edited (max 1)
+    behaviorLastEditedAt?: number;       // Unix timestamp of last edit
     headInjury: boolean;
     headInjuryWitness?: string;
     headInjuryWitnessDesc?: string;

@@ -139,10 +139,64 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
     };
 
     const saveBehavior = () => {
+        const now = Date.now();
+        const isFirstSubmission = !editedStudent.behaviorSubmittedAt;
+
+        const updatedStudent = {
+            ...editedStudent,
+            behaviorSubmittedAt: isFirstSubmission ? now : editedStudent.behaviorSubmittedAt,
+            behaviorEditCount: isFirstSubmission ? 0 : (editedStudent.behaviorEditCount || 0) + 1,
+            behaviorLastEditedAt: now
+        };
+
         setBehaviorCollapsed(true);
         setShowTicketOptions(false);
-        handleSectionSave(editedStudent);
+        setEditedStudent(updatedStudent);
+        handleSectionSave(updatedStudent);
     };
+
+    const canEditBehaviorTicket = (student: Student): boolean => {
+        if (!student.behaviorSubmittedAt) return true; // Not submitted yet
+
+        const now = Date.now();
+        const tenMinutesInMs = 10 * 60 * 1000;
+        const timeElapsed = now - student.behaviorSubmittedAt;
+        const withinTimeWindow = timeElapsed < tenMinutesInMs;
+        const withinRevisionLimit = (student.behaviorEditCount || 0) < 1;
+
+        return withinTimeWindow && withinRevisionLimit;
+    };
+
+    const getBehaviorEditTimeRemaining = (student: Student): string | undefined => {
+        if (!student.behaviorSubmittedAt || !canEditBehaviorTicket(student)) return undefined;
+
+        const now = Date.now();
+        const tenMinutesInMs = 10 * 60 * 1000;
+        const timeElapsed = now - student.behaviorSubmittedAt;
+        const timeRemaining = tenMinutesInMs - timeElapsed;
+
+        const minutesLeft = Math.ceil(timeRemaining / (60 * 1000));
+        return `Can edit: ${minutesLeft} min remaining`;
+    };
+
+    const handleEditBehavior = () => {
+        if (!canEditBehaviorTicket(editedStudent)) {
+            const now = Date.now();
+            const tenMinutesInMs = 10 * 60 * 1000;
+            const timeElapsed = now - (editedStudent.behaviorSubmittedAt || 0);
+
+            if (timeElapsed >= tenMinutesInMs) {
+                showToast?.('Edit window expired (10 minutes elapsed)', 'error');
+            } else if ((editedStudent.behaviorEditCount || 0) >= 1) {
+                showToast?.('Maximum revisions reached (1 allowed)', 'error');
+            }
+            return;
+        }
+
+        setIsEditingBehavior(true);
+        setShowTicketOptions(true);
+    };
+
 
     const cancelTicket = () => {
         setEditedStudent(prev => ({ ...prev, behavior: 'none', behaviorIssues: [], behaviorDescription: undefined }));
@@ -417,22 +471,18 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                             {activeSection === 'behavior' && (
                                 <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
                                     <div style={{ padding: '20px', backgroundColor: 'var(--bg-app)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
-                                        {filedReportType === 'behavior' && (
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
-                                                <div style={{ padding: '4px 12px', backgroundColor: '#dcfce7', color: '#166534', borderRadius: '20px', fontSize: '12px', fontWeight: '700', border: '1px solid #bbf7d0' }}>
-                                                    FILED SUCCESSFULLY
-                                                </div>
+                                        {editedStudent.behavior !== 'none' && !isEditingBehavior && editedStudent.behaviorTimestamp && (
+                                            <div style={{ marginBottom: '16px' }}>
+                                                <CollapsedBehaviorView
+                                                    student={editedStudent}
+                                                    onClick={handleEditBehavior}
+                                                    canEdit={canEditBehaviorTicket(editedStudent)}
+                                                    editTimeRemaining={getBehaviorEditTimeRemaining(editedStudent)}
+                                                />
                                             </div>
                                         )}
 
-                                        {filedReportType === 'behavior' ? (
-                                            <div style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '2px dashed var(--color-success)', textAlign: 'center' }}>
-                                                <span className="material-icons-round" style={{ color: 'var(--color-success)', fontSize: '32px', marginBottom: '8px' }}>check_circle</span>
-                                                <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)' }}>Ticket Stamped & Drafted</div>
-                                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>Draft is available in Leader Dashboard</div>
-                                                <button onClick={() => setFiledReportType(null)} style={{ marginTop: '12px', padding: '8px 16px', borderRadius: '8px', backgroundColor: 'var(--bg-app)', border: '1px solid var(--border-subtle)', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>FILE ANOTHER</button>
-                                            </div>
-                                        ) : (
+                                        {(editedStudent.behavior === 'none' || isEditingBehavior) && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                                 {editedStudent.behavior !== 'none' && (
                                                     <div style={{ animation: 'slideUp 0.2s', display: 'flex', flexDirection: 'column', gap: '16px' }}>
