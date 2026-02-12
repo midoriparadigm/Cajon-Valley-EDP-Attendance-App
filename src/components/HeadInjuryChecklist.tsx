@@ -116,7 +116,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column' }}>
                     <label style={{ display: 'block', fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '8px' }}>
-                        Witness Statement {student.headInjuryTimestamp && <span style={{ fontWeight: '400', fontSize: '13px' }}>• Reported by {student.headInjuryWitness || currentStaffName} at {student.headInjuryTimestamp}</span>}
+                        WITNESS STATEMENT {student.headInjuryTimestamp && <span style={{ fontWeight: '400', fontSize: '13px' }}>• Reported by {student.headInjuryWitness || currentStaffName} at {student.headInjuryTimestamp}</span>}
                     </label>
                     <textarea
                         value={witnessText}
@@ -232,13 +232,9 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                         ))}
                     </div>
 
-                    {/* Save/Done buttons at bottom of right column */}
+                    {/* Done button at bottom of right column (only when issues found) */}
                     {isLead && !isReadOnly && hasYesSymptoms && !surveyCompleted && (
                         <button onClick={handleYesDone} style={{ width: '100%', padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', flexShrink: 0 }}>Done (Issues Found)</button>
-                    )}
-
-                    {isLead && !isReadOnly && surveyCompleted && (
-                        <button onClick={handleSaveLog} style={{ width: '100%', padding: '14px', backgroundColor: 'var(--color-danger)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', flexShrink: 0 }}>Save Assessment</button>
                     )}
                 </div>
             )}
