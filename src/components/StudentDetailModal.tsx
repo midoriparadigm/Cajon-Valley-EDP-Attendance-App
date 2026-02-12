@@ -471,7 +471,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                             {activeSection === 'behavior' && (
                                 <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
                                     <div style={{ padding: '20px', backgroundColor: 'var(--bg-app)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
-                                        {editedStudent.behavior !== 'none' && !isEditingBehavior && editedStudent.behaviorTimestamp && (
+                                        {editedStudent.behavior !== 'none' && !isEditingBehavior && editedStudent.behaviorSubmittedAt && (
                                             <div style={{ marginBottom: '16px' }}>
                                                 <CollapsedBehaviorView
                                                     student={editedStudent}
