@@ -30,7 +30,7 @@ const CollapsedBehaviorView = ({ student, onClick, canEdit = true, editTimeRemai
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
                     <div style={{ fontSize: '13px', color: style.text }}>
-                        <span style={{ fontWeight: '700' }}>Handling Staff:</span> {student.behaviorStaff}
+                        <span style={{ fontWeight: '700' }}>Handling Staff:</span> {student.behaviorStaff || 'N/A'}
                     </div>
                     <div style={{ fontSize: '13px', color: style.text }}>
                         <span style={{ fontWeight: '700' }}>Staff Closest to Situation:</span> {student.behaviorStaffSupport || 'N/A'}
@@ -65,7 +65,7 @@ const CollapsedBehaviorView = ({ student, onClick, canEdit = true, editTimeRemai
                 </div>
 
                 <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: `1px solid ${style.border}40`, fontSize: '11px', color: style.text, opacity: 0.9 }}>
-                    Submitted by {student.behaviorStaff} on {student.behaviorSubmittedAt ? new Date(student.behaviorSubmittedAt).toLocaleDateString() : 'Unknown Date'} at {student.behaviorSubmittedAt ? new Date(student.behaviorSubmittedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}
+                    Submitted by <span style={{ fontWeight: '700' }}>{student.behaviorStaff || 'Unknown Staff'}</span> on {student.behaviorSubmittedAt ? new Date(student.behaviorSubmittedAt).toLocaleDateString() : 'Unknown Date'} at {student.behaviorSubmittedAt ? new Date(student.behaviorSubmittedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}
                 </div>
 
                 {editTimeRemaining && canEdit && (
