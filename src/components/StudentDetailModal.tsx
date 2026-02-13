@@ -357,9 +357,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                     setActiveSection(option.id as any);
                                     // Auto-trigger ticket/report creation flow for behavior and wecare sections
                                     if (option.id === 'behavior' && editedStudent.behavior === 'none') {
-                                        setEditedStudent(prev => ({ ...prev, behavior: 'green' }));
-                                        setShowTicketOptions(true);
-                                        setIsEditingBehavior(true);
+                                        startNewTicket();
                                     }
                                     if (option.id === 'wecare' && !editedStudent.weCareTimestamp) {
                                         setShowWeCareOptions(true);
