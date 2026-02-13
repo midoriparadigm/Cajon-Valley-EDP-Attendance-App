@@ -657,6 +657,10 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                 <WeCareReportForm
                                                     student={editedStudent}
                                                     currentStaffName={currentStaff.name}
+                                                    isEditing={!!editedStudent.weCareSubmittedAt}
+                                                    initialActivity={editedStudent.weCareActivity || ''}
+                                                    initialFirstAid={editedStudent.weCareFirstAid || []}
+                                                    initialInfo={editedStudent.weCareInfo || ''}
                                                     onSave={(reportData) => {
                                                         const now = new Date();
                                                         const stamp = now.toLocaleString([], { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
