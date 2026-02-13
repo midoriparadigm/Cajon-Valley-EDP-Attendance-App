@@ -151,6 +151,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
 
         setBehaviorCollapsed(true);
         setShowTicketOptions(false);
+        setIsEditingBehavior(false);
         setEditedStudent(updatedStudent);
         handleSectionSave(updatedStudent);
     };
@@ -201,6 +202,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
     const cancelTicket = () => {
         setEditedStudent(prev => ({ ...prev, behavior: 'none', behaviorIssues: [], behaviorDescription: undefined }));
         setShowTicketOptions(false);
+        setIsEditingBehavior(false);
     };
 
     const setBehavior = (status: BehaviorStatus) => {
@@ -217,6 +219,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
             });
             setBehaviorCollapsed(false);
             setShowTicketOptions(true);
+            setIsEditingBehavior(true);
         }
     };
 
@@ -231,6 +234,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
         });
         setBehaviorCollapsed(false);
         setShowTicketOptions(true);
+        setIsEditingBehavior(true);
     };
 
     const handleLocalCheckOut = () => {
@@ -555,7 +559,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                         {/* Buttons at bottom of left column */}
                                                                         <div style={{ display: 'flex', gap: '12px' }}>
                                                                             <button onClick={cancelTicket} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                                                                            <button onClick={() => { saveBehavior(); setFiledReportType('behavior'); }} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Submit</button>
+                                                                            <button onClick={saveBehavior} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Submit</button>
                                                                         </div>
                                                                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>ID: {student.id} | Stamped: {editedStudent.behaviorTimestamp} by {editedStudent.behaviorStaff}</div>
                                                                     </div>
