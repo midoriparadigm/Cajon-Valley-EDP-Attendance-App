@@ -216,7 +216,8 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                 ...editedStudent,
                 behavior: status,
                 behaviorTimestamp: stamp,
-                behaviorStaff: currentStaff.name
+                behaviorStaff: currentStaff.name,
+                behaviorStaffSupport: currentStaff.name
             });
             setBehaviorCollapsed(false);
             setShowTicketOptions(true);
@@ -231,7 +232,8 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
             ...editedStudent,
             behavior: 'green',
             behaviorTimestamp: stamp,
-            behaviorStaff: currentStaff.name
+            behaviorStaff: currentStaff.name,
+            behaviorStaffSupport: currentStaff.name
         });
         setBehaviorCollapsed(false);
         setShowTicketOptions(true);
