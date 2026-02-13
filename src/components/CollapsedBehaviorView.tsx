@@ -21,29 +21,55 @@ const CollapsedBehaviorView = ({ student, onClick, canEdit = true, editTimeRemai
     return (
         <div onClick={canEdit ? onClick : undefined} style={{ backgroundColor: style.bg, borderRadius: '8px', padding: '16px', cursor: canEdit ? 'pointer' : 'default', border: `1px solid ${style.border}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                     <div style={{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: style.border }}></div>
                     <span style={{ fontWeight: '800', color: style.text, fontSize: '14px' }}>
-                        LEVEL {style.level} FILED
+                        Green Card Submitted
                     </span>
                 </div>
 
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '13px', color: style.text }}>
+                        <span style={{ fontWeight: '700' }}>Handling Staff:</span> {student.behaviorStaff}
+                    </div>
+                    <div style={{ fontSize: '13px', color: style.text }}>
+                        <span style={{ fontWeight: '700' }}>Staff Closest to Situation:</span> {student.behaviorStaffSupport || 'N/A'}
+                    </div>
+                </div>
+
                 {student.behaviorIssues.length > 0 && (
-                    <div style={{ marginBottom: '8px' }}>
+                    <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: '800', color: style.text, opacity: 0.8, marginBottom: '4px', textTransform: 'uppercase' }}>Check Behaviors</div>
                         {student.behaviorIssues.map(issue => (
-                            <div key={issue} style={{ fontSize: '13px', fontWeight: '700', color: style.text, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div key={issue} style={{ fontSize: '13px', fontWeight: '600', color: style.text, display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <span className="material-icons-round" style={{ fontSize: '14px' }}>check</span> {issue}
                             </div>
                         ))}
                     </div>
                 )}
 
-                <div style={{ fontSize: '13px', color: style.text, fontWeight: '500', lineHeight: '1.4' }}>
-                    {student.behaviorDescription || 'No additional description provided.'}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div>
+                        <div style={{ fontSize: '11px', fontWeight: '800', color: style.text, opacity: 0.8, marginBottom: '2px', textTransform: 'uppercase' }}>Details of the Incident</div>
+                        <div style={{ fontSize: '13px', color: style.text, fontWeight: '500', lineHeight: '1.4', whiteSpace: 'pre-wrap' }}>
+                            {student.behaviorDescription || 'No details provided.'}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style={{ fontSize: '11px', fontWeight: '800', color: style.text, opacity: 0.8, marginBottom: '2px', textTransform: 'uppercase' }}>Actions Taken by Staff</div>
+                        <div style={{ fontSize: '13px', color: style.text, fontWeight: '500', lineHeight: '1.4', whiteSpace: 'pre-wrap' }}>
+                            {student.behaviorActions || 'No actions recorded.'}
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: `1px solid ${style.border}40`, fontSize: '11px', color: style.text, opacity: 0.9 }}>
+                    Submitted by {student.behaviorStaff} on {student.behaviorSubmittedAt ? new Date(student.behaviorSubmittedAt).toLocaleDateString() : 'Unknown Date'} at {student.behaviorSubmittedAt ? new Date(student.behaviorSubmittedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}
                 </div>
 
                 {editTimeRemaining && canEdit && (
-                    <div style={{ marginTop: '8px', fontSize: '11px', color: style.text, fontWeight: '600', opacity: 0.8 }}>
+                    <div style={{ marginTop: '8px', fontSize: '11px', color: style.text, fontWeight: '700' }}>
                         {editTimeRemaining}
                     </div>
                 )}

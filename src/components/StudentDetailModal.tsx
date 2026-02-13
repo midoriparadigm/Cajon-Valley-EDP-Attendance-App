@@ -203,6 +203,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
         setEditedStudent(prev => ({ ...prev, behavior: 'none', behaviorIssues: [], behaviorDescription: undefined }));
         setShowTicketOptions(false);
         setIsEditingBehavior(false);
+        setActiveSection(null);
     };
 
     const setBehavior = (status: BehaviorStatus) => {
