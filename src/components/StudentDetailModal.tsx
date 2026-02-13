@@ -7,6 +7,7 @@ import { MockDatabase } from '../utils/mock';
 import { playAlarm } from '../utils/helpers';
 import HeadInjuryChecklist from './HeadInjuryChecklist';
 import CollapsedBehaviorView from './CollapsedBehaviorView';
+import CollapsedWeCareView from './CollapsedWeCareView';
 import CollapsedHeadInjuryView from './CollapsedHeadInjuryView';
 import GuardianAddForm from './GuardianAddForm';
 import WeCareReportForm from './WeCareReportForm';
@@ -607,29 +608,50 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                             {activeSection === 'wecare' && (
                                 <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)', marginBottom: '16px' }}>
                                     <div style={{ padding: '16px' }}>
-                                        {filedReportType === 'wecare' && (
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
-                                                <div style={{ padding: '4px 12px', backgroundColor: '#fce7f3', color: '#9d174d', borderRadius: '20px', fontSize: '12px', fontWeight: '700', border: '1px solid #fbcfe8' }}>
-                                                    FILED SUCCESSFULLY
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {filedReportType === 'wecare' ? (
-                                            <div style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '2px dashed #ec4899', textAlign: 'center' }}>
-                                                <span className="material-icons-round" style={{ color: '#ec4899', fontSize: '32px', marginBottom: '8px' }}>check_circle</span>
-                                                <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)' }}>Report Stamped & Drafted</div>
-                                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>Draft is available in Leader Dashboard</div>
-                                                <button onClick={() => setFiledReportType(null)} style={{ marginTop: '12px', padding: '8px 16px', borderRadius: '8px', backgroundColor: 'var(--bg-app)', border: '1px solid var(--border-subtle)', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>FILE ANOTHER</button>
-                                            </div>
-                                        ) : !isEditingWeCare && editedStudent.weCareTimestamp ? (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                                <div style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
-                                                    <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>We Care Report Filed</div>
-                                                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>{editedStudent.weCareTimestamp} by {editedStudent.weCareStaff}</div>
-                                                    <button onClick={() => setIsEditingWeCare(true)} style={{ padding: '8px 16px', borderRadius: '8px', backgroundColor: 'var(--bg-app)', border: '1px solid var(--border-subtle)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>EDIT REPORT</button>
-                                                </div>
-                                            </div>
+                                        {(filedReportType === 'wecare' || (!isEditingWeCare && editedStudent.weCareTimestamp)) ? (
+                                            <CollapsedWeCareView
+                                                student={editedStudent}
+                                                onClick={() => {
+                                                    const canEdit = (() => {
+                                                        if (!editedStudent.weCareSubmittedAt) return true;
+                                                        const now = Date.now();
+                                                        const tenMin = 10 * 60 * 1000;
+                                                        const elapsed = now - editedStudent.weCareSubmittedAt;
+                                                        return elapsed < tenMin && (editedStudent.weCareEditCount || 0) < 1;
+                                                    })();
+                                                    if (canEdit) {
+                                                        setIsEditingWeCare(true);
+                                                        setShowWeCareOptions(true);
+                                                        setFiledReportType(null);
+                                                    } else {
+                                                        const now = Date.now();
+                                                        const tenMin = 10 * 60 * 1000;
+                                                        const elapsed = now - (editedStudent.weCareSubmittedAt || 0);
+                                                        if (elapsed >= tenMin) {
+                                                            showToast?.('Edit window expired (10 minutes elapsed)', 'error');
+                                                        } else {
+                                                            showToast?.('Maximum revisions reached (1 allowed)', 'error');
+                                                        }
+                                                    }
+                                                }}
+                                                canEdit={(() => {
+                                                    if (!editedStudent.weCareSubmittedAt) return true;
+                                                    const now = Date.now();
+                                                    const tenMin = 10 * 60 * 1000;
+                                                    const elapsed = now - editedStudent.weCareSubmittedAt;
+                                                    return elapsed < tenMin && (editedStudent.weCareEditCount || 0) < 1;
+                                                })()}
+                                                editTimeRemaining={(() => {
+                                                    if (!editedStudent.weCareSubmittedAt) return undefined;
+                                                    const now = Date.now();
+                                                    const tenMin = 10 * 60 * 1000;
+                                                    const elapsed = now - editedStudent.weCareSubmittedAt;
+                                                    if (elapsed >= tenMin || (editedStudent.weCareEditCount || 0) >= 1) return undefined;
+                                                    const remaining = tenMin - elapsed;
+                                                    const minutesLeft = Math.ceil(remaining / (60 * 1000));
+                                                    return `Can edit: ${minutesLeft} min remaining`;
+                                                })()}
+                                            />
                                         ) : (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                                 <WeCareReportForm
@@ -650,18 +672,20 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                             staffId: currentStaff.id
                                                         };
 
-                                                        setEditedStudent({
+                                                        const updatedStudent = {
                                                             ...editedStudent,
                                                             weCareTimestamp: stamp,
-                                                            weCareStaff: currentStaff.name
-                                                        });
+                                                            weCareStaff: currentStaff.name,
+                                                            weCareActivity: reportData.activity,
+                                                            weCareFirstAid: reportData.firstAid,
+                                                            weCareInfo: reportData.info,
+                                                            weCareSubmittedAt: Date.now(),
+                                                            weCareEditCount: (editedStudent.weCareEditCount || 0) + (editedStudent.weCareSubmittedAt ? 1 : 0)
+                                                        };
+                                                        setEditedStudent(updatedStudent);
                                                         setShowWeCareOptions(false);
                                                         setIsEditingWeCare(false);
-                                                        handleSectionSave({
-                                                            ...editedStudent,
-                                                            weCareTimestamp: stamp,
-                                                            weCareStaff: currentStaff.name
-                                                        });
+                                                        handleSectionSave(updatedStudent);
                                                         if (onUpdateReport) onUpdateReport(weCareReport);
                                                         if (showToast) showToast('Draft saved! (We Care Report)', 'success');
                                                         setFiledReportType('wecare');

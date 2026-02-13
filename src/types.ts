@@ -177,6 +177,11 @@ export interface Student {
     sunsetCheckoutBy?: string;
     weCareTimestamp?: string;
     weCareStaff?: string;
+    weCareActivity?: string;             // Activity during incident
+    weCareFirstAid?: string[];           // First aid items provided
+    weCareInfo?: string;                 // Additional information
+    weCareSubmittedAt?: number;          // Unix timestamp of submission
+    weCareEditCount?: number;            // Number of edits (max 1)
     behaviorStaffSupport?: string;
     behaviorActions?: string;
 }
