@@ -509,9 +509,9 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                     height: '60vh'
                                                                 }}>
                                                                     {/* LEFT COLUMN: Staff, Details, Actions, Buttons */}
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflow: 'hidden' }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden', minHeight: 0 }}>
                                                                         {/* Staff Selection - stacked vertically */}
-                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flexShrink: 0 }}>
                                                                             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Handling Staff</label>
                                                                             <select
                                                                                 value={editedStudent.behaviorStaff || currentStaff.name}
@@ -522,7 +522,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                             </select>
                                                                         </div>
 
-                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flexShrink: 0 }}>
                                                                             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Staff Closest to Situation</label>
                                                                             <select
                                                                                 value={editedStudent.behaviorStaffSupport || ''}
@@ -535,7 +535,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                         </div>
 
                                                                         {/* Details textarea - optimized height */}
-                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flex: '1', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flex: '1', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                                                                             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Details of the Incident</label>
                                                                             <textarea
                                                                                 value={editedStudent.behaviorDescription || ''}
@@ -547,7 +547,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                         </div>
 
                                                                         {/* Actions textarea - optimized height */}
-                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flex: '1', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flex: '1', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                                                                             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actions Taken by Staff</label>
                                                                             <textarea
                                                                                 value={editedStudent.behaviorActions || ''}
@@ -558,7 +558,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                         </div>
 
                                                                         {/* Buttons at bottom of left column */}
-                                                                        <div style={{ display: 'flex', gap: '12px' }}>
+                                                                        <div style={{ display: 'flex', gap: '12px', flexShrink: 0 }}>
                                                                             <button onClick={cancelTicket} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
                                                                             <button onClick={saveBehavior} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>{editedStudent.behaviorSubmittedAt ? 'Save Edit' : 'Submit'}</button>
                                                                         </div>
@@ -566,7 +566,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                     </div>
 
                                                                     {/* RIGHT COLUMN: Guidelines and Behavior Checklist */}
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0, overflow: 'hidden' }}>
                                                                         {/* Guidelines box */}
                                                                         <div style={{ padding: '12px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '12px', lineHeight: '1.5', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
                                                                             <strong>BEHAVIOR GUIDELINES:</strong><br />
