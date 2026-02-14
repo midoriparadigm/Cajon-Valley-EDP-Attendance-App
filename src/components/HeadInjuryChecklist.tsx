@@ -34,18 +34,18 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
         return null;
     };
 
-    // Helper: compute whether monitoring timer is active from raw data (doesn't depend on timeLeft prop)
+    // Helper: compute whether monitoring timer is active from raw data
     const computeIsTimerActive = (): boolean => {
         if (!student.headInjuryStartTime || !student.headInjury) return false;
         const elapsed = Date.now() - student.headInjuryStartTime;
         const has15 = student.headInjuryLogs.some(l => l.stage === '15min');
         const has30 = student.headInjuryLogs.some(l => l.stage === '30min');
-        if (has30) return false; // All done
+        if (has30) return false;
         const nextCheck = has15 ? 30 * 60 * 1000 : 15 * 60 * 1000;
         return elapsed < nextCheck;
     };
 
-    // Compute initial tab: if timer is active, show last completed stage; otherwise show next stage
+    // Compute initial tab
     const getInitialTab = (): '0min' | '15min' | '30min' => {
         if (computeIsTimerActive()) {
             const lastCompleted = getLastCompletedStage();
@@ -61,10 +61,11 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
     const [showNewReportForm, setShowNewReportForm] = useState(!student.headInjury);
     const [witnessText, setWitnessText] = useState(student.headInjuryWitnessDesc || '');
     const [witnessDone, setWitnessDone] = useState(!!student.headInjuryWitnessDesc);
-    const justSavedRef = useRef(false); // prevents auto-advancing on save
+    const [additionalComments, setAdditionalComments] = useState('');
+    const justSavedRef = useRef(false);
     const prevTimeLeftRef = useRef(timeLeft);
 
-    // Sync witness state when returning to component
+    // Sync witness state
     useEffect(() => {
         if (student.headInjuryWitnessDesc) {
             setWitnessText(student.headInjuryWitnessDesc);
@@ -73,15 +74,12 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
         }
     }, [student.headInjuryWitnessDesc]);
 
-    // Handle external log changes (e.g. from another device or parent re-render)
+    // Handle external log changes
     useEffect(() => {
         if (justSavedRef.current) {
-            // Don't auto-advance right after saving — stay on the saved tab
             justSavedRef.current = false;
             return;
         }
-
-        // If timer is active, stay on last completed stage
         if (computeIsTimerActive()) {
             const lastCompleted = getLastCompletedStage();
             if (lastCompleted) {
@@ -89,15 +87,12 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                 return;
             }
         }
-
-        // Otherwise go to next stage
         setActiveTab(getNextStage());
     }, [student.headInjuryLogs]);
 
-    // When timer expires (transitions from >0 to 0), auto-advance to next tab
+    // When timer expires, auto-advance
     useEffect(() => {
         if (prevTimeLeftRef.current > 0 && timeLeft === 0) {
-            // Timer just expired — advance to the next stage
             setActiveTab(getNextStage());
         }
         prevTimeLeftRef.current = timeLeft;
@@ -115,15 +110,16 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
             setNotes('');
             setSurveyCompleted(false);
         }
+        setAdditionalComments('');
     }, [activeTab, student.headInjuryLogs]);
 
-    const handleSaveLog = () => {
+    const handleSaveLog = (commentOverride?: string) => {
         const newLog: HeadInjuryLog = {
             stage: activeTab,
             completedAt: new Date().toISOString(),
             staffName: currentStaffName,
             symptoms: currentSymptoms,
-            notes: notes
+            notes: commentOverride !== undefined ? commentOverride : notes
         };
         const updatedLogs = [...student.headInjuryLogs.filter(l => l.stage !== activeTab), newLog];
 
@@ -132,7 +128,6 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
             startTime = Number(Date.now());
         }
 
-        // Prevent auto-advancing to next tab
         justSavedRef.current = true;
 
         onUpdate({
@@ -170,20 +165,62 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
         onUpdate({ headInjury: false, headInjuryWitnessDesc: undefined, headInjuryLogs: [], headInjuryStartTime: undefined });
     };
 
+    const handleSaveComments = () => {
+        handleSaveLog(additionalComments);
+        setAdditionalComments('');
+    };
+
+    const handleCancelComments = () => {
+        // Go back to editing the questionnaire
+        setSurveyCompleted(false);
+        setAdditionalComments('');
+    };
+
     const isReadOnly = !!student.headInjuryLogs.find(l => l.stage === activeTab);
     const hasYesSymptoms = Object.values(currentSymptoms).some(val => val === true);
-
-    // "Monitoring" = viewing a completed tab while the timer is still running
     const isMonitoring = isReadOnly && timeLeft > 0;
-
-    // Get the saved log for the current active tab to show results in summary
-    const savedLog = student.headInjuryLogs.find(l => l.stage === activeTab);
-
-    // Determine if all symptoms are "No"
-    const allNo = savedLog ? Object.values(savedLog.symptoms).every(v => v === false) : false;
-
-    // The "next" stage for pill clickability
     const nextStage = getNextStage();
+
+    // Determine if we need the additional comments box
+    // This is true when: survey is done, there are YES symptoms, and this stage hasn't been saved yet
+    const needsComments = surveyCompleted && hasYesSymptoms && !isReadOnly;
+
+    // Get all completed logs sorted by stage order for the cumulative summary
+    const stageOrder = ['0min', '15min', '30min'];
+    const completedLogs = student.headInjuryLogs
+        .slice()
+        .sort((a, b) => stageOrder.indexOf(a.stage) - stageOrder.indexOf(b.stage));
+
+    // Render the results for a single log entry
+    const renderLogResults = (log: HeadInjuryLog) => {
+        const logAllNo = Object.values(log.symptoms).every(v => v === false);
+        return (
+            <div key={log.stage}>
+                <div style={{ fontSize: '11px', fontWeight: '800', color: '#991b1b', opacity: 0.8, marginBottom: '4px', textTransform: 'uppercase' }}>
+                    Assessment Results ({log.stage})
+                </div>
+                {logAllNo ? (
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                        <span className="material-icons-round" style={{ fontSize: '14px' }}>check</span> "No" to All Symptoms
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '8px' }}>
+                        {Object.entries(log.symptoms).map(([symptom, val]) => (
+                            <div key={symptom} style={{ fontSize: '12px', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontWeight: '700', color: val ? '#dc2626' : '#16a34a', fontSize: '11px', width: '14px' }}>{val ? 'Y' : 'N'}</span>
+                                <span style={{ fontWeight: '500' }}>{symptom}</span>
+                            </div>
+                        ))}
+                        {log.notes && (
+                            <div style={{ marginTop: '4px', fontSize: '12px', color: '#991b1b', fontStyle: 'italic' }}>
+                                <span style={{ fontWeight: '700' }}>Comments:</span> {log.notes}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div style={{
@@ -193,97 +230,108 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
             maxHeight: '60vh',
             height: '60vh'
         }}>
-            {/* LEFT COLUMN: Witness Statement / Summary + Buttons / Timer */}
+            {/* LEFT COLUMN */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-                {isReadOnly && savedLog ? (
-                    /* ===== SUMMARY BOX (for any completed tab) ===== */
-                    <div style={{ backgroundColor: '#fef2f2', borderRadius: '8px', padding: '16px', border: '1px solid #ef4444', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {/* Header */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span className="material-icons-round" style={{ fontSize: '16px', color: '#ef4444' }}>local_hospital</span>
-                            <span style={{ fontWeight: '800', color: '#991b1b', fontSize: '14px' }}>
-                                Head Injury Report Submitted
-                            </span>
-                        </div>
-
-                        {/* Witness Statement */}
-                        <div>
-                            <div style={{ fontSize: '11px', fontWeight: '800', color: '#991b1b', opacity: 0.8, marginBottom: '2px', textTransform: 'uppercase' }}>Witness Statement</div>
-                            <div style={{ fontSize: '13px', color: '#991b1b', fontWeight: '500', lineHeight: '1.4', whiteSpace: 'pre-wrap' }}>
-                                {student.headInjuryWitnessDesc || witnessText}
-                            </div>
-                        </div>
-
-                        {/* Questionnaire Results */}
-                        <div>
-                            <div style={{ fontSize: '11px', fontWeight: '800', color: '#991b1b', opacity: 0.8, marginBottom: '4px', textTransform: 'uppercase' }}>
-                                Assessment Results ({activeTab})
-                            </div>
-                            {allNo ? (
-                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span className="material-icons-round" style={{ fontSize: '14px' }}>check</span> "No" to All Symptoms
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    {Object.entries(savedLog.symptoms).map(([symptom, val]) => (
-                                        <div key={symptom} style={{ fontSize: '12px', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ fontWeight: '700', color: val ? '#dc2626' : '#16a34a', fontSize: '11px', width: '14px' }}>{val ? 'Y' : 'N'}</span>
-                                            <span style={{ fontWeight: '500' }}>{symptom}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Submitted by footer */}
-                        <div style={{ paddingTop: '12px', borderTop: '1px solid #ef444440', fontSize: '11px', color: '#991b1b', opacity: 0.9 }}>
-                            Submitted by <span style={{ fontWeight: '700' }}>{savedLog.staffName || currentStaffName}</span> on {student.headInjuryTimestamp || 'Unknown Date'}
-                        </div>
-                    </div>
-                ) : (
-                    /* ===== ORIGINAL WITNESS STATEMENT (for new/editing) ===== */
-                    <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column' }}>
-                        <label style={{ display: 'block', fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '8px' }}>
-                            WITNESS STATEMENT {student.headInjuryTimestamp && <span style={{ fontWeight: '400', fontSize: '13px' }}>• Reported by {student.headInjuryWitness || currentStaffName} at {student.headInjuryTimestamp}</span>}
-                        </label>
-                        <textarea
-                            value={witnessText}
-                            onChange={(e) => setWitnessText(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey && witnessText.trim() && !witnessDone) {
-                                    e.preventDefault();
-                                    handleWitnessDone();
-                                }
-                            }}
-                            disabled={witnessDone}
-                            placeholder="Describe how the injury occurred..."
-                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', minHeight: '120px', fontFamily: 'inherit', outline: 'none', resize: 'none' }}
-                        />
-                    </div>
-                )}
-
-                {/* Buttons area — replaced by timer when monitoring */}
-                {isMonitoring ? (
-                    /* ===== INLINE TIMER (replaces Cancel/Save buttons) ===== */
-                    <div style={{ backgroundColor: 'var(--bg-app)', borderRadius: '8px', padding: '16px', textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Active Monitoring</div>
-                        <div style={{ fontSize: '28px', fontWeight: '800', color: '#4b5563', fontVariantNumeric: 'tabular-nums' }}>
-                            {formatTimeWithMs(timeLeft)}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>Next assessment unlocks automatically</div>
-                    </div>
-                ) : (
+                {!witnessDone ? (
+                    /* ===== EDITABLE WITNESS STATEMENT (only before first Done) ===== */
                     <>
-                        {!witnessDone && (
-                            <>
-                                <button onClick={handleCancelReport} style={{ padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                                <button onClick={handleWitnessDone} disabled={!witnessText.trim()} style={{ padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--color-danger)', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer', opacity: witnessText.trim() ? 1 : 0.5 }}>Done</button>
-                            </>
+                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column' }}>
+                            <label style={{ display: 'block', fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '8px' }}>
+                                WITNESS STATEMENT
+                            </label>
+                            <textarea
+                                value={witnessText}
+                                onChange={(e) => setWitnessText(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey && witnessText.trim()) {
+                                        e.preventDefault();
+                                        handleWitnessDone();
+                                    }
+                                }}
+                                placeholder="Describe how the injury occurred..."
+                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', minHeight: '120px', fontFamily: 'inherit', outline: 'none', resize: 'none' }}
+                            />
+                        </div>
+                        <button onClick={handleCancelReport} style={{ padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                        <button onClick={handleWitnessDone} disabled={!witnessText.trim()} style={{ padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--color-danger)', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer', opacity: witnessText.trim() ? 1 : 0.5 }}>Done</button>
+                    </>
+
+                ) : needsComments ? (
+                    /* ===== ADDITIONAL COMMENTS BOX (replaces summary when YES symptoms found) ===== */
+                    <>
+                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column' }}>
+                            <label style={{ display: 'block', fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '8px' }}>
+                                ADDITIONAL COMMENTS
+                            </label>
+                            <textarea
+                                value={additionalComments}
+                                onChange={(e) => setAdditionalComments(e.target.value)}
+                                placeholder="Describe any additional observations about the symptoms..."
+                                autoFocus
+                                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', minHeight: '120px', fontFamily: 'inherit', outline: 'none', resize: 'none' }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button onClick={handleCancelComments} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                            <button onClick={handleSaveComments} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Comments</button>
+                        </div>
+                    </>
+
+                ) : (
+                    /* ===== SUMMARY BOX + TIMER / ACTION BUTTONS ===== */
+                    <>
+                        {completedLogs.length > 0 ? (
+                            /* Cumulative summary box */
+                            <div style={{ backgroundColor: '#fef2f2', borderRadius: '8px', padding: '16px', border: '1px solid #ef4444', display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: isMonitoring ? '45%' : '55%' }}>
+                                {/* Header */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span className="material-icons-round" style={{ fontSize: '16px', color: '#ef4444' }}>local_hospital</span>
+                                    <span style={{ fontWeight: '800', color: '#991b1b', fontSize: '14px' }}>
+                                        Head Injury Report Submitted
+                                    </span>
+                                </div>
+
+                                {/* Witness Statement */}
+                                <div>
+                                    <div style={{ fontSize: '11px', fontWeight: '800', color: '#991b1b', opacity: 0.8, marginBottom: '2px', textTransform: 'uppercase' }}>Witness Statement</div>
+                                    <div style={{ fontSize: '13px', color: '#991b1b', fontWeight: '500', lineHeight: '1.4', whiteSpace: 'pre-wrap' }}>
+                                        {student.headInjuryWitnessDesc || witnessText}
+                                    </div>
+                                </div>
+
+                                {/* All completed stage results */}
+                                {completedLogs.map(log => renderLogResults(log))}
+
+                                {/* Submitted by footer */}
+                                <div style={{ paddingTop: '12px', borderTop: '1px solid #ef444440', fontSize: '11px', color: '#991b1b', opacity: 0.9 }}>
+                                    Submitted by <span style={{ fontWeight: '700' }}>{student.headInjuryWitness || currentStaffName}</span> on {student.headInjuryTimestamp || 'Unknown Date'}
+                                </div>
+                            </div>
+                        ) : (
+                            /* No completed logs yet — show read-only witness statement card */
+                            <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column' }}>
+                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '8px' }}>
+                                    WITNESS STATEMENT {student.headInjuryTimestamp && <span style={{ fontWeight: '400', fontSize: '13px' }}>• Reported by {student.headInjuryWitness || currentStaffName} at {student.headInjuryTimestamp}</span>}
+                                </label>
+                                <textarea
+                                    value={witnessText}
+                                    disabled
+                                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', minHeight: '120px', fontFamily: 'inherit', outline: 'none', resize: 'none', opacity: 0.7 }}
+                                />
+                            </div>
                         )}
 
-                        {/* Action buttons shown directly below witness statement */}
-                        {witnessDone && isLead && !isReadOnly && (
+                        {/* Timer or action buttons */}
+                        {isMonitoring ? (
+                            <div style={{ backgroundColor: 'var(--bg-app)', borderRadius: '8px', padding: '16px', textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
+                                <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Active Monitoring</div>
+                                <div style={{ fontSize: '28px', fontWeight: '800', color: '#4b5563', fontVariantNumeric: 'tabular-nums' }}>
+                                    {formatTimeWithMs(timeLeft)}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>Next assessment unlocks automatically</div>
+                            </div>
+                        ) : witnessDone && isLead && !isReadOnly ? (
                             <div style={{ display: 'flex', gap: '12px' }}>
                                 <button onClick={handleCancelReport} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
                                 {!surveyCompleted ? (
@@ -292,7 +340,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                                     <button onClick={handleSaveLog} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Assessment</button>
                                 )}
                             </div>
-                        )}
+                        ) : null}
                     </>
                 )}
             </div>
@@ -300,13 +348,12 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
             {/* RIGHT COLUMN: Questionnaire (only shown after witness done) */}
             {witnessDone && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', overflow: 'hidden' }}>
-                    {/* Time-based pills (like main page filters) */}
+                    {/* Time-based pills */}
                     {isLead && (
                         <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                             {(['0min', '15min', '30min'] as const).map(stage => {
                                 const isDone = student.headInjuryLogs.some(l => l.stage === stage);
                                 const isActive = activeTab === stage;
-                                // A tab is clickable if: it's done (can review), or it's the current pending stage AND timer has expired
                                 const isClickable = isDone || (stage === nextStage && timeLeft === 0);
                                 return (
                                     <button
@@ -338,7 +385,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                         </div>
                     )}
 
-                    {/* Scrollable questionnaire with fixed height — grayed out when viewing a completed tab */}
+                    {/* Scrollable questionnaire — grayed out when viewing a completed tab */}
                     <div style={{ flex: '1', overflowY: 'scroll', opacity: isReadOnly ? 0.4 : (surveyCompleted ? 0.6 : 1), pointerEvents: isReadOnly ? 'none' : (surveyCompleted ? 'none' : 'auto'), display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0, backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '8px', border: '1px solid var(--border-subtle)' }}>
                         {isLead && Object.entries(HEAD_INJURY_SYMPTOMS).map(([category, symptoms]) => (
                             <div key={category} style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
@@ -381,7 +428,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                     </div>
 
                     {/* Done button at bottom of right column (only when issues found) */}
-                    {isLead && !isReadOnly && !isMonitoring && hasYesSymptoms && !surveyCompleted && (
+                    {isLead && !isReadOnly && hasYesSymptoms && !surveyCompleted && (
                         <button onClick={handleYesDone} style={{ width: '100%', padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', flexShrink: 0 }}>Done (Issues Found)</button>
                     )}
                 </div>
