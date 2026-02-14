@@ -736,9 +736,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                 darkMode={darkMode}
                                             />
                                         )}
-                                        {editedStudent.headInjuryTimestamp && (
-                                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>Stamped: {editedStudent.headInjuryTimestamp} by {editedStudent.headInjuryWitness || 'Staff'}</div>
-                                        )}
+
                                     </div>
                                 </section>
                             )}
