@@ -507,7 +507,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                     gap: '20px'
                                                                 }}>
                                                                     {/* LEFT COLUMN: Staff, Details, Actions, Buttons */}
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', height: '100%' }}>
                                                                         {/* Staff Selection - stacked vertically */}
                                                                         <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flexShrink: 0 }}>
                                                                             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Handling Staff</label>
