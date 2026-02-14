@@ -14,27 +14,66 @@ interface HeadInjuryChecklistProps {
 }
 
 const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, darkMode, timeLeft = 0 }: HeadInjuryChecklistProps) => {
-    const [activeTab, setActiveTab] = useState<'0min' | '15min' | '30min'>('0min');
-    const [currentSymptoms, setCurrentSymptoms] = useState<Record<string, boolean>>({});
-    const [notes, setNotes] = useState('');
-    const [surveyCompleted, setSurveyCompleted] = useState(false);
-    const [showNewReportForm, setShowNewReportForm] = useState(!student.headInjury);
-    const [witnessText, setWitnessText] = useState('');
-    const [witnessDone, setWitnessDone] = useState(false);
-    const justSavedRef = useRef(false); // prevents auto-advancing on save
-    const prevTimeLeftRef = useRef(timeLeft);
-
-    // Determine which stage is the "next" one to fill out
+    // Helper: determine which stage is next to fill out
     const getNextStage = (): '0min' | '15min' | '30min' => {
-        const logs = student.headInjuryLogs;
-        const has0 = logs.some(l => l.stage === '0min');
-        const has15 = logs.some(l => l.stage === '15min');
+        const has0 = student.headInjuryLogs.some(l => l.stage === '0min');
+        const has15 = student.headInjuryLogs.some(l => l.stage === '15min');
         if (!has0) return '0min';
         if (!has15) return '15min';
         return '30min';
     };
 
-    // Initial setup: set tab based on logs & witness state (only on mount / external changes)
+    // Helper: get the last completed stage
+    const getLastCompletedStage = (): '0min' | '15min' | '30min' | null => {
+        const has30 = student.headInjuryLogs.some(l => l.stage === '30min');
+        const has15 = student.headInjuryLogs.some(l => l.stage === '15min');
+        const has0 = student.headInjuryLogs.some(l => l.stage === '0min');
+        if (has30) return '30min';
+        if (has15) return '15min';
+        if (has0) return '0min';
+        return null;
+    };
+
+    // Helper: compute whether monitoring timer is active from raw data (doesn't depend on timeLeft prop)
+    const computeIsTimerActive = (): boolean => {
+        if (!student.headInjuryStartTime || !student.headInjury) return false;
+        const elapsed = Date.now() - student.headInjuryStartTime;
+        const has15 = student.headInjuryLogs.some(l => l.stage === '15min');
+        const has30 = student.headInjuryLogs.some(l => l.stage === '30min');
+        if (has30) return false; // All done
+        const nextCheck = has15 ? 30 * 60 * 1000 : 15 * 60 * 1000;
+        return elapsed < nextCheck;
+    };
+
+    // Compute initial tab: if timer is active, show last completed stage; otherwise show next stage
+    const getInitialTab = (): '0min' | '15min' | '30min' => {
+        if (computeIsTimerActive()) {
+            const lastCompleted = getLastCompletedStage();
+            if (lastCompleted) return lastCompleted;
+        }
+        return getNextStage();
+    };
+
+    const [activeTab, setActiveTab] = useState<'0min' | '15min' | '30min'>(getInitialTab);
+    const [currentSymptoms, setCurrentSymptoms] = useState<Record<string, boolean>>({});
+    const [notes, setNotes] = useState('');
+    const [surveyCompleted, setSurveyCompleted] = useState(false);
+    const [showNewReportForm, setShowNewReportForm] = useState(!student.headInjury);
+    const [witnessText, setWitnessText] = useState(student.headInjuryWitnessDesc || '');
+    const [witnessDone, setWitnessDone] = useState(!!student.headInjuryWitnessDesc);
+    const justSavedRef = useRef(false); // prevents auto-advancing on save
+    const prevTimeLeftRef = useRef(timeLeft);
+
+    // Sync witness state when returning to component
+    useEffect(() => {
+        if (student.headInjuryWitnessDesc) {
+            setWitnessText(student.headInjuryWitnessDesc);
+            setWitnessDone(true);
+            setShowNewReportForm(true);
+        }
+    }, [student.headInjuryWitnessDesc]);
+
+    // Handle external log changes (e.g. from another device or parent re-render)
     useEffect(() => {
         if (justSavedRef.current) {
             // Don't auto-advance right after saving — stay on the saved tab
@@ -42,22 +81,24 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
             return;
         }
 
-        const nextStage = getNextStage();
-        setActiveTab(nextStage);
-
-        if (student.headInjuryWitnessDesc) {
-            setWitnessText(student.headInjuryWitnessDesc);
-            setWitnessDone(true);
-            setShowNewReportForm(true);
+        // If timer is active, stay on last completed stage
+        if (computeIsTimerActive()) {
+            const lastCompleted = getLastCompletedStage();
+            if (lastCompleted) {
+                setActiveTab(lastCompleted);
+                return;
+            }
         }
-    }, [student.headInjuryLogs, student.headInjuryWitnessDesc]);
+
+        // Otherwise go to next stage
+        setActiveTab(getNextStage());
+    }, [student.headInjuryLogs]);
 
     // When timer expires (transitions from >0 to 0), auto-advance to next tab
     useEffect(() => {
         if (prevTimeLeftRef.current > 0 && timeLeft === 0) {
             // Timer just expired — advance to the next stage
-            const nextStage = getNextStage();
-            setActiveTab(nextStage);
+            setActiveTab(getNextStage());
         }
         prevTimeLeftRef.current = timeLeft;
     }, [timeLeft, student.headInjuryLogs]);
@@ -141,7 +182,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
     // Determine if all symptoms are "No"
     const allNo = savedLog ? Object.values(savedLog.symptoms).every(v => v === false) : false;
 
-    // Determine which stage is currently "pending" (next to be done)
+    // The "next" stage for pill clickability
     const nextStage = getNextStage();
 
     return (
@@ -155,53 +196,8 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
             {/* LEFT COLUMN: Witness Statement / Summary + Buttons / Timer */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-                {isMonitoring ? (
-                    /* ===== SUMMARY BOX (replaces witness statement after saving) ===== */
-                    <div style={{ backgroundColor: '#fef2f2', borderRadius: '8px', padding: '16px', border: '1px solid #ef4444', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {/* Header */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span className="material-icons-round" style={{ fontSize: '16px', color: '#ef4444' }}>local_hospital</span>
-                            <span style={{ fontWeight: '800', color: '#991b1b', fontSize: '14px' }}>
-                                Head Injury Report Submitted
-                            </span>
-                        </div>
-
-                        {/* Witness Statement */}
-                        <div>
-                            <div style={{ fontSize: '11px', fontWeight: '800', color: '#991b1b', opacity: 0.8, marginBottom: '2px', textTransform: 'uppercase' }}>Witness Statement</div>
-                            <div style={{ fontSize: '13px', color: '#991b1b', fontWeight: '500', lineHeight: '1.4', whiteSpace: 'pre-wrap' }}>
-                                {student.headInjuryWitnessDesc || witnessText}
-                            </div>
-                        </div>
-
-                        {/* Questionnaire Results */}
-                        <div>
-                            <div style={{ fontSize: '11px', fontWeight: '800', color: '#991b1b', opacity: 0.8, marginBottom: '4px', textTransform: 'uppercase' }}>
-                                Assessment Results ({activeTab})
-                            </div>
-                            {allNo ? (
-                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span className="material-icons-round" style={{ fontSize: '14px' }}>check</span> "No" to All Symptoms
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    {savedLog && Object.entries(savedLog.symptoms).map(([symptom, val]) => (
-                                        <div key={symptom} style={{ fontSize: '12px', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ fontWeight: '700', color: val ? '#dc2626' : '#16a34a', fontSize: '11px', width: '14px' }}>{val ? 'Y' : 'N'}</span>
-                                            <span style={{ fontWeight: '500' }}>{symptom}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Submitted by footer */}
-                        <div style={{ paddingTop: '12px', borderTop: '1px solid #ef444440', fontSize: '11px', color: '#991b1b', opacity: 0.9 }}>
-                            Submitted by <span style={{ fontWeight: '700' }}>{student.headInjuryWitness || currentStaffName}</span> on {student.headInjuryTimestamp || 'Unknown Date'}
-                        </div>
-                    </div>
-                ) : isReadOnly && savedLog ? (
-                    /* ===== SUMMARY BOX for completed tabs when timer has expired (e.g. clicking back on 0min after it's done) ===== */
+                {isReadOnly && savedLog ? (
+                    /* ===== SUMMARY BOX (for any completed tab) ===== */
                     <div style={{ backgroundColor: '#fef2f2', borderRadius: '8px', padding: '16px', border: '1px solid #ef4444', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {/* Header */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -343,7 +339,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                     )}
 
                     {/* Scrollable questionnaire with fixed height — grayed out when viewing a completed tab */}
-                    <div style={{ flex: '1', overflowY: 'scroll', opacity: isReadOnly ? 0.4 : ((surveyCompleted && !isReadOnly) ? 0.6 : 1), pointerEvents: isReadOnly ? 'none' : ((surveyCompleted && !isReadOnly) ? 'none' : 'auto'), display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0, backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '8px', border: '1px solid var(--border-subtle)' }}>
+                    <div style={{ flex: '1', overflowY: 'scroll', opacity: isReadOnly ? 0.4 : (surveyCompleted ? 0.6 : 1), pointerEvents: isReadOnly ? 'none' : (surveyCompleted ? 'none' : 'auto'), display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0, backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '8px', border: '1px solid var(--border-subtle)' }}>
                         {isLead && Object.entries(HEAD_INJURY_SYMPTOMS).map(([category, symptoms]) => (
                             <div key={category} style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
