@@ -711,7 +711,18 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                 <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
                                     <div style={{ padding: '16px' }}>
                                         {isHeadInjuryMonitoring() && timeLeft > 0 ? (
-                                            <CollapsedHeadInjuryView timeLeft={timeLeft} />
+                                            <HeadInjuryChecklist
+                                                student={editedStudent}
+                                                currentStaffName={currentStaff.name}
+                                                isLead={isLead}
+                                                onUpdate={(updates, logs) => {
+                                                    const merged = { ...editedStudent, ...updates };
+                                                    if (logs) merged.headInjuryLogs = logs;
+                                                    handleSectionSave(merged);
+                                                }}
+                                                darkMode={darkMode}
+                                                timeLeft={timeLeft}
+                                            />
                                         ) : (
                                             <HeadInjuryChecklist
                                                 student={editedStudent}
