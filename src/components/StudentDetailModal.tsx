@@ -542,9 +542,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                                 placeholder="Describe the details of the incident..."
                                                                                 style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', height: 'calc(100% - 40px)', minHeight: '100px', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.4', fontSize: '13px', resize: 'none' }}
                                                                             />
-                                                                            {editedStudent.behaviorTimestamp && (
-                                                                                <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--color-warning)', fontWeight: '600' }}>Limit: 1 edit per day</div>
-                                                                            )}
+
                                                                         </div>
 
                                                                         {/* Actions textarea - optimized height */}
@@ -563,7 +561,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                             <button onClick={cancelTicket} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
                                                                             <button onClick={saveBehavior} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Submit</button>
                                                                         </div>
-                                                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>ID: {student.id} | Stamped: {editedStudent.behaviorTimestamp} by {editedStudent.behaviorStaff}</div>
+
                                                                     </div>
 
                                                                     {/* RIGHT COLUMN: Guidelines and Behavior Checklist */}
