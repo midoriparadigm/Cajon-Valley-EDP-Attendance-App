@@ -393,7 +393,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                             <span className="material-icons-round">arrow_back</span>
                         </button>
                     </div>
-                    <div style={{ flex: 1, overflowY: 'auto', padding: '20px', paddingBottom: '40px' }}>
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '20px', paddingBottom: '16px' }}>
                         <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                             {activeSection === 'attendance' && (
@@ -533,25 +533,25 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                         </div>
 
                                                                         {/* Details textarea - optimized height */}
-                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flex: 1, display: 'flex', flexDirection: 'column' }}>
                                                                             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Details of the Incident</label>
                                                                             <textarea
                                                                                 value={editedStudent.behaviorDescription || ''}
                                                                                 onChange={e => setEditedStudent({ ...editedStudent, behaviorDescription: e.target.value })}
                                                                                 placeholder="Describe the details of the incident..."
-                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', height: '60px', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.4', fontSize: '13px', resize: 'none' }}
+                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', flex: 1, backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.4', fontSize: '13px', resize: 'none' }}
                                                                             />
 
                                                                         </div>
 
                                                                         {/* Actions textarea - optimized height */}
-                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flex: 1, display: 'flex', flexDirection: 'column' }}>
                                                                             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actions Taken by Staff</label>
                                                                             <textarea
                                                                                 value={editedStudent.behaviorActions || ''}
                                                                                 onChange={e => setEditedStudent({ ...editedStudent, behaviorActions: e.target.value })}
                                                                                 placeholder="Describe actions taken..."
-                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '13px', height: '60px', outline: 'none', fontFamily: 'inherit', resize: 'none' }}
+                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '13px', flex: 1, outline: 'none', fontFamily: 'inherit', resize: 'none' }}
                                                                             />
                                                                         </div>
 
@@ -564,7 +564,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                     </div>
 
                                                                     {/* RIGHT COLUMN: Guidelines and Behavior Checklist */}
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0, overflow: 'hidden' }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                                         {/* Guidelines box */}
                                                                         <div style={{ padding: '12px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '12px', lineHeight: '1.5', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
                                                                             <strong>BEHAVIOR GUIDELINES:</strong><br />
