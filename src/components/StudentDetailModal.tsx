@@ -559,7 +559,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                         {/* Buttons at bottom of left column */}
                                                                         <div style={{ display: 'flex', gap: '12px' }}>
                                                                             <button onClick={cancelTicket} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                                                                            <button onClick={saveBehavior} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Submit</button>
+                                                                            <button onClick={saveBehavior} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>{editedStudent.behaviorSubmittedAt ? 'Save Edit' : 'Submit'}</button>
                                                                         </div>
 
                                                                     </div>
@@ -577,8 +577,8 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Behaviors</label>
                                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto', flex: '1' }}>
                                                                                 {BEHAVIOR_CHECKLISTS[editedStudent.behavior as 'green']?.map((item) => (
-                                                                                    <label key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-main)', padding: '6px 0', borderBottom: '1px solid var(--bg-app)', cursor: 'pointer', flexShrink: 0 }}>
-                                                                                        <input type="checkbox" checked={editedStudent.behaviorIssues?.includes(item) || false} onChange={() => {
+                                                                                    <label key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-main)', padding: '6px 0', borderBottom: '1px solid var(--bg-app)', cursor: editedStudent.behaviorSubmittedAt ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: editedStudent.behaviorSubmittedAt ? 0.5 : 1 }}>
+                                                                                        <input type="checkbox" checked={editedStudent.behaviorIssues?.includes(item) || false} disabled={!!editedStudent.behaviorSubmittedAt} onChange={() => {
                                                                                             const issues = editedStudent.behaviorIssues.includes(item) ? editedStudent.behaviorIssues.filter(i => i !== item) : [...editedStudent.behaviorIssues, item];
                                                                                             setEditedStudent({ ...editedStudent, behaviorIssues: issues });
                                                                                         }} style={{ transform: 'scale(1.2)', flexShrink: 0 }} />
