@@ -505,7 +505,8 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                     display: 'grid',
                                                                     gridTemplateColumns: 'minmax(550px, 1fr) minmax(500px, 1fr)',
                                                                     gap: '20px',
-                                                                    '@media (max-width: 900px)': { gridTemplateColumns: '1fr' }
+                                                                    maxHeight: '60vh',
+                                                                    height: '60vh'
                                                                 }}>
                                                                     {/* LEFT COLUMN: Staff, Details, Actions, Buttons */}
                                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
