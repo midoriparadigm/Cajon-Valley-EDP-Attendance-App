@@ -504,10 +504,11 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                 <div style={{
                                                                     display: 'grid',
                                                                     gridTemplateColumns: 'minmax(550px, 1fr) minmax(500px, 1fr)',
-                                                                    gap: '12px'
+                                                                    gap: '12px',
+                                                                    maxHeight: 'calc(100vh - 280px)'
                                                                 }}>
                                                                     {/* LEFT COLUMN: Staff, Details, Actions, Buttons */}
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', height: '100%' }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', height: '100%', overflow: 'hidden' }}>
                                                                         {/* Staff Selection - stacked vertically */}
                                                                         <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flexShrink: 0 }}>
                                                                             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Handling Staff</label>
@@ -564,7 +565,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                     </div>
 
                                                                     {/* RIGHT COLUMN: Guidelines and Behavior Checklist */}
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden', minHeight: 0 }}>
                                                                         {/* Guidelines box */}
                                                                         <div style={{ padding: '8px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '12px', lineHeight: '1.4', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
                                                                             <strong>BEHAVIOR GUIDELINES:</strong><br />
