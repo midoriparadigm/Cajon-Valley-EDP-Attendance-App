@@ -540,7 +540,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                                 value={editedStudent.behaviorDescription || ''}
                                                                                 onChange={e => setEditedStudent({ ...editedStudent, behaviorDescription: e.target.value })}
                                                                                 placeholder="Describe the details of the incident..."
-                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', height: 'calc(100% - 40px)', minHeight: '100px', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.4', fontSize: '13px', resize: 'none' }}
+                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', height: 'calc(100% - 40px)', minHeight: '50px', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.4', fontSize: '13px', resize: 'none' }}
                                                                             />
 
                                                                         </div>
@@ -552,7 +552,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                                 value={editedStudent.behaviorActions || ''}
                                                                                 onChange={e => setEditedStudent({ ...editedStudent, behaviorActions: e.target.value })}
                                                                                 placeholder="Describe actions taken..."
-                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '13px', height: 'calc(100% - 30px)', minHeight: '100px', outline: 'none', fontFamily: 'inherit', resize: 'none' }}
+                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '13px', height: 'calc(100% - 30px)', minHeight: '50px', outline: 'none', fontFamily: 'inherit', resize: 'none' }}
                                                                             />
                                                                         </div>
 
