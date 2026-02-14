@@ -121,6 +121,12 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                     <textarea
                         value={witnessText}
                         onChange={(e) => setWitnessText(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey && witnessText.trim() && !witnessDone) {
+                                e.preventDefault();
+                                handleWitnessDone();
+                            }
+                        }}
                         disabled={witnessDone}
                         placeholder="Describe how the injury occurred..."
                         style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', minHeight: '120px', fontFamily: 'inherit', outline: 'none', resize: 'none' }}
