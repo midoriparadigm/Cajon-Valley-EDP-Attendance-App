@@ -231,7 +231,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
             height: '60vh'
         }}>
             {/* LEFT COLUMN */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflow: 'hidden' }}>
 
                 {!witnessDone ? (
                     /* ===== EDITABLE WITNESS STATEMENT (only before first Done) ===== */
@@ -283,7 +283,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                     <>
                         {completedLogs.length > 0 ? (
                             /* Cumulative summary box */
-                            <div style={{ backgroundColor: '#fef2f2', borderRadius: '8px', padding: '16px', border: '1px solid #ef4444', display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: isMonitoring ? '45%' : '55%' }}>
+                            <div style={{ backgroundColor: '#fef2f2', borderRadius: '8px', padding: '16px', border: '1px solid #ef4444', display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', flex: 1, minHeight: 0 }}>
                                 {/* Header */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span className="material-icons-round" style={{ fontSize: '16px', color: '#ef4444' }}>local_hospital</span>
@@ -324,7 +324,8 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
 
                         {/* Timer or action buttons */}
                         {isMonitoring ? (
-                            <div style={{ backgroundColor: 'var(--bg-app)', borderRadius: '8px', padding: '16px', textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
+                            /* Timer box — fixed at bottom */
+                            <div style={{ backgroundColor: 'var(--bg-app)', borderRadius: '8px', padding: '16px', textAlign: 'center', border: '1px solid var(--border-subtle)', flexShrink: 0 }}>
                                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Active Monitoring</div>
                                 <div style={{ fontSize: '28px', fontWeight: '800', color: '#4b5563', fontVariantNumeric: 'tabular-nums' }}>
                                     {formatTimeWithMs(timeLeft)}
