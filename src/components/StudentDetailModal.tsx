@@ -504,12 +504,10 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                 <div style={{
                                                                     display: 'grid',
                                                                     gridTemplateColumns: 'minmax(550px, 1fr) minmax(500px, 1fr)',
-                                                                    gap: '20px',
-                                                                    maxHeight: 'calc(100vh - 230px)',
-                                                                    height: 'calc(100vh - 230px)'
+                                                                    gap: '20px'
                                                                 }}>
                                                                     {/* LEFT COLUMN: Staff, Details, Actions, Buttons */}
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'hidden', minHeight: 0 }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                                         {/* Staff Selection - stacked vertically */}
                                                                         <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flexShrink: 0 }}>
                                                                             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Handling Staff</label>
@@ -535,25 +533,25 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                         </div>
 
                                                                         {/* Details textarea - optimized height */}
-                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flex: '1', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                                                                             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Details of the Incident</label>
                                                                             <textarea
                                                                                 value={editedStudent.behaviorDescription || ''}
                                                                                 onChange={e => setEditedStudent({ ...editedStudent, behaviorDescription: e.target.value })}
                                                                                 placeholder="Describe the details of the incident..."
-                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', flex: 1, minHeight: 0, backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.4', fontSize: '13px', resize: 'none' }}
+                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', height: '60px', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.4', fontSize: '13px', resize: 'none' }}
                                                                             />
 
                                                                         </div>
 
                                                                         {/* Actions textarea - optimized height */}
-                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flex: '1', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                                                                             <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Actions Taken by Staff</label>
                                                                             <textarea
                                                                                 value={editedStudent.behaviorActions || ''}
                                                                                 onChange={e => setEditedStudent({ ...editedStudent, behaviorActions: e.target.value })}
                                                                                 placeholder="Describe actions taken..."
-                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '13px', flex: 1, minHeight: 0, outline: 'none', fontFamily: 'inherit', resize: 'none' }}
+                                                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '13px', height: '60px', outline: 'none', fontFamily: 'inherit', resize: 'none' }}
                                                                             />
                                                                         </div>
 
