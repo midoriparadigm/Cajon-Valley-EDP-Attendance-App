@@ -310,8 +310,8 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                             {(['0min', '15min', '30min'] as const).map(stage => {
                                 const isDone = student.headInjuryLogs.some(l => l.stage === stage);
                                 const isActive = activeTab === stage;
-                                // A tab is clickable if: it's done (can review), or it's the current pending stage and timer is expired
-                                const isClickable = isDone || stage === nextStage;
+                                // A tab is clickable if: it's done (can review), or it's the current pending stage AND timer has expired
+                                const isClickable = isDone || (stage === nextStage && timeLeft === 0);
                                 return (
                                     <button
                                         key={stage}
