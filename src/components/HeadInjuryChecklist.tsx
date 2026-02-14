@@ -1,5 +1,5 @@
 // src/components/HeadInjuryChecklist.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Student, HeadInjuryLog } from '../types';
 import { HEAD_INJURY_SYMPTOMS } from '../constants';
 import { formatTimeWithMs } from '../utils/helpers';
@@ -21,29 +21,48 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
     const [showNewReportForm, setShowNewReportForm] = useState(!student.headInjury);
     const [witnessText, setWitnessText] = useState('');
     const [witnessDone, setWitnessDone] = useState(false);
-    const [justSaved, setJustSaved] = useState(false); // tracks if assessment was just saved
+    const justSavedRef = useRef(false); // prevents auto-advancing on save
+    const prevTimeLeftRef = useRef(timeLeft);
 
-    useEffect(() => {
+    // Determine which stage is the "next" one to fill out
+    const getNextStage = (): '0min' | '15min' | '30min' => {
         const logs = student.headInjuryLogs;
         const has0 = logs.some(l => l.stage === '0min');
         const has15 = logs.some(l => l.stage === '15min');
+        if (!has0) return '0min';
+        if (!has15) return '15min';
+        return '30min';
+    };
 
-        if (!has0) setActiveTab('0min');
-        else if (!has15) setActiveTab('15min');
-        else setActiveTab('30min');
+    // Initial setup: set tab based on logs & witness state (only on mount / external changes)
+    useEffect(() => {
+        if (justSavedRef.current) {
+            // Don't auto-advance right after saving — stay on the saved tab
+            justSavedRef.current = false;
+            return;
+        }
+
+        const nextStage = getNextStage();
+        setActiveTab(nextStage);
 
         if (student.headInjuryWitnessDesc) {
             setWitnessText(student.headInjuryWitnessDesc);
             setWitnessDone(true);
             setShowNewReportForm(true);
         }
-
-        // If logs exist, we're in a post-save state
-        if (has0) {
-            setJustSaved(true);
-        }
     }, [student.headInjuryLogs, student.headInjuryWitnessDesc]);
 
+    // When timer expires (transitions from >0 to 0), auto-advance to next tab
+    useEffect(() => {
+        if (prevTimeLeftRef.current > 0 && timeLeft === 0) {
+            // Timer just expired — advance to the next stage
+            const nextStage = getNextStage();
+            setActiveTab(nextStage);
+        }
+        prevTimeLeftRef.current = timeLeft;
+    }, [timeLeft, student.headInjuryLogs]);
+
+    // Load symptoms/notes when switching tabs
     useEffect(() => {
         const existingLog = student.headInjuryLogs.find(l => l.stage === activeTab);
         if (existingLog) {
@@ -54,8 +73,6 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
             setCurrentSymptoms({});
             setNotes('');
             setSurveyCompleted(false);
-            // If switching to a new tab that hasn't been completed, allow editing
-            if (justSaved) setJustSaved(false);
         }
     }, [activeTab, student.headInjuryLogs]);
 
@@ -74,7 +91,8 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
             startTime = Number(Date.now());
         }
 
-        setJustSaved(true);
+        // Prevent auto-advancing to next tab
+        justSavedRef.current = true;
 
         onUpdate({
             headInjury: true,
@@ -108,21 +126,23 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
         setShowNewReportForm(false);
         setWitnessText('');
         setWitnessDone(false);
-        setJustSaved(false);
         onUpdate({ headInjury: false, headInjuryWitnessDesc: undefined, headInjuryLogs: [], headInjuryStartTime: undefined });
     };
 
     const isReadOnly = !!student.headInjuryLogs.find(l => l.stage === activeTab);
     const hasYesSymptoms = Object.values(currentSymptoms).some(val => val === true);
 
-    // Check if we're in "monitoring" mode = assessment saved and timer is active
-    const isMonitoring = justSaved && isReadOnly && timeLeft > 0;
+    // "Monitoring" = viewing a completed tab while the timer is still running
+    const isMonitoring = isReadOnly && timeLeft > 0;
 
     // Get the saved log for the current active tab to show results in summary
     const savedLog = student.headInjuryLogs.find(l => l.stage === activeTab);
 
     // Determine if all symptoms are "No"
     const allNo = savedLog ? Object.values(savedLog.symptoms).every(v => v === false) : false;
+
+    // Determine which stage is currently "pending" (next to be done)
+    const nextStage = getNextStage();
 
     return (
         <div style={{
@@ -178,6 +198,51 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                         {/* Submitted by footer */}
                         <div style={{ paddingTop: '12px', borderTop: '1px solid #ef444440', fontSize: '11px', color: '#991b1b', opacity: 0.9 }}>
                             Submitted by <span style={{ fontWeight: '700' }}>{student.headInjuryWitness || currentStaffName}</span> on {student.headInjuryTimestamp || 'Unknown Date'}
+                        </div>
+                    </div>
+                ) : isReadOnly && savedLog ? (
+                    /* ===== SUMMARY BOX for completed tabs when timer has expired (e.g. clicking back on 0min after it's done) ===== */
+                    <div style={{ backgroundColor: '#fef2f2', borderRadius: '8px', padding: '16px', border: '1px solid #ef4444', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {/* Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className="material-icons-round" style={{ fontSize: '16px', color: '#ef4444' }}>local_hospital</span>
+                            <span style={{ fontWeight: '800', color: '#991b1b', fontSize: '14px' }}>
+                                Head Injury Report Submitted
+                            </span>
+                        </div>
+
+                        {/* Witness Statement */}
+                        <div>
+                            <div style={{ fontSize: '11px', fontWeight: '800', color: '#991b1b', opacity: 0.8, marginBottom: '2px', textTransform: 'uppercase' }}>Witness Statement</div>
+                            <div style={{ fontSize: '13px', color: '#991b1b', fontWeight: '500', lineHeight: '1.4', whiteSpace: 'pre-wrap' }}>
+                                {student.headInjuryWitnessDesc || witnessText}
+                            </div>
+                        </div>
+
+                        {/* Questionnaire Results */}
+                        <div>
+                            <div style={{ fontSize: '11px', fontWeight: '800', color: '#991b1b', opacity: 0.8, marginBottom: '4px', textTransform: 'uppercase' }}>
+                                Assessment Results ({activeTab})
+                            </div>
+                            {allNo ? (
+                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span className="material-icons-round" style={{ fontSize: '14px' }}>check</span> "No" to All Symptoms
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    {Object.entries(savedLog.symptoms).map(([symptom, val]) => (
+                                        <div key={symptom} style={{ fontSize: '12px', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ fontWeight: '700', color: val ? '#dc2626' : '#16a34a', fontSize: '11px', width: '14px' }}>{val ? 'Y' : 'N'}</span>
+                                            <span style={{ fontWeight: '500' }}>{symptom}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Submitted by footer */}
+                        <div style={{ paddingTop: '12px', borderTop: '1px solid #ef444440', fontSize: '11px', color: '#991b1b', opacity: 0.9 }}>
+                            Submitted by <span style={{ fontWeight: '700' }}>{savedLog.staffName || currentStaffName}</span> on {student.headInjuryTimestamp || 'Unknown Date'}
                         </div>
                     </div>
                 ) : (
@@ -245,20 +310,17 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                             {(['0min', '15min', '30min'] as const).map(stage => {
                                 const isDone = student.headInjuryLogs.some(l => l.stage === stage);
                                 const isActive = activeTab === stage;
+                                // A tab is clickable if: it's done (can review), or it's the current pending stage and timer is expired
+                                const isClickable = isDone || stage === nextStage;
                                 return (
                                     <button
                                         key={stage}
                                         onClick={() => {
-                                            if (isDone || activeTab === stage) {
+                                            if (isClickable) {
                                                 setActiveTab(stage);
-                                                const savedLog = student.headInjuryLogs.find(l => l.stage === stage);
-                                                if (savedLog) {
-                                                    setCurrentSymptoms(savedLog.symptoms);
-                                                    setJustSaved(true);
-                                                }
                                             }
                                         }}
-                                        disabled={!isDone && activeTab !== stage}
+                                        disabled={!isClickable}
                                         style={{
                                             flex: 1,
                                             padding: '12px 16px',
@@ -266,10 +328,10 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                                             border: 'none',
                                             backgroundColor: isActive ? 'var(--text-main)' : (darkMode ? 'rgba(255,255,255,0.1)' : '#e5e7eb'),
                                             color: isActive ? 'var(--bg-card)' : (darkMode ? 'rgba(255,255,255,0.7)' : 'var(--text-main)'),
-                                            opacity: (!isDone && activeTab !== stage) ? 0.5 : 1,
+                                            opacity: !isClickable ? 0.5 : 1,
                                             fontWeight: '800',
                                             fontSize: '14px',
-                                            cursor: (isDone || activeTab === stage) ? 'pointer' : 'not-allowed',
+                                            cursor: isClickable ? 'pointer' : 'not-allowed',
                                             transition: 'all 0.2s'
                                         }}
                                     >
@@ -280,8 +342,8 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                         </div>
                     )}
 
-                    {/* Scrollable questionnaire with fixed height — grayed out when monitoring */}
-                    <div style={{ flex: '1', overflowY: 'scroll', opacity: isMonitoring ? 0.4 : ((surveyCompleted && !isReadOnly) || (activeTab !== '0min' && student.headInjuryLogs.find(l => l.stage === activeTab)) ? 0.6 : 1), pointerEvents: isMonitoring ? 'none' : (((surveyCompleted && !isReadOnly) || (activeTab !== '0min' && student.headInjuryLogs.find(l => l.stage === activeTab))) ? 'none' : 'auto'), display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0, backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '8px', border: '1px solid var(--border-subtle)' }}>
+                    {/* Scrollable questionnaire with fixed height — grayed out when viewing a completed tab */}
+                    <div style={{ flex: '1', overflowY: 'scroll', opacity: isReadOnly ? 0.4 : ((surveyCompleted && !isReadOnly) ? 0.6 : 1), pointerEvents: isReadOnly ? 'none' : ((surveyCompleted && !isReadOnly) ? 'none' : 'auto'), display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0, backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '8px', border: '1px solid var(--border-subtle)' }}>
                         {isLead && Object.entries(HEAD_INJURY_SYMPTOMS).map(([category, symptoms]) => (
                             <div key={category} style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -293,7 +355,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                                             <span style={{ fontSize: '13px', color: 'var(--text-main)', flex: 1, paddingRight: '4px', fontWeight: '500' }}>{symptom}</span>
                                             <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                                                 <button
-                                                    disabled={isReadOnly || isMonitoring || (activeTab !== '0min' && student.headInjuryLogs.find(l => l.stage === activeTab))}
+                                                    disabled={isReadOnly}
                                                     onClick={() => setCurrentSymptoms(p => ({ ...p, [symptom]: p[symptom] === true ? undefined : true }))}
                                                     style={{
                                                         width: '42px', height: '36px', borderRadius: '8px',
@@ -304,7 +366,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                                                         transition: 'all 0.2s ease'
                                                     }}>Y</button>
                                                 <button
-                                                    disabled={isReadOnly || isMonitoring || (activeTab !== '0min' && student.headInjuryLogs.find(l => l.stage === activeTab))}
+                                                    disabled={isReadOnly}
                                                     onClick={() => setCurrentSymptoms(p => ({ ...p, [symptom]: p[symptom] === false ? undefined : false }))}
                                                     style={{
                                                         width: '42px', height: '36px', borderRadius: '8px',
