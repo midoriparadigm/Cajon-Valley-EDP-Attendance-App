@@ -476,7 +476,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
 
                             {activeSection === 'behavior' && (
                                 <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
-                                    <div style={{ padding: '20px', backgroundColor: 'var(--bg-app)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
+                                    <div style={{ padding: '12px', backgroundColor: 'var(--bg-app)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
                                         {editedStudent.behavior !== 'none' && !isEditingBehavior && editedStudent.behaviorSubmittedAt && (
                                             <div style={{ marginBottom: '16px' }}>
                                                 <CollapsedBehaviorView
@@ -489,9 +489,9 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                         )}
 
                                         {(editedStudent.behavior === 'none' || isEditingBehavior) && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                 {editedStudent.behavior !== 'none' && (
-                                                    <div style={{ animation: 'slideUp 0.2s', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                                    <div style={{ animation: 'slideUp 0.2s', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                         {!isEditingBehavior && student.behaviorTimestamp ? (
                                                             <div style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
                                                                 <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>Behavior Ticket Filed</div>
@@ -504,7 +504,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                 <div style={{
                                                                     display: 'grid',
                                                                     gridTemplateColumns: 'minmax(550px, 1fr) minmax(500px, 1fr)',
-                                                                    gap: '20px'
+                                                                    gap: '12px'
                                                                 }}>
                                                                     {/* LEFT COLUMN: Staff, Details, Actions, Buttons */}
                                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', height: '100%' }}>
@@ -556,9 +556,9 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                         </div>
 
                                                                         {/* Buttons at bottom of left column */}
-                                                                        <div style={{ display: 'flex', gap: '12px', flexShrink: 0 }}>
-                                                                            <button onClick={cancelTicket} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                                                                            <button onClick={saveBehavior} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>{editedStudent.behaviorSubmittedAt ? 'Save Edit' : 'Submit'}</button>
+                                                                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                                                                            <button onClick={cancelTicket} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                                                                            <button onClick={saveBehavior} style={{ flex: 1, padding: '10px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>{editedStudent.behaviorSubmittedAt ? 'Save Edit' : 'Submit'}</button>
                                                                         </div>
 
                                                                     </div>
@@ -566,21 +566,21 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                     {/* RIGHT COLUMN: Guidelines and Behavior Checklist */}
                                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                                         {/* Guidelines box */}
-                                                                        <div style={{ padding: '12px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '12px', lineHeight: '1.5', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
+                                                                        <div style={{ padding: '8px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '12px', lineHeight: '1.4', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
                                                                             <strong>BEHAVIOR GUIDELINES:</strong><br />
                                                                             Please fill out the following behavior ticket per student/behavior as detailed as possible.
                                                                         </div>
 
                                                                         {/* Behavior checklist - styled like Head Injury questionnaire */}
-                                                                        <div style={{ backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '8px', border: '1px solid var(--border-subtle)', flex: '1', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                                                                            <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column' }}>
-                                                                                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Behaviors</label>
+                                                                        <div style={{ backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '4px', border: '1px solid var(--border-subtle)', flex: '1', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                                                                            <div style={{ backgroundColor: 'var(--bg-card)', padding: '6px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column' }}>
+                                                                                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Behaviors</label>
                                                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
                                                                                     {BEHAVIOR_CHECKLISTS[editedStudent.behavior as 'green']?.map((item) => {
                                                                                         const isChecked = editedStudent.behaviorIssues?.includes(item) || false;
                                                                                         const isDisabled = !!editedStudent.behaviorSubmittedAt;
                                                                                         return (
-                                                                                            <div key={item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid var(--bg-app)' }}>
+                                                                                            <div key={item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2px 0', borderBottom: '1px solid var(--bg-app)' }}>
                                                                                                 <span style={{ fontSize: '13px', color: 'var(--text-main)', flex: 1, paddingRight: '4px', fontWeight: '500' }}>{item}</span>
                                                                                                 <button
                                                                                                     disabled={isDisabled}
@@ -589,7 +589,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                                                         setEditedStudent({ ...editedStudent, behaviorIssues: issues });
                                                                                                     }}
                                                                                                     style={{
-                                                                                                        width: '42px', height: '32px', borderRadius: '8px', flexShrink: 0,
+                                                                                                        width: '36px', height: '26px', borderRadius: '6px', flexShrink: 0,
                                                                                                         border: isChecked ? '2px solid var(--color-success)' : '1px solid var(--border-subtle)',
                                                                                                         backgroundColor: isChecked ? 'var(--color-success-bg)' : 'var(--bg-card)',
                                                                                                         color: isChecked ? 'var(--color-success)' : 'var(--text-secondary)',
