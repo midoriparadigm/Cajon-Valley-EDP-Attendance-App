@@ -572,19 +572,37 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                             Please fill out the following behavior ticket per student/behavior as detailed as possible.
                                                                         </div>
 
-                                                                        {/* Behavior checklist - takes remaining height */}
-                                                                        <div style={{ backgroundColor: 'var(--bg-card)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flex: '1', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                                                                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Behaviors</label>
-                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto', flex: '1' }}>
-                                                                                {BEHAVIOR_CHECKLISTS[editedStudent.behavior as 'green']?.map((item) => (
-                                                                                    <label key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-main)', padding: '6px 0', borderBottom: '1px solid var(--bg-app)', cursor: editedStudent.behaviorSubmittedAt ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: editedStudent.behaviorSubmittedAt ? 0.5 : 1 }}>
-                                                                                        <input type="checkbox" checked={editedStudent.behaviorIssues?.includes(item) || false} disabled={!!editedStudent.behaviorSubmittedAt} onChange={() => {
-                                                                                            const issues = editedStudent.behaviorIssues.includes(item) ? editedStudent.behaviorIssues.filter(i => i !== item) : [...editedStudent.behaviorIssues, item];
-                                                                                            setEditedStudent({ ...editedStudent, behaviorIssues: issues });
-                                                                                        }} style={{ transform: 'scale(1.2)', flexShrink: 0 }} />
-                                                                                        {item}
-                                                                                    </label>
-                                                                                ))}
+                                                                        {/* Behavior checklist - styled like Head Injury questionnaire */}
+                                                                        <div style={{ backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '8px', border: '1px solid var(--border-subtle)', flex: '1', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                                                                            <div style={{ backgroundColor: 'var(--bg-card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column' }}>
+                                                                                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Behaviors</label>
+                                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
+                                                                                    {BEHAVIOR_CHECKLISTS[editedStudent.behavior as 'green']?.map((item) => {
+                                                                                        const isChecked = editedStudent.behaviorIssues?.includes(item) || false;
+                                                                                        const isDisabled = !!editedStudent.behaviorSubmittedAt;
+                                                                                        return (
+                                                                                            <div key={item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid var(--bg-app)' }}>
+                                                                                                <span style={{ fontSize: '13px', color: 'var(--text-main)', flex: 1, paddingRight: '4px', fontWeight: '500' }}>{item}</span>
+                                                                                                <button
+                                                                                                    disabled={isDisabled}
+                                                                                                    onClick={() => {
+                                                                                                        const issues = editedStudent.behaviorIssues.includes(item) ? editedStudent.behaviorIssues.filter(i => i !== item) : [...editedStudent.behaviorIssues, item];
+                                                                                                        setEditedStudent({ ...editedStudent, behaviorIssues: issues });
+                                                                                                    }}
+                                                                                                    style={{
+                                                                                                        width: '42px', height: '32px', borderRadius: '8px', flexShrink: 0,
+                                                                                                        border: isChecked ? '2px solid var(--color-success)' : '1px solid var(--border-subtle)',
+                                                                                                        backgroundColor: isChecked ? 'var(--color-success-bg)' : 'var(--bg-card)',
+                                                                                                        color: isChecked ? 'var(--color-success)' : 'var(--text-secondary)',
+                                                                                                        fontWeight: '800', fontSize: '14px', cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                                                                                        opacity: isDisabled ? 0.5 : 1,
+                                                                                                        transition: 'all 0.2s ease'
+                                                                                                    }}
+                                                                                                >{isChecked ? '✓' : '—'}</button>
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     </div>
