@@ -277,7 +277,8 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
 
         setEditedStudent(prev => ({ ...prev, ...pendingUpdate, smsSentTime: timeStr }));
         setShowCheckOutConfirm(false);
-        onCheckOut(student.id, timeStr, checkoutBy);
+        const staffName = currentStaff ? `${currentStaff.name} (${currentStaff.organization})` : 'Staff';
+        onCheckOut(student.id, timeStr, staffName);
     };
 
     const currentStatus = program === 'sunrise' ? editedStudent.sunriseStatus : editedStudent.sunsetStatus;
