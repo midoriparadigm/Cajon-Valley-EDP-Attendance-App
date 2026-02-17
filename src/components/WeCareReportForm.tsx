@@ -48,7 +48,7 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
                             }
                         }}
                         disabled={isEditing}
-                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: isEditing ? 'var(--bg-app)' : 'var(--bg-card)', color: 'var(--text-main)', fontSize: '14px', cursor: isEditing ? 'not-allowed' : 'pointer', opacity: isEditing ? 0.6 : 1 }}
+                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: isEditing ? 'var(--bg-app)' : 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', cursor: isEditing ? 'not-allowed' : 'pointer', opacity: isEditing ? 0.6 : 1, outline: 'none' }}
                     >
                         <option value="">Select an activity...</option>
                         {activityOptions.map(opt => (
