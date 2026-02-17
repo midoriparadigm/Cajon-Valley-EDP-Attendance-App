@@ -217,7 +217,7 @@ const App = () => {
                 const update = program === 'sunrise'
                     ? { sunriseStatus: 'present' as AttendanceStatus, sunriseTime: timeString, sunriseStaff: staffName }
                     : { sunsetStatus: 'present' as AttendanceStatus, sunsetTime: timeString, sunsetStaff: staffName };
-                return { ...s, ...update, checkInPhoto: photo };
+                return { ...s, ...update, checkInPhoto: photo, checkInSmsSent: true, checkInSmsTime: timeString };
             }
             return s;
         }));

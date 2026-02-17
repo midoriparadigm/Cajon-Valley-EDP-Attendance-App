@@ -427,21 +427,23 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                             <div style={{ width: '100%', height: '1px', backgroundColor: 'var(--border-subtle)', margin: '4px 0' }} />
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', backgroundColor: 'var(--bg-app)', borderRadius: '10px' }}>
+                                                {/* Check-In row - green only if it's the latest event */}
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>Check-In:</span>
-                                                    <span style={{ fontSize: '13px', fontWeight: '700', color: isPresent ? 'var(--color-success)' : 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                        {isPresent && <span className="material-icons-round" style={{ fontSize: '14px' }}>check_circle</span>}
+                                                    <span style={{ fontSize: '13px', fontWeight: currentStatus === 'present' && !editedStudent.checkInSmsSent ? '700' : '500', color: currentStatus === 'present' && !editedStudent.checkInSmsSent ? 'var(--color-success)' : 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                         {program === 'sunrise' ? editedStudent.sunriseTime : editedStudent.sunsetTime || '--:--'}
                                                         <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500', marginLeft: '4px' }}>
                                                             by {program === 'sunrise' ? editedStudent.sunriseStaff : editedStudent.sunsetStaff}
                                                         </span>
                                                     </span>
                                                 </div>
+                                                {/* Check-In SMS Sent row */}
                                                 {editedStudent.checkInSmsSent && (
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                         <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>Check-In SMS Sent:</span>
-                                                        <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            <span className="material-icons-round" style={{ fontSize: '14px' }}>done_all</span> {editedStudent.checkInSmsTime}
+                                                        <span style={{ fontSize: '13px', fontWeight: currentStatus === 'present' ? '700' : '500', color: currentStatus === 'present' ? 'var(--color-success)' : 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                            {currentStatus === 'present' && <span className="material-icons-round" style={{ fontSize: '14px' }}>check_circle</span>}
+                                                            <span className="material-icons-round" style={{ fontSize: '14px' }}>done</span> {editedStudent.checkInSmsTime}
                                                         </span>
                                                     </div>
                                                 )}
@@ -450,8 +452,9 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                         <div style={{ width: '100%', height: '1px', backgroundColor: 'var(--border-subtle)', margin: '4px 0' }} />
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                             <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>Check-Out SMS Sent:</span>
-                                                            <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                <span className="material-icons-round" style={{ fontSize: '14px' }}>done_all</span> {editedStudent.smsSentTime || '--:--'}
+                                                            <span style={{ fontSize: '13px', fontWeight: currentStatus === 'pending_parent' ? '700' : '500', color: currentStatus === 'pending_parent' ? 'var(--color-success)' : 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                {currentStatus === 'pending_parent' && <span className="material-icons-round" style={{ fontSize: '14px' }}>check_circle</span>}
+                                                                <span className="material-icons-round" style={{ fontSize: '14px' }}>done</span> {editedStudent.smsSentTime || '--:--'}
                                                             </span>
                                                         </div>
                                                     </>

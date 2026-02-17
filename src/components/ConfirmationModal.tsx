@@ -126,7 +126,7 @@ const ConfirmationModal = (props: ConfirmationModalProps) => {
                         <div style={{ display: 'flex', gap: '12px' }}>
                             <button onClick={onCancel} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
                             <button onClick={() => showPhotoOption ? startCamera() : onConfirm()} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>
-                                {showPhotoOption ? 'Verify & Check-In' : 'Confirm'}
+                                {showPhotoOption ? 'Verify, Check-In & Send SMS to Guardian' : 'Confirm'}
                             </button>
                         </div>
                     </>
@@ -194,6 +194,9 @@ const ConfirmationModal = (props: ConfirmationModalProps) => {
                             </div>
                         </div>
                         <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Comparing facial features...</div>
+                        <div style={{ marginTop: '12px', fontSize: '13px', color: '#10b981', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                            <span className="material-icons-round" style={{ fontSize: '16px' }}>sms</span> SMS Sent to Guardian
+                        </div>
                     </>
                 )}
 
