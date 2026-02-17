@@ -354,27 +354,31 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                 <div style={{ flex: 1, overflowY: 'auto', padding: '24px', paddingBottom: '100px' }}>
                     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-                            {studentMenuOptions.map(option => (
-                                <button key={option.id} onClick={() => {
-                                    setActiveSection(option.id as any);
-                                    // Auto-trigger ticket/report creation flow for behavior and wecare sections
-                                    if (option.id === 'behavior' && editedStudent.behavior === 'none') {
-                                        startNewTicket();
-                                    }
-                                    if (option.id === 'wecare' && !editedStudent.weCareTimestamp) {
-                                        setShowWeCareOptions(true);
-                                        setIsEditingWeCare(true);
-                                    }
-                                }} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '24px', borderRadius: '16px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-subtle)', cursor: 'pointer', textAlign: 'left', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.1s, box-shadow 0.1s' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                                    <div style={{ width: '56px', height: '56px', borderRadius: '12px', backgroundColor: option.bg, color: option.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        {option.icon === 'head_injury_custom' ? <HeadInjuryIcon size={28} color={option.color} /> : <span className="material-icons-round" style={{ fontSize: '28px' }}>{option.icon}</span>}
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>{option.label}</div>
-                                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Tap to open</div>
-                                    </div>
-                                </button>
-                            ))}
+                            {studentMenuOptions.map(option => {
+                                const isDisabledByCheckout = (currentStatus === 'checked_out' || currentStatus === 'pending_parent') && ['behavior', 'wecare', 'injury'].includes(option.id);
+                                return (
+                                    <button key={option.id} onClick={() => {
+                                        if (isDisabledByCheckout) return;
+                                        setActiveSection(option.id as any);
+                                        // Auto-trigger ticket/report creation flow for behavior and wecare sections
+                                        if (option.id === 'behavior' && editedStudent.behavior === 'none') {
+                                            startNewTicket();
+                                        }
+                                        if (option.id === 'wecare' && !editedStudent.weCareTimestamp) {
+                                            setShowWeCareOptions(true);
+                                            setIsEditingWeCare(true);
+                                        }
+                                    }} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '24px', borderRadius: '16px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-subtle)', cursor: isDisabledByCheckout ? 'not-allowed' : 'pointer', textAlign: 'left', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.1s, box-shadow 0.1s', opacity: isDisabledByCheckout ? 0.4 : 1, filter: isDisabledByCheckout ? 'grayscale(1)' : 'none' }} onMouseEnter={(e) => { if (!isDisabledByCheckout) e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+                                        <div style={{ width: '56px', height: '56px', borderRadius: '12px', backgroundColor: option.bg, color: option.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            {option.icon === 'head_injury_custom' ? <HeadInjuryIcon size={28} color={option.color} /> : <span className="material-icons-round" style={{ fontSize: '28px' }}>{option.icon}</span>}
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>{option.label}</div>
+                                            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{isDisabledByCheckout ? 'Student checked out' : 'Tap to open'}</div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
