@@ -63,6 +63,7 @@ const ConfirmationModal = (props: ConfirmationModalProps) => {
     }, [facingMode]);
 
     const capturePhoto = async () => {
+        const mockBiometricData = { anomalyScore: Math.random() * 0.3, visualAnomalyDetected: false };
         if (videoRef.current) {
             const canvas = document.createElement('canvas');
             canvas.width = videoRef.current.videoWidth || 320;
@@ -78,7 +79,7 @@ const ConfirmationModal = (props: ConfirmationModalProps) => {
                 setTimeout(() => {
                     setStep('verified');
                     setTimeout(() => {
-                        onConfirm(capturedPhoto);
+                        onConfirm(capturedPhoto, mockBiometricData);
                     }, 1500);
                 }, 1500);
             }
@@ -87,7 +88,7 @@ const ConfirmationModal = (props: ConfirmationModalProps) => {
             setTimeout(() => {
                 setStep('verified');
                 setTimeout(() => {
-                    onConfirm();
+                    onConfirm(undefined, mockBiometricData);
                 }, 1500);
             }, 1500);
         }
