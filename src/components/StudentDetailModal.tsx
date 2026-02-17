@@ -464,7 +464,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                             <span className="material-icons-round" style={{ fontSize: '14px' }}>check_circle</span>
                                                             {program === 'sunrise' ? editedStudent.sunriseCheckOutTime : editedStudent.sunsetCheckOutTime || '--:--'}
                                                             <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '500', marginLeft: '4px' }}>
-                                                                by {program === 'sunrise' ? editedStudent.sunriseCheckoutBy : editedStudent.sunsetCheckoutBy}
+                                                                by {editedStudent.lastCheckOutBy || (program === 'sunrise' ? editedStudent.sunriseCheckoutBy : editedStudent.sunsetCheckoutBy) || 'Staff'}
                                                             </span>
                                                         </span>
                                                     </div>
