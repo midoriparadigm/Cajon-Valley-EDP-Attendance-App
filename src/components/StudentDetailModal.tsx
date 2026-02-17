@@ -442,8 +442,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                         <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>Check-In SMS Sent:</span>
                                                         <span style={{ fontSize: '13px', fontWeight: currentStatus === 'present' ? '700' : '500', color: currentStatus === 'present' ? 'var(--color-success)' : 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            {currentStatus === 'present' && <span className="material-icons-round" style={{ fontSize: '14px' }}>check_circle</span>}
-                                                            <span className="material-icons-round" style={{ fontSize: '14px' }}>done</span> {editedStudent.checkInSmsTime}
+                                                            <span className="material-icons-round" style={{ fontSize: '14px' }}>{currentStatus === 'present' ? 'check_circle' : 'done'}</span> {editedStudent.checkInSmsTime}
                                                         </span>
                                                     </div>
                                                 )}
@@ -453,8 +452,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                             <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>Check-Out SMS Sent:</span>
                                                             <span style={{ fontSize: '13px', fontWeight: currentStatus === 'pending_parent' ? '700' : '500', color: currentStatus === 'pending_parent' ? 'var(--color-success)' : 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                {currentStatus === 'pending_parent' && <span className="material-icons-round" style={{ fontSize: '14px' }}>check_circle</span>}
-                                                                <span className="material-icons-round" style={{ fontSize: '14px' }}>done</span> {editedStudent.smsSentTime || '--:--'}
+                                                                <span className="material-icons-round" style={{ fontSize: '14px' }}>{currentStatus === 'pending_parent' ? 'check_circle' : 'done'}</span> {editedStudent.smsSentTime || '--:--'}
                                                             </span>
                                                         </div>
                                                     </>
