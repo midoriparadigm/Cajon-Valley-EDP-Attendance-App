@@ -33,78 +33,84 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-                <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>ACTIVITY</label>
-                <select
-                    value={activity}
-                    onChange={e => {
-                        if (isEditing) return;
-                        setActivity(e.target.value);
-                        if (e.target.value !== 'Other') {
-                            setActivityOther('');
-                        }
-                    }}
-                    disabled={isEditing}
-                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: isEditing ? 'var(--bg-app)' : 'var(--bg-card)', color: 'var(--text-main)', fontSize: '14px', cursor: isEditing ? 'not-allowed' : 'pointer', opacity: isEditing ? 0.6 : 1 }}
-                >
-                    <option value="">Select an activity...</option>
-                    {activityOptions.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                </select>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            {/* LEFT COLUMN: Activity, Additional Info, Buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', height: '100%' }}>
+                <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flexShrink: 0 }}>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Activity</label>
+                    <select
+                        value={activity}
+                        onChange={e => {
+                            if (isEditing) return;
+                            setActivity(e.target.value);
+                            if (e.target.value !== 'Other') {
+                                setActivityOther('');
+                            }
+                        }}
+                        disabled={isEditing}
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: isEditing ? 'var(--bg-app)' : 'var(--bg-card)', color: 'var(--text-main)', fontSize: '14px', cursor: isEditing ? 'not-allowed' : 'pointer', opacity: isEditing ? 0.6 : 1 }}
+                    >
+                        <option value="">Select an activity...</option>
+                        {activityOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {activity === 'Other' && (
+                    <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flexShrink: 0 }}>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Specify Activity</label>
+                        <input
+                            placeholder="Enter activity name..."
+                            value={activityOther}
+                            onChange={e => { if (!isEditing) setActivityOther(e.target.value); }}
+                            disabled={isEditing}
+                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: isEditing ? 'var(--bg-app)' : 'var(--bg-card)', color: 'var(--text-main)', opacity: isEditing ? 0.6 : 1, cursor: isEditing ? 'not-allowed' : 'text' }}
+                        />
+                    </div>
+                )}
+
+                <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flex: '1', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Additional Information</label>
+                    <textarea placeholder="Details about the incident..." value={info} onChange={e => setInfo(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', flex: 1, minHeight: 0, backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.4', fontSize: '13px', resize: 'none' }} />
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', flexShrink: 0 }}>
+                    <button onClick={(e) => { e.stopPropagation(); onCancel(); }} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                    <button onClick={(e) => { e.stopPropagation(); onSave({ activity: activity === 'Other' ? activityOther : activity, info, firstAid }); }} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#ec4899', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>{isEditing ? 'Save Edit' : 'Save Report'}</button>
+                </div>
             </div>
 
-            {activity === 'Other' && (
-                <div>
-                    <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>SPECIFY ACTIVITY</label>
-                    <input
-                        placeholder="Enter activity name..."
-                        value={activityOther}
-                        onChange={e => { if (!isEditing) setActivityOther(e.target.value); }}
-                        disabled={isEditing}
-                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: isEditing ? 'var(--bg-app)' : 'var(--bg-card)', color: 'var(--text-main)', opacity: isEditing ? 0.6 : 1, cursor: isEditing ? 'not-allowed' : 'text' }}
-                    />
-                </div>
-            )}
-
-            <div style={{ backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '4px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ backgroundColor: 'var(--bg-card)', padding: '6px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>First Aid Provided</label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
-                        {options.map(opt => {
-                            const isSelected = firstAid.includes(opt);
-                            return (
-                                <div key={opt} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid var(--bg-app)' }}>
-                                    <span style={{ fontSize: '13px', color: 'var(--text-main)', flex: 1, paddingRight: '4px', fontWeight: '500' }}>{opt}</span>
-                                    <button
-                                        disabled={isEditing}
-                                        onClick={() => toggleOption(opt)}
-                                        style={{
-                                            width: '36px', height: '26px', borderRadius: '6px', flexShrink: 0,
-                                            border: isSelected ? '2px solid #ec4899' : '1px solid var(--border-subtle)',
-                                            backgroundColor: isSelected ? 'rgba(236, 72, 153, 0.15)' : 'var(--bg-card)',
-                                            color: isSelected ? '#ec4899' : 'var(--text-secondary)',
-                                            fontWeight: '800', fontSize: '14px', cursor: isEditing ? 'not-allowed' : 'pointer',
-                                            opacity: isEditing ? 0.5 : 1,
-                                            transition: 'all 0.2s ease'
-                                        }}
-                                    >{isSelected ? '✓' : '—'}</button>
-                                </div>
-                            );
-                        })}
+            {/* RIGHT COLUMN: First Aid Provided Checklist */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '4px', border: '1px solid var(--border-subtle)', flex: '1', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                    <div style={{ backgroundColor: 'var(--bg-card)', padding: '6px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column' }}>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>First Aid Provided</label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
+                            {options.map(opt => {
+                                const isSelected = firstAid.includes(opt);
+                                return (
+                                    <div key={opt} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid var(--bg-app)' }}>
+                                        <span style={{ fontSize: '13px', color: 'var(--text-main)', flex: 1, paddingRight: '4px', fontWeight: '500' }}>{opt}</span>
+                                        <button
+                                            disabled={isEditing}
+                                            onClick={() => toggleOption(opt)}
+                                            style={{
+                                                width: '36px', height: '26px', borderRadius: '6px', flexShrink: 0,
+                                                border: isSelected ? '2px solid #ec4899' : '1px solid var(--border-subtle)',
+                                                backgroundColor: isSelected ? 'rgba(236, 72, 153, 0.15)' : 'var(--bg-card)',
+                                                color: isSelected ? '#ec4899' : 'var(--text-secondary)',
+                                                fontWeight: '800', fontSize: '14px', cursor: isEditing ? 'not-allowed' : 'pointer',
+                                                opacity: isEditing ? 0.5 : 1,
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                        >{isSelected ? '✓' : '—'}</button>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div>
-                <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>ADDITIONAL INFORMATION</label>
-                <textarea placeholder="Details about the incident..." value={info} onChange={e => setInfo(e.target.value)} style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                <button onClick={(e) => { e.stopPropagation(); onCancel(); }} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                <button onClick={(e) => { e.stopPropagation(); onSave({ activity: activity === 'Other' ? activityOther : activity, info, firstAid }); }} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', backgroundColor: '#ec4899', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>{isEditing ? 'Save Edit' : 'Save Report'}</button>
             </div>
         </div>
     );
