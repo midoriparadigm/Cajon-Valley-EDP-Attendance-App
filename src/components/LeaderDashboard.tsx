@@ -344,10 +344,11 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
         return msg;
     }, []);
 
-    const generateWithGemini = useCallback(async (reports: ParentReport[], studentObj?: Student) => {
+    const generateWithGemini = useCallback(async (reports: ParentReport[], studentObj?: Student): Promise<string | null> => {
         const apiKey = process.env.GEMINI_API_KEY || '';
         if (!apiKey) {
             console.warn('[Gemini] No API key found. Set GEMINI_API_KEY in .env file.');
+            showToast('No Gemini API key configured — using template', 'info');
             return null;
         }
         try {
@@ -379,11 +380,13 @@ Requirements:
 
             const result = await model.generateContent(prompt);
             return result.response.text();
-        } catch (e) {
-            console.error('Gemini API error:', e);
+        } catch (e: unknown) {
+            const errMsg = e instanceof Error ? e.message : String(e);
+            console.error('Gemini API error:', errMsg);
+            showToast(`Gemini error: ${errMsg.substring(0, 100)}`, 'error');
             return null;
         }
-    }, []);
+    }, [showToast]);
 
     const enterDraftMode = useCallback(async (reports: ParentReport[]) => {
         const studentObj = students.find(s => s.id === reports[0]?.studentId);
