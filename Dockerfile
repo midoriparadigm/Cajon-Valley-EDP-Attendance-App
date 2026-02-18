@@ -4,6 +4,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+ARG VITE_GEMINI_API_KEY=""
+RUN if [ -n "$VITE_GEMINI_API_KEY" ]; then echo "VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY}" >> .env; fi
 RUN npm run build
 
 # Production stage
