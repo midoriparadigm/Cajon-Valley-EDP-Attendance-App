@@ -346,7 +346,10 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
 
     const generateWithGemini = useCallback(async (reports: ParentReport[], studentObj?: Student) => {
         const apiKey = process.env.GEMINI_API_KEY || '';
-        if (!apiKey) return null;
+        if (!apiKey) {
+            console.warn('[Gemini] No API key found. Set GEMINI_API_KEY in .env file.');
+            return null;
+        }
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
@@ -409,13 +412,22 @@ Requirements:
         setIsGeneratingAI(true);
         const studentObj = students.find(s => s.id === draftSourceReports[0]?.studentId);
         const aiMsg = await generateWithGemini(draftSourceReports, studentObj);
-        const newMsg = aiMsg || generateTemplateMessage(draftSourceReports, studentObj);
-        setDraftMessage(newMsg);
-        const newHistory = [...messageHistory.slice(0, historyIndex + 1), newMsg];
-        setMessageHistory(newHistory);
-        setHistoryIndex(newHistory.length - 1);
+        if (aiMsg) {
+            setDraftMessage(aiMsg);
+            const newHistory = [...messageHistory.slice(0, historyIndex + 1), aiMsg];
+            setMessageHistory(newHistory);
+            setHistoryIndex(newHistory.length - 1);
+            showToast('AI-generated message ready', 'success');
+        } else {
+            const templateMsg = generateTemplateMessage(draftSourceReports, studentObj);
+            setDraftMessage(templateMsg);
+            const newHistory = [...messageHistory.slice(0, historyIndex + 1), templateMsg];
+            setMessageHistory(newHistory);
+            setHistoryIndex(newHistory.length - 1);
+            showToast('Using template — add GEMINI_API_KEY to .env for AI generation', 'info');
+        }
         setIsGeneratingAI(false);
-    }, [isGeneratingAI, students, draftSourceReports, generateWithGemini, generateTemplateMessage, messageHistory, historyIndex]);
+    }, [isGeneratingAI, students, draftSourceReports, generateWithGemini, generateTemplateMessage, messageHistory, historyIndex, showToast]);
 
     const handleUndo = useCallback(() => {
         if (historyIndex > 0) {
