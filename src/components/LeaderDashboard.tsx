@@ -345,9 +345,9 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
     }, []);
 
     const generateWithGemini = useCallback(async (reports: ParentReport[], studentObj?: Student): Promise<string | null> => {
-        const apiKey = process.env.GEMINI_API_KEY || '';
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
         if (!apiKey) {
-            console.warn('[Gemini] No API key found. Set GEMINI_API_KEY in .env file.');
+            console.warn('[Gemini] No API key found. Set VITE_GEMINI_API_KEY in .env file.');
             showToast('No Gemini API key configured — using template', 'info');
             return null;
         }
