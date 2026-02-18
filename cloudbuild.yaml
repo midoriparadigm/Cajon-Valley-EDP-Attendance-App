@@ -1,3 +1,6 @@
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 steps:
   # Build the Docker image with the API key as a build arg
   - name: 'gcr.io/cloud-builders/docker'
