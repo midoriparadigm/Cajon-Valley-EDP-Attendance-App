@@ -1,9 +1,9 @@
 // src/components/LeaderDashboard.tsx
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import type { Student, Staff, ParentReport, BiometricLog, ProgramType } from '../types';
 import { GRADES } from '../constants';
 import RosterManager from './RosterManager';
-import ParentReportModal from './ParentReportModal';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface LeaderDashboardProps {
     user: Staff;
@@ -56,7 +56,16 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
     const [selectedReportStudentId, setSelectedReportStudentId] = useState<string | null>(null);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [selectedAccessGrade, setSelectedAccessGrade] = useState<string | null>(null);
-    const [reportModalData, setReportModalData] = useState<{ report: ParentReport; student: Student } | null>(null);
+
+    // Inline draft state (replaces pop-out ParentReportModal)
+    const [inlineDraftMode, setInlineDraftMode] = useState(false);
+    const [draftMessage, setDraftMessage] = useState('');
+    const [draftMethod, setDraftMethod] = useState<'email' | 'sms' | 'both'>('both');
+    const [draftReportTypes, setDraftReportTypes] = useState<string[]>([]);
+    const [messageHistory, setMessageHistory] = useState<string[]>([]);
+    const [historyIndex, setHistoryIndex] = useState(0);
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+    const [draftSourceReports, setDraftSourceReports] = useState<ParentReport[]>([]);
 
     // Staff management state
     const [showAddStaffModal, setShowAddStaffModal] = useState(false);
@@ -261,6 +270,217 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
             onUpdateStaff(updated);
             showToast(`Removed ${confirmRemoveStaff.name}`, 'info');
             setConfirmRemoveStaff(null);
+        }
+    };
+
+    // --- Parent Report Inline Draft Helpers ---
+
+    const generateTemplateMessage = useCallback((reports: ParentReport[], studentObj?: Student) => {
+        const studentName = reports[0]?.studentName || 'Student';
+        const guardianName = studentObj?.guardians?.[0]
+            ? `${studentObj.guardians[0].firstName} ${studentObj.guardians[0].lastName}`
+            : 'Parent/Guardian';
+        const date = new Date().toLocaleDateString();
+        const types = [...new Set(reports.map(r => r.type))];
+
+        let msg = `Dear ${guardianName},\n\n`;
+
+        if (reports.length === 1) {
+            const r = reports[0];
+            if (r.type === 'behavior' && studentObj) {
+                const ticketLevel = studentObj.behavior === 'green' ? 'Level 1 (Green)' : 'None';
+                const behaviorList = studentObj.behaviorIssues.length > 0
+                    ? studentObj.behaviorIssues.map(b => `• ${b}`).join('\n')
+                    : '• General behavior concern';
+                msg += `This is to inform you that your child, ${studentName}, received a behavior ticket today (${date}).\n\n`;
+                msg += `**Ticket Information:**\n• Level: ${ticketLevel}\n• Time: ${studentObj.behaviorTimestamp || new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}\n• Staff: ${studentObj.behaviorStaff || 'EDP Staff'}\n\n`;
+                msg += `**Reported Behaviors:**\n${behaviorList}\n\n`;
+                if (studentObj.behaviorDescription) msg += `**Additional Notes:** ${studentObj.behaviorDescription}\n\n`;
+                msg += `Please discuss this with your child. We appreciate your partnership in supporting positive behavior.`;
+            } else if (r.type === 'injury' && studentObj) {
+                const symptoms = studentObj.headInjuryLogs.length > 0
+                    ? Object.entries(studentObj.headInjuryLogs[studentObj.headInjuryLogs.length - 1].symptoms)
+                        .filter(([, v]) => v === true).map(([k]) => k).join(', ')
+                    : 'None reported';
+                msg += `This is to inform you that your child, ${studentName}, experienced a head injury incident today (${date}).\n\n`;
+                msg += `**Incident Details:**\n• Witness: ${studentObj.headInjuryWitness || 'Staff member'}\n• Description: ${studentObj.headInjuryWitnessDesc || 'Minor bump observed'}\n• Symptoms Monitored: ${symptoms}\n\n`;
+                msg += `Our staff followed the standard head injury protocol and monitored ${studentObj.firstName} throughout the day. ${studentObj.headInjuryLogs.length} assessment(s) were completed.\n\nPlease monitor your child at home and contact us if you notice any concerning symptoms.`;
+            } else if (r.type === 'wecare') {
+                msg += `This is to inform you about a We Care report filed for your child, ${studentName}, today (${date}).\n\n`;
+                const lines = r.message.split('\n').filter(l => l.trim());
+                msg += lines.join('\n') + '\n\nPlease feel free to reach out if you have any questions or concerns.';
+            } else {
+                msg += r.message;
+            }
+        } else {
+            msg += `This is a comprehensive daily report for your child, ${studentName}, for today (${date}).\n\n`;
+            const byType = reports.reduce((acc, r) => { acc[r.type] = acc[r.type] || []; acc[r.type].push(r); return acc; }, {} as Record<string, ParentReport[]>);
+            if (byType.behavior) {
+                msg += `**Behavior Ticket${byType.behavior.length > 1 ? 's' : ''}:**\n`;
+                byType.behavior.forEach((r, i) => { msg += `${i + 1}. ${new Date(r.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}: ${r.message.split('\n').filter(l => l.trim()).slice(0, 2).join(' — ')}\n`; });
+                msg += '\n';
+            }
+            if (byType.injury) {
+                msg += `**Head Injury Report${byType.injury.length > 1 ? 's' : ''}:**\n`;
+                byType.injury.forEach((r, i) => { msg += `${i + 1}. ${new Date(r.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}: ${r.message.split('\n').filter(l => l.trim()).slice(0, 2).join(' — ')}\n`; });
+                msg += '\n';
+            }
+            if (byType.wecare) {
+                msg += `**We Care Report${byType.wecare.length > 1 ? 's' : ''}:**\n`;
+                byType.wecare.forEach((r, i) => { msg += `${i + 1}. ${new Date(r.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}: ${r.message.split('\n').filter(l => l.trim()).slice(0, 2).join(' — ')}\n`; });
+                msg += '\n';
+            }
+            msg += 'Please contact us if you have any questions or concerns.';
+        }
+
+        msg += '\n\nBest regards,\nEDP Team — Cajon Valley School District';
+        return msg;
+    }, []);
+
+    const generateWithGemini = useCallback(async (reports: ParentReport[], studentObj?: Student) => {
+        const apiKey = (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || '';
+        if (!apiKey) return null;
+        try {
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+            const guardianName = studentObj?.guardians?.[0]
+                ? `${studentObj.guardians[0].firstName} ${studentObj.guardians[0].lastName}`
+                : 'Parent/Guardian';
+            const studentName = reports[0]?.studentName || 'Student';
+            const date = new Date().toLocaleDateString();
+            const reportSummaries = reports.map(r => `Type: ${r.type}, Created: ${new Date(r.createdAt).toLocaleTimeString()}, Content: ${r.message.substring(0, 500)}`).join('\n---\n');
+
+            const prompt = `You are writing a parent notification letter for an after-school program (EDP - Extended Day Program) at Cajon Valley School District. Write a professional, warm, and concise letter to "${guardianName}" about their child "${studentName}" for the date ${date}.
+
+Here are the incident reports to summarize:
+${reportSummaries}
+
+Requirements:
+- Start with "Dear ${guardianName},"
+- Be professional but warm and caring
+- Summarize each incident clearly with key details (time, description, any actions taken)
+- If there are behavior tickets, mention the level and behaviors noted
+- If there are head injury reports, emphasize monitoring and symptoms
+- If there are We Care reports, describe the care provided
+- End positively with a note about partnership and contact information
+- Sign off as "EDP Team — Cajon Valley School District"
+- Do NOT use any markdown formatting (no **, no ##, etc.)
+- Keep it concise — aim for 150-250 words`;
+
+            const result = await model.generateContent(prompt);
+            return result.response.text();
+        } catch (e) {
+            console.error('Gemini API error:', e);
+            return null;
+        }
+    }, []);
+
+    const enterDraftMode = useCallback(async (reports: ParentReport[]) => {
+        const studentObj = students.find(s => s.id === reports[0]?.studentId);
+        const types = [...new Set(reports.map(r => r.type))];
+        setDraftReportTypes(types);
+        setDraftSourceReports(reports);
+        setDraftMethod('both');
+        setInlineDraftMode(true);
+
+        // First set a template message immediately
+        const templateMsg = generateTemplateMessage(reports, studentObj);
+
+        // Try Gemini AI for a better initial message
+        setIsGeneratingAI(true);
+        setDraftMessage('Generating with AI...');
+        const aiMsg = await generateWithGemini(reports, studentObj);
+        const initialMsg = aiMsg || templateMsg;
+        setDraftMessage(initialMsg);
+        setMessageHistory([initialMsg]);
+        setHistoryIndex(0);
+        setIsGeneratingAI(false);
+    }, [students, generateTemplateMessage, generateWithGemini]);
+
+    const handleGenerateText = useCallback(async () => {
+        if (isGeneratingAI) return;
+        setIsGeneratingAI(true);
+        const studentObj = students.find(s => s.id === draftSourceReports[0]?.studentId);
+        const aiMsg = await generateWithGemini(draftSourceReports, studentObj);
+        const newMsg = aiMsg || generateTemplateMessage(draftSourceReports, studentObj);
+        setDraftMessage(newMsg);
+        const newHistory = [...messageHistory.slice(0, historyIndex + 1), newMsg];
+        setMessageHistory(newHistory);
+        setHistoryIndex(newHistory.length - 1);
+        setIsGeneratingAI(false);
+    }, [isGeneratingAI, students, draftSourceReports, generateWithGemini, generateTemplateMessage, messageHistory, historyIndex]);
+
+    const handleUndo = useCallback(() => {
+        if (historyIndex > 0) {
+            const newIndex = historyIndex - 1;
+            setHistoryIndex(newIndex);
+            setDraftMessage(messageHistory[newIndex]);
+        }
+    }, [historyIndex, messageHistory]);
+
+    const handleRedo = useCallback(() => {
+        if (historyIndex < messageHistory.length - 1) {
+            const newIndex = historyIndex + 1;
+            setHistoryIndex(newIndex);
+            setDraftMessage(messageHistory[newIndex]);
+        }
+    }, [historyIndex, messageHistory]);
+
+    const handleSaveDraft = useCallback(() => {
+        if (!selectedReportStudentId) return;
+        const sReports = parentReports.filter(r => r.studentId === selectedReportStudentId);
+        // Delete old individual reports
+        if (onDeleteReport) sReports.forEach(r => onDeleteReport(r.id));
+        // Add consolidated draft
+        const report: ParentReport = {
+            id: `draft-${Date.now()}`,
+            studentId: selectedReportStudentId,
+            studentName: sReports[0]?.studentName || '',
+            type: draftReportTypes.length === 1 ? draftReportTypes[0] as ParentReport['type'] : 'behavior',
+            message: draftMessage,
+            method: draftMethod,
+            status: 'draft',
+            createdAt: new Date().toISOString(),
+            staffId: user.id
+        };
+        if (onUpdateReport) onUpdateReport(report);
+        setInlineDraftMode(false);
+        showToast('Draft saved!', 'info');
+    }, [selectedReportStudentId, parentReports, onDeleteReport, onUpdateReport, draftMessage, draftMethod, draftReportTypes, user.id, showToast]);
+
+    const handleSendReport = useCallback(() => {
+        if (!selectedReportStudentId) return;
+        const sReports = parentReports.filter(r => r.studentId === selectedReportStudentId);
+        if (onDeleteReport) sReports.forEach(r => onDeleteReport(r.id));
+        const report: ParentReport = {
+            id: `sent-${Date.now()}`,
+            studentId: selectedReportStudentId,
+            studentName: sReports[0]?.studentName || '',
+            type: draftReportTypes.length === 1 ? draftReportTypes[0] as ParentReport['type'] : 'behavior',
+            message: draftMessage,
+            method: draftMethod,
+            status: 'sent',
+            createdAt: new Date().toISOString(),
+            staffId: user.id
+        };
+        if (onUpdateReport) onUpdateReport(report);
+        setInlineDraftMode(false);
+        showToast('Report sent!', 'success');
+    }, [selectedReportStudentId, parentReports, onDeleteReport, onUpdateReport, draftMessage, draftMethod, draftReportTypes, user.id, showToast]);
+
+    const handleDiscardDraft = useCallback(() => {
+        setInlineDraftMode(false);
+        setDraftMessage('');
+        setMessageHistory([]);
+        setHistoryIndex(0);
+    }, []);
+
+    const getPillConfig = (type: string) => {
+        switch (type) {
+            case 'behavior': return { label: 'Behavior Ticket', bg: '#dcfce7', color: '#16a34a' };
+            case 'injury': return { label: 'Head Injury', bg: '#fef2f2', color: '#dc2626' };
+            case 'wecare': return { label: 'We Care', bg: '#fce7f3', color: '#db2777' };
+            default: return { label: type, bg: '#f3f4f6', color: '#6b7280' };
         }
     };
 
@@ -538,7 +758,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                         )}
                         {activeSection === 'reports' && (
                             <div style={{ flex: 1, overflowY: 'auto', padding: isInline ? '16px' : '24px' }}>
-                                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                                <div style={{ maxWidth: '900px', margin: '0 auto' }}>
                                     <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Parent Reports</h3>
                                     {parentReports.length === 0 ? (
                                         <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
@@ -549,116 +769,122 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                                     ) : (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                             {selectedReportStudentId ? (
-                                                <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                                <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                                                     <div style={{ padding: '16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                                         <h4 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>{parentReports.find(r => r.studentId === selectedReportStudentId)?.studentName}</h4>
-                                                        <button onClick={() => setSelectedReportStudentId(null)} style={{ background: 'var(--bg-hover)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-main)' }}>
+                                                        <button onClick={() => { setSelectedReportStudentId(null); setInlineDraftMode(false); }} style={{ background: 'var(--bg-hover)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-main)' }}>
                                                             <span className="material-icons-round">arrow_back</span>
                                                         </button>
                                                     </div>
                                                     <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                                            {['behavior', 'injury', 'wecare'].map(type => {
-                                                                const filtered = parentReports.filter(r => r.studentId === selectedReportStudentId && r.type === type);
-                                                                if (filtered.length === 0) return null;
-                                                                return (
-                                                                    <div key={type}>
-                                                                        <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                            <span className="material-icons-round" style={{ fontSize: '16px' }}>{type === 'behavior' ? 'traffic' : type === 'injury' ? 'personal_injury' : 'medication'}</span>
-                                                                            {type === 'behavior' ? 'Behavior Tickets' : type === 'injury' ? 'Head Injury Reports' : 'We Care Reports'}
-                                                                        </div>
-                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                                            {filtered.map(report => (
-                                                                                <div key={report.id} style={{ padding: '12px', backgroundColor: 'var(--bg-input)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
-                                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                                                        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>{new Date(report.createdAt).toLocaleDateString()}</div>
-                                                                                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{report.status === 'sent' ? '✓ Sent' : 'Draft'}</div>
-                                                                                    </div>
-                                                                                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{report.message}</div>
-                                                                                </div>
-                                                                            ))}
+                                                        {inlineDraftMode ? (
+                                                            /* ===== INLINE DRAFT EDITOR (Fix 3, 4, 5, 6) ===== */
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                                                {/* Header with pills */}
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+                                                                    <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Parent Report Draft</h3>
+                                                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                                                        {draftReportTypes.map(t => {
+                                                                            const pill = getPillConfig(t);
+                                                                            return <span key={t} style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', backgroundColor: pill.bg, color: pill.color }}>{pill.label}</span>;
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Send via */}
+                                                                <div>
+                                                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>Send via</label>
+                                                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                                                        {(['email', 'sms', 'both'] as const).map(m => (
+                                                                            <button key={m} onClick={() => setDraftMethod(m)} style={{ padding: '8px 16px', borderRadius: '8px', border: draftMethod === m ? '2px solid #8b5cf6' : '1px solid var(--border-subtle)', backgroundColor: draftMethod === m ? 'rgba(139,92,246,0.1)' : 'transparent', fontWeight: '600', cursor: 'pointer', color: 'var(--text-main)' }}>
+                                                                                {m === 'email' ? '📧 Email' : m === 'sms' ? '💬 SMS' : '📧+💬 Both'}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Message + Generate Text + Undo/Redo */}
+                                                                <div>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                                        <label style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-secondary)' }}>Message (Editable)</label>
+                                                                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                                                            <button onClick={handleUndo} disabled={historyIndex <= 0} style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'transparent', cursor: historyIndex > 0 ? 'pointer' : 'default', opacity: historyIndex > 0 ? 1 : 0.4, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }} title="Undo">
+                                                                                <span className="material-icons-round" style={{ fontSize: '16px' }}>undo</span>
+                                                                            </button>
+                                                                            <button onClick={handleRedo} disabled={historyIndex >= messageHistory.length - 1} style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'transparent', cursor: historyIndex < messageHistory.length - 1 ? 'pointer' : 'default', opacity: historyIndex < messageHistory.length - 1 ? 1 : 0.4, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }} title="Redo">
+                                                                                <span className="material-icons-round" style={{ fontSize: '16px' }}>redo</span>
+                                                                            </button>
+                                                                            <button onClick={handleGenerateText} disabled={isGeneratingAI} style={{ padding: '4px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'transparent', fontSize: '12px', fontWeight: '600', cursor: isGeneratingAI ? 'default' : 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', opacity: isGeneratingAI ? 0.6 : 1 }}>
+                                                                                <span className="material-icons-round" style={{ fontSize: '14px' }}>{isGeneratingAI ? 'hourglass_empty' : 'auto_fix_high'}</span>
+                                                                                {isGeneratingAI ? 'Generating...' : 'Generate Text'}
+                                                                            </button>
                                                                         </div>
                                                                     </div>
-                                                                );
-                                                            })}
-                                                            {/* Conditional button logic: 1 report = Edit/Generate, 2+ = Comprehensive Draft */}
-                                                            {(() => {
-                                                                const sReports = parentReports.filter(r => r.studentId === selectedReportStudentId);
-                                                                if (sReports.length === 1) {
-                                                                    const report = sReports[0];
-                                                                    const reportStudent = students.find(s => s.id === report.studentId);
-                                                                    if (!reportStudent) return null;
+                                                                    <textarea
+                                                                        value={draftMessage}
+                                                                        onChange={(e) => setDraftMessage(e.target.value)}
+                                                                        placeholder="Type your message to the parent/guardian here..."
+                                                                        style={{ width: '100%', height: '300px', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-subtle)', fontSize: '14px', lineHeight: '1.6', resize: 'vertical', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                                                                    />
+                                                                </div>
 
-                                                                    return (
+                                                                {/* Action buttons */}
+                                                                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                                                    <button onClick={handleDiscardDraft} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'var(--bg-hover)', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>Discard</button>
+                                                                    <button onClick={handleSaveDraft} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>Save Draft</button>
+                                                                    <button onClick={handleSendReport} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Send Report</button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (() => {
+                                                            /* ===== REPORT LIST + ACTION BUTTONS ===== */
+                                                            const sReports = parentReports.filter(r => r.studentId === selectedReportStudentId);
+                                                            const allSent = sReports.every(r => r.status === 'sent');
+                                                            return (
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                                                    {/* Report cards by type */}
+                                                                    {['behavior', 'injury', 'wecare'].map(type => {
+                                                                        const filtered = parentReports.filter(r => r.studentId === selectedReportStudentId && r.type === type);
+                                                                        if (filtered.length === 0) return null;
+                                                                        return (
+                                                                            <div key={type}>
+                                                                                <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                    <span className="material-icons-round" style={{ fontSize: '16px' }}>{type === 'behavior' ? 'traffic' : type === 'injury' ? 'personal_injury' : 'medication'}</span>
+                                                                                    {type === 'behavior' ? 'Behavior Tickets' : type === 'injury' ? 'Head Injury Reports' : 'We Care Reports'}
+                                                                                </div>
+                                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                                                    {filtered.map(report => (
+                                                                                        <div key={report.id} style={{ padding: '12px', backgroundColor: 'var(--bg-input)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                                                                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                                                                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>{new Date(report.createdAt).toLocaleDateString()}</div>
+                                                                                                <div style={{ fontSize: '11px', color: report.status === 'sent' ? '#16a34a' : 'var(--text-secondary)', fontWeight: report.status === 'sent' ? '700' : '400' }}>{report.status === 'sent' ? '✓ Sent' : 'Draft'}</div>
+                                                                                            </div>
+                                                                                            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{report.message}</div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+
+                                                                    {/* Sent report: read-only view (Fix 6) */}
+                                                                    {allSent ? (
+                                                                        <div style={{ padding: '16px', backgroundColor: 'rgba(22, 163, 98, 0.08)', borderRadius: '12px', border: '1px solid rgba(22, 163, 98, 0.2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                            <span className="material-icons-round" style={{ color: '#16a34a', fontSize: '20px' }}>check_circle</span>
+                                                                            <span style={{ fontWeight: '700', fontSize: '14px', color: '#16a34a' }}>Report has been sent — view only</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        /* Action button: EDIT / GENERATE or GENERATE COMPREHENSIVE DRAFT */
                                                                         <button
-                                                                            onClick={() => setReportModalData({ report, student: reportStudent })}
-                                                                            style={{ width: '100%', padding: '14px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px' }}
+                                                                            onClick={() => enterDraftMode(sReports)}
+                                                                            style={{ width: '100%', padding: '14px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '4px' }}
                                                                         >
-                                                                            <span className="material-icons-round">edit_note</span>
-                                                                            EDIT / GENERATE
+                                                                            <span className="material-icons-round">{sReports.length === 1 ? 'edit_note' : 'auto_fix_high'}</span>
+                                                                            {sReports.length === 1 ? 'EDIT / GENERATE' : 'GENERATE COMPREHENSIVE DRAFT'}
                                                                         </button>
-                                                                    );
-                                                                } else {
-                                                                    return (
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                // Generate comprehensive summary
-                                                                                const studentName = sReports[0].studentName;
-                                                                                const date = new Date().toLocaleDateString();
-
-                                                                                let summary = `Dear Parent/Guardian,\n\nThis is a comprehensive daily report for ${studentName} (${date}).\n\n`;
-
-                                                                                // Group by type
-                                                                                const byType = sReports.reduce((acc, r) => {
-                                                                                    acc[r.type] = acc[r.type] || [];
-                                                                                    acc[r.type].push(r);
-                                                                                    return acc;
-                                                                                }, {} as Record<string, ParentReport[]>);
-
-                                                                                // Add sections for each type
-                                                                                Object.entries(byType).forEach(([type, typeReports]) => {
-                                                                                    summary += `**${type.toUpperCase()} REPORTS (${typeReports.length})**\n`;
-                                                                                    typeReports.forEach((r, i) => {
-                                                                                        const lines = r.message.split('\n').filter(line => line.trim().length > 0);
-                                                                                        const preview = lines.slice(0, 3).join('\n');
-                                                                                        summary += `\n${i + 1}. ${new Date(r.createdAt).toLocaleTimeString()}:\n${preview}\n`;
-                                                                                    });
-                                                                                    summary += '\n';
-                                                                                });
-
-                                                                                summary += 'Please contact us if you have any questions.\n\nBest regards,\nEDP Team - Cajon Valley School District';
-
-                                                                                // Create comprehensive report
-                                                                                const comprehensiveReport: ParentReport = {
-                                                                                    id: `comp-${Date.now()}`,
-                                                                                    studentId: selectedReportStudentId || '',
-                                                                                    studentName: sReports[0].studentName,
-                                                                                    type: 'behavior',
-                                                                                    message: summary,
-                                                                                    method: 'both',
-                                                                                    status: 'draft',
-                                                                                    createdAt: new Date().toISOString(),
-                                                                                    staffId: user.id
-                                                                                };
-
-                                                                                // Delete old individual reports
-                                                                                if (onDeleteReport) {
-                                                                                    sReports.forEach(r => onDeleteReport(r.id));
-                                                                                }
-
-                                                                                // Add comprehensive report
-                                                                                if (onUpdateReport) onUpdateReport(comprehensiveReport);
-                                                                                showToast('Comprehensive draft generated!', 'success');
-                                                                            }}
-                                                                            style={{ width: '100%', padding: '14px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px' }}
-                                                                        >
-                                                                            <span className="material-icons-round">auto_fix_high</span>
-                                                                            GENERATE COMPREHENSIVE DRAFT
-                                                                        </button>
-                                                                    );
-                                                                }
-                                                            })()}
-                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
                                             ) : (
@@ -667,6 +893,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                                                         const studentReports = parentReports.filter(r => r.studentId === sid);
                                                         const sName = studentReports[0].studentName;
                                                         const hasDrafts = studentReports.some(r => r.status === 'draft');
+                                                        const allSent = studentReports.every(r => r.status === 'sent');
                                                         return (
                                                             <div key={sid} style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setSelectedReportStudentId(sid)}>
                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -680,6 +907,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                                                                         </div>
                                                                     </div>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                        {allSent && <span style={{ padding: '4px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: '800', backgroundColor: '#dcfce7', color: '#16a34a', textTransform: 'uppercase' }}>Sent</span>}
                                                                         {hasDrafts && <span style={{ padding: '4px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: '800', backgroundColor: '#fef3c7', color: '#d97706', textTransform: 'uppercase' }}>Drafts Pending</span>}
                                                                         <span className="material-icons-round" style={{ color: 'var(--text-muted)' }}>chevron_right</span>
                                                                     </div>
@@ -814,25 +1042,6 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                 </div>
             )}
 
-            {reportModalData && (
-                <ParentReportModal
-                    student={reportModalData.student}
-                    type={reportModalData.report.type === 'injury' ? 'injury' : 'behavior'}
-                    existingReport={reportModalData.report}
-                    onClose={() => setReportModalData(null)}
-                    onSend={(report) => {
-                        if (onUpdateReport) onUpdateReport(report);
-                        showToast('Report sent!', 'success');
-                        setReportModalData(null);
-                    }}
-                    onSaveDraft={(report) => {
-                        if (onUpdateReport) onUpdateReport(report);
-                        showToast('Draft saved!', 'info');
-                        setReportModalData(null);
-                    }}
-                    staffId={user.id}
-                />
-            )}
 
             {/* Add / Edit Staff Modal */}
             {showAddStaffModal && (
