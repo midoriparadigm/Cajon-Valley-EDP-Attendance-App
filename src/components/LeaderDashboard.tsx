@@ -58,6 +58,12 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
     const [selectedAccessGrade, setSelectedAccessGrade] = useState<string | null>(null);
     const [reportModalData, setReportModalData] = useState<{ report: ParentReport; student: Student } | null>(null);
 
+    // Staff management state
+    const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+    const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+    const [confirmRemoveStaff, setConfirmRemoveStaff] = useState<Staff | null>(null);
+    const [staffFormData, setStaffFormData] = useState<{ firstName: string; lastName: string; phone: string; email: string; role: 'Assistant' | 'Coach'; organization: 'EDP' | '549 Sports' }>({ firstName: '', lastName: '', phone: '', email: '', role: 'Assistant', organization: 'EDP' });
+
     const menuOptions = [
         { id: 'roster', label: 'Roster Management', icon: 'groups', color: '#3b82f6', bg: '#dbeafe' },
         { id: 'reports', label: `Parent Reports (${parentReports.length})`, icon: 'assignment', color: '#f59e0b', bg: '#fef3c7' },
@@ -197,6 +203,67 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
         }
     };
 
+    const openAddStaffModal = () => {
+        setEditingStaff(null);
+        setStaffFormData({ firstName: '', lastName: '', phone: '', email: '', role: 'Assistant', organization: 'EDP' });
+        setShowAddStaffModal(true);
+    };
+
+    const openEditStaffModal = (staff: Staff) => {
+        setEditingStaff(staff);
+        const nameParts = staff.name.split(' ');
+        setStaffFormData({
+            firstName: nameParts[0] || '',
+            lastName: nameParts.slice(1).join(' ') || '',
+            phone: staff.phone || '',
+            email: staff.email || '',
+            role: staff.role === 'Lead' ? 'Assistant' : staff.role,
+            organization: staff.organization
+        });
+        setShowAddStaffModal(true);
+    };
+
+    const handleSaveStaff = () => {
+        if (!staffFormData.firstName.trim() || !staffFormData.lastName.trim()) return;
+        const fullName = `${staffFormData.firstName.trim()} ${staffFormData.lastName.trim()}`;
+        if (editingStaff) {
+            const updated = localStaff.map(s => s.id === editingStaff.id ? { ...s, name: fullName, phone: staffFormData.phone, email: staffFormData.email, role: staffFormData.role as Staff['role'], organization: staffFormData.organization } : s);
+            setLocalStaff(updated);
+            onUpdateStaff(updated);
+            showToast(`Updated ${fullName}`, 'success');
+        } else {
+            const newStaff: Staff = {
+                id: `staff-${Date.now()}`,
+                name: fullName,
+                role: staffFormData.role,
+                organization: staffFormData.organization,
+                phone: staffFormData.phone || undefined,
+                email: staffFormData.email || undefined,
+                assignedGrades: [],
+                canCheckIn: true,
+                canAdminTasks: false,
+                canCheckOut: false,
+                canHir: false,
+                canWeCare: false
+            };
+            const updated = [...localStaff, newStaff];
+            setLocalStaff(updated);
+            onUpdateStaff(updated);
+            showToast(`Added ${fullName}`, 'success');
+        }
+        setShowAddStaffModal(false);
+    };
+
+    const handleRemoveStaff = () => {
+        if (confirmRemoveStaff) {
+            const updated = localStaff.filter(s => s.id !== confirmRemoveStaff.id);
+            setLocalStaff(updated);
+            onUpdateStaff(updated);
+            showToast(`Removed ${confirmRemoveStaff.name}`, 'info');
+            setConfirmRemoveStaff(null);
+        }
+    };
+
     // Note: The render JSX is continued in the return statement
     // This component uses a large amount of inline styles for sections
 
@@ -248,7 +315,13 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                         {activeSection === 'permissions' && (
                             <div style={{ padding: '20px' }}>
                                 <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                                    <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-main)' }}>Staff Permissions</h3>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                        <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: 'var(--text-main)' }}>Staff Permissions</h3>
+                                        <button onClick={openAddStaffModal} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'} onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}>
+                                            <span className="material-icons-round" style={{ fontSize: '20px' }}>person_add</span>
+                                            Add Staff
+                                        </button>
+                                    </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                         {localStaff.map(staff => (
                                             <div key={staff.id} style={{ backgroundColor: 'var(--bg-card)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
@@ -256,9 +329,25 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                                                     <div>
                                                         <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)' }}>{staff.name}</div>
                                                         <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{staff.role} • {staff.organization}</div>
+                                                        {(staff.phone || staff.email) && (
+                                                            <div style={{ display: 'flex', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                                                {staff.phone && <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}><span className="material-icons-round" style={{ fontSize: '14px' }}>phone</span>{staff.phone}</span>}
+                                                                {staff.email && <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}><span className="material-icons-round" style={{ fontSize: '14px' }}>email</span>{staff.email}</span>}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     {staff.id !== 's1' && (
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                            {/* Edit & Remove buttons */}
+                                                            <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
+                                                                <button onClick={() => openEditStaffModal(staff)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-hover)', color: 'var(--text-main)', fontSize: '12px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                                                    <span className="material-icons-round" style={{ fontSize: '16px' }}>edit</span> Edit
+                                                                </button>
+                                                                <button onClick={() => setConfirmRemoveStaff(staff)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', fontSize: '12px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                                                    <span className="material-icons-round" style={{ fontSize: '16px' }}>delete</span> Remove
+                                                                </button>
+                                                            </div>
+                                                            {/* Toggles */}
                                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '180px' }}>
                                                                 <span style={{ fontSize: '13px', fontWeight: '600' }}>Can Check-In</span>
                                                                 <button title="Toggle Check-In Permission" onClick={() => toggleStaffCheckIn(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckIn ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
@@ -743,6 +832,95 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                     }}
                     staffId={user.id}
                 />
+            )}
+
+            {/* Add / Edit Staff Modal */}
+            {showAddStaffModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000, padding: '20px' }}>
+                    <div style={{ backgroundColor: 'var(--bg-card)', padding: '32px', borderRadius: '24px', maxWidth: '480px', width: '100%', boxShadow: 'var(--shadow-lg)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>
+                                {editingStaff ? 'Edit Staff' : 'Add Staff'}
+                            </h3>
+                            <button onClick={() => setShowAddStaffModal(false)} style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', backgroundColor: 'var(--bg-hover)', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span className="material-icons-round">close</span>
+                            </button>
+                        </div>
+
+                        {/* Staff Type Selection */}
+                        <div style={{ marginBottom: '20px' }}>
+                            <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>Staff Type</div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button onClick={() => setStaffFormData(prev => ({ ...prev, role: 'Assistant', organization: 'EDP' }))} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: staffFormData.organization === 'EDP' ? '2px solid #8b5cf6' : '1px solid var(--border-subtle)', backgroundColor: staffFormData.organization === 'EDP' ? 'rgba(139,92,246,0.1)' : 'var(--bg-app)', color: staffFormData.organization === 'EDP' ? '#8b5cf6' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                    <span className="material-icons-round" style={{ fontSize: '20px' }}>badge</span>
+                                    EDP Staff
+                                </button>
+                                <button onClick={() => setStaffFormData(prev => ({ ...prev, role: 'Coach', organization: '549 Sports' }))} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: staffFormData.organization === '549 Sports' ? '2px solid #f59e0b' : '1px solid var(--border-subtle)', backgroundColor: staffFormData.organization === '549 Sports' ? 'rgba(245,158,11,0.1)' : 'var(--bg-app)', color: staffFormData.organization === '549 Sports' ? '#f59e0b' : 'var(--text-main)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                    <span className="material-icons-round" style={{ fontSize: '20px' }}>sports</span>
+                                    549 Coach
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Name Fields */}
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>First Name</label>
+                                <input type="text" placeholder="First" value={staffFormData.firstName} onChange={(e) => setStaffFormData(prev => ({ ...prev, firstName: e.target.value }))} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-app)', color: 'var(--text-main)', fontSize: '15px', boxSizing: 'border-box', outline: 'none' }} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Last Name</label>
+                                <input type="text" placeholder="Last" value={staffFormData.lastName} onChange={(e) => setStaffFormData(prev => ({ ...prev, lastName: e.target.value }))} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-app)', color: 'var(--text-main)', fontSize: '15px', boxSizing: 'border-box', outline: 'none' }} />
+                            </div>
+                        </div>
+
+                        {/* Phone Field */}
+                        <div style={{ marginBottom: '12px' }}>
+                            <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Phone Number</label>
+                            <div style={{ position: 'relative' }}>
+                                <span className="material-icons-round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '18px', color: 'var(--text-muted)' }}>phone</span>
+                                <input type="tel" placeholder="(619) 555-0000" value={staffFormData.phone} onChange={(e) => setStaffFormData(prev => ({ ...prev, phone: e.target.value }))} style={{ width: '100%', padding: '12px 16px 12px 40px', borderRadius: '12px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-app)', color: 'var(--text-main)', fontSize: '15px', boxSizing: 'border-box', outline: 'none' }} />
+                            </div>
+                        </div>
+
+                        {/* Email Field */}
+                        <div style={{ marginBottom: '24px' }}>
+                            <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Email Address</label>
+                            <div style={{ position: 'relative' }}>
+                                <span className="material-icons-round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '18px', color: 'var(--text-muted)' }}>email</span>
+                                <input type="email" placeholder="name@school.edu" value={staffFormData.email} onChange={(e) => setStaffFormData(prev => ({ ...prev, email: e.target.value }))} style={{ width: '100%', padding: '12px 16px 12px 40px', borderRadius: '12px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-app)', color: 'var(--text-main)', fontSize: '15px', boxSizing: 'border-box', outline: 'none' }} />
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button onClick={() => setShowAddStaffModal(false)} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer', fontSize: '15px' }}>Cancel</button>
+                            <button onClick={handleSaveStaff} disabled={!staffFormData.firstName.trim() || !staffFormData.lastName.trim()} style={{ flex: 2, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer', opacity: (!staffFormData.firstName.trim() || !staffFormData.lastName.trim()) ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                <span className="material-icons-round" style={{ fontSize: '20px' }}>{editingStaff ? 'save' : 'person_add'}</span>
+                                {editingStaff ? 'Save Changes' : 'Add Staff Member'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Remove Staff Confirmation */}
+            {confirmRemoveStaff && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000 }}>
+                    <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '24px', padding: '32px', width: '90%', maxWidth: '400px', textAlign: 'center', boxShadow: 'var(--shadow-lg)' }}>
+                        <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                            <span className="material-icons-round" style={{ fontSize: '32px' }}>person_remove</span>
+                        </div>
+                        <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '12px', color: 'var(--text-main)' }}>Remove Staff Member?</h3>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '15px', lineHeight: '1.5' }}>
+                            Are you sure you want to remove <strong>{confirmRemoveStaff.name}</strong> ({confirmRemoveStaff.role} • {confirmRemoveStaff.organization})? This action cannot be undone.
+                        </p>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button onClick={() => setConfirmRemoveStaff(null)} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer', fontSize: '15px' }}>Cancel</button>
+                            <button onClick={handleRemoveStaff} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: '#ef4444', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>Remove</button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

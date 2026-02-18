@@ -115,6 +115,7 @@ export interface Staff {
     role: 'Lead' | 'Assistant' | 'Coach';
     organization: 'EDP' | '549 Sports';
     email?: string;
+    phone?: string;
     assignedGrades?: string[];     // e.g., ['TK', 'K']
     canCheckIn?: boolean;
     canAdminTasks?: boolean;
