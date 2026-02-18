@@ -67,6 +67,13 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
     const [draftSourceReports, setDraftSourceReports] = useState<ParentReport[]>([]);
 
+    // Expandable report cards
+    const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
+
+    // HIR override modal
+    const [showHirOverride, setShowHirOverride] = useState(false);
+    const [hirOverrideNotes, setHirOverrideNotes] = useState('');
+
     // Staff management state
     const [showAddStaffModal, setShowAddStaffModal] = useState(false);
     const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
@@ -293,9 +300,9 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                     ? studentObj.behaviorIssues.map(b => `• ${b}`).join('\n')
                     : '• General behavior concern';
                 msg += `This is to inform you that your child, ${studentName}, received a behavior ticket today (${date}).\n\n`;
-                msg += `**Ticket Information:**\n• Level: ${ticketLevel}\n• Time: ${studentObj.behaviorTimestamp || new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}\n• Staff: ${studentObj.behaviorStaff || 'EDP Staff'}\n\n`;
-                msg += `**Reported Behaviors:**\n${behaviorList}\n\n`;
-                if (studentObj.behaviorDescription) msg += `**Additional Notes:** ${studentObj.behaviorDescription}\n\n`;
+                msg += `Ticket Information:\n• Level: ${ticketLevel}\n• Time: ${studentObj.behaviorTimestamp || new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}\n• Staff: ${studentObj.behaviorStaff || 'EDP Staff'}\n\n`;
+                msg += `Reported Behaviors:\n${behaviorList}\n\n`;
+                if (studentObj.behaviorDescription) msg += `Additional Notes: ${studentObj.behaviorDescription}\n\n`;
                 msg += `Please discuss this with your child. We appreciate your partnership in supporting positive behavior.`;
             } else if (r.type === 'injury' && studentObj) {
                 const symptoms = studentObj.headInjuryLogs.length > 0
@@ -303,7 +310,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
                         .filter(([, v]) => v === true).map(([k]) => k).join(', ')
                     : 'None reported';
                 msg += `This is to inform you that your child, ${studentName}, experienced a head injury incident today (${date}).\n\n`;
-                msg += `**Incident Details:**\n• Witness: ${studentObj.headInjuryWitness || 'Staff member'}\n• Description: ${studentObj.headInjuryWitnessDesc || 'Minor bump observed'}\n• Symptoms Monitored: ${symptoms}\n\n`;
+                msg += `Incident Details:\n• Witness: ${studentObj.headInjuryWitness || 'Staff member'}\n• Description: ${studentObj.headInjuryWitnessDesc || 'Minor bump observed'}\n• Symptoms Monitored: ${symptoms}\n\n`;
                 msg += `Our staff followed the standard head injury protocol and monitored ${studentObj.firstName} throughout the day. ${studentObj.headInjuryLogs.length} assessment(s) were completed.\n\nPlease monitor your child at home and contact us if you notice any concerning symptoms.`;
             } else if (r.type === 'wecare') {
                 msg += `This is to inform you about a We Care report filed for your child, ${studentName}, today (${date}).\n\n`;
@@ -316,17 +323,17 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
             msg += `This is a comprehensive daily report for your child, ${studentName}, for today (${date}).\n\n`;
             const byType = reports.reduce((acc, r) => { acc[r.type] = acc[r.type] || []; acc[r.type].push(r); return acc; }, {} as Record<string, ParentReport[]>);
             if (byType.behavior) {
-                msg += `**Behavior Ticket${byType.behavior.length > 1 ? 's' : ''}:**\n`;
+                msg += `Behavior Ticket${byType.behavior.length > 1 ? 's' : ''}:\n`;
                 byType.behavior.forEach((r, i) => { msg += `${i + 1}. ${new Date(r.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}: ${r.message.split('\n').filter(l => l.trim()).slice(0, 2).join(' — ')}\n`; });
                 msg += '\n';
             }
             if (byType.injury) {
-                msg += `**Head Injury Report${byType.injury.length > 1 ? 's' : ''}:**\n`;
+                msg += `Head Injury Report${byType.injury.length > 1 ? 's' : ''}:\n`;
                 byType.injury.forEach((r, i) => { msg += `${i + 1}. ${new Date(r.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}: ${r.message.split('\n').filter(l => l.trim()).slice(0, 2).join(' — ')}\n`; });
                 msg += '\n';
             }
             if (byType.wecare) {
-                msg += `**We Care Report${byType.wecare.length > 1 ? 's' : ''}:**\n`;
+                msg += `We Care Report${byType.wecare.length > 1 ? 's' : ''}:\n`;
                 byType.wecare.forEach((r, i) => { msg += `${i + 1}. ${new Date(r.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}: ${r.message.split('\n').filter(l => l.trim()).slice(0, 2).join(' — ')}\n`; });
                 msg += '\n';
             }
@@ -338,7 +345,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
     }, []);
 
     const generateWithGemini = useCallback(async (reports: ParentReport[], studentObj?: Student) => {
-        const apiKey = (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || '';
+        const apiKey = process.env.GEMINI_API_KEY || '';
         if (!apiKey) return null;
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
@@ -475,10 +482,19 @@ Requirements:
         setHistoryIndex(0);
     }, []);
 
-    const getPillConfig = (type: string) => {
+    const isHirComplete = useCallback((studentId: string) => {
+        const studentObj = students.find(s => s.id === studentId);
+        if (!studentObj || !studentObj.headInjury) return true; // no HIR → consider complete
+        const stages = studentObj.headInjuryLogs.map(l => l.stage);
+        return stages.includes('15min') && stages.includes('30min');
+    }, [students]);
+
+    const getPillConfig = (type: string, hirInProgress?: boolean) => {
         switch (type) {
             case 'behavior': return { label: 'Behavior Ticket', bg: '#dcfce7', color: '#16a34a' };
-            case 'injury': return { label: 'Head Injury', bg: '#fef2f2', color: '#dc2626' };
+            case 'injury': return hirInProgress
+                ? { label: 'HIR (In Progress)', bg: '#fef2f2', color: '#dc2626' }
+                : { label: 'Head Injury', bg: '#fef2f2', color: '#dc2626' };
             case 'wecare': return { label: 'We Care', bg: '#fce7f3', color: '#db2777' };
             default: return { label: type, bg: '#f3f4f6', color: '#6b7280' };
         }
@@ -785,7 +801,8 @@ Requirements:
                                                                     <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Parent Report Draft</h3>
                                                                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                                                         {draftReportTypes.map(t => {
-                                                                            const pill = getPillConfig(t);
+                                                                            const hirInProg = t === 'injury' && selectedReportStudentId ? !isHirComplete(selectedReportStudentId) : false;
+                                                                            const pill = getPillConfig(t, hirInProg);
                                                                             return <span key={t} style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', backgroundColor: pill.bg, color: pill.color }}>{pill.label}</span>;
                                                                         })}
                                                                     </div>
@@ -832,7 +849,21 @@ Requirements:
                                                                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                                                                     <button onClick={handleDiscardDraft} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'var(--bg-hover)', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>Discard</button>
                                                                     <button onClick={handleSaveDraft} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'transparent', fontWeight: '700', cursor: 'pointer', color: 'var(--text-main)' }}>Save Draft</button>
-                                                                    <button onClick={handleSendReport} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Send Report</button>
+                                                                    <button onClick={() => {
+                                                                        // Check for incomplete HIR before sending
+                                                                        const hasInjury = draftReportTypes.includes('injury');
+                                                                        const hirIncomplete = hasInjury && selectedReportStudentId && !isHirComplete(selectedReportStudentId);
+                                                                        if (hirIncomplete) {
+                                                                            if (user.role === 'Lead') {
+                                                                                setHirOverrideNotes('');
+                                                                                setShowHirOverride(true);
+                                                                            } else {
+                                                                                showToast('Only the EDP Lead can send reports with an in-progress HIR', 'error');
+                                                                            }
+                                                                        } else {
+                                                                            handleSendReport();
+                                                                        }
+                                                                    }} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Send Report</button>
                                                                 </div>
                                                             </div>
                                                         ) : (() => {
@@ -852,15 +883,25 @@ Requirements:
                                                                                     {type === 'behavior' ? 'Behavior Tickets' : type === 'injury' ? 'Head Injury Reports' : 'We Care Reports'}
                                                                                 </div>
                                                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                                                    {filtered.map(report => (
-                                                                                        <div key={report.id} style={{ padding: '12px', backgroundColor: 'var(--bg-input)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
-                                                                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                                                                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>{new Date(report.createdAt).toLocaleDateString()}</div>
-                                                                                                <div style={{ fontSize: '11px', color: report.status === 'sent' ? '#16a34a' : 'var(--text-secondary)', fontWeight: report.status === 'sent' ? '700' : '400' }}>{report.status === 'sent' ? '✓ Sent' : 'Draft'}</div>
+                                                                                    {filtered.map(report => {
+                                                                                        const isExpanded = expandedReportId === report.id;
+                                                                                        return (
+                                                                                            <div key={report.id} onClick={() => setExpandedReportId(isExpanded ? null : report.id)} style={{ padding: '12px', backgroundColor: 'var(--bg-input)', borderRadius: '12px', border: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                                                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                                        <span className="material-icons-round" style={{ fontSize: '14px', color: 'var(--text-muted)', transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)' }}>chevron_right</span>
+                                                                                                        <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>{new Date(report.createdAt).toLocaleDateString()}</span>
+                                                                                                    </div>
+                                                                                                    <div style={{ fontSize: '11px', color: report.status === 'sent' ? '#16a34a' : 'var(--text-secondary)', fontWeight: report.status === 'sent' ? '700' : '400' }}>{report.status === 'sent' ? '✓ Sent' : 'Draft'}</div>
+                                                                                                </div>
+                                                                                                {isExpanded ? (
+                                                                                                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: '1.6', marginTop: '8px', padding: '8px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>{report.message}</div>
+                                                                                                ) : (
+                                                                                                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{report.message}</div>
+                                                                                                )}
                                                                                             </div>
-                                                                                            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{report.message}</div>
-                                                                                        </div>
-                                                                                    ))}
+                                                                                        );
+                                                                                    })}
                                                                                 </div>
                                                                             </div>
                                                                         );
@@ -1042,6 +1083,46 @@ Requirements:
                 </div>
             )}
 
+            {/* HIR Override Modal (Lead Only) */}
+            {showHirOverride && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000, padding: '20px' }}>
+                    <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '24px', padding: '32px', width: '90%', maxWidth: '480px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                            <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span className="material-icons-round" style={{ fontSize: '28px', color: '#dc2626' }}>warning</span>
+                            </div>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>HIR Override Required</h3>
+                                <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>Head Injury Report protocol is not complete</p>
+                            </div>
+                        </div>
+                        <div style={{ backgroundColor: 'rgba(220, 38, 38, 0.06)', border: '1px solid rgba(220, 38, 38, 0.15)', borderRadius: '12px', padding: '12px', marginBottom: '16px' }}>
+                            <p style={{ margin: 0, fontSize: '13px', color: '#dc2626', lineHeight: '1.5' }}>
+                                The 30-minute, 2-questionnaire Head Injury Report has not been fully completed. Sending this report early requires EDP Lead authorization.
+                            </p>
+                        </div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '8px' }}>Additional Information</label>
+                        <textarea
+                            value={hirOverrideNotes}
+                            onChange={(e) => setHirOverrideNotes(e.target.value)}
+                            placeholder="Reason for early send (e.g. parent arrived for pickup during timed HIR)..."
+                            style={{ width: '100%', height: '100px', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-subtle)', fontSize: '14px', lineHeight: '1.5', resize: 'vertical', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                        />
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                            <button onClick={() => setShowHirOverride(false)} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                            <button onClick={() => {
+                                // Append override notes to draft message and send
+                                if (hirOverrideNotes.trim()) {
+                                    setDraftMessage(prev => prev + `\n\n--- HIR Override (EDP Lead) ---\n${hirOverrideNotes.trim()}`);
+                                }
+                                setShowHirOverride(false);
+                                // Use setTimeout to allow state update before sending
+                                setTimeout(() => handleSendReport(), 50);
+                            }} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', backgroundColor: '#dc2626', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Override & Send</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Add / Edit Staff Modal */}
             {showAddStaffModal && (
