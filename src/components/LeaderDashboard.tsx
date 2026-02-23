@@ -72,6 +72,11 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
 
     // HIR override modal
     const [showHirOverride, setShowHirOverride] = useState(false);
+
+    // Saved template for Gemini style matching
+    const [savedTemplate, setSavedTemplate] = useState<string | null>(() => {
+        try { return localStorage.getItem('edp-report-template'); } catch { return null; }
+    });
     const [hirOverrideNotes, setHirOverrideNotes] = useState('');
 
     // Staff management state
@@ -361,6 +366,10 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
             const date = new Date().toLocaleDateString();
             const reportSummaries = reports.map(r => `Type: ${r.type}, Created: ${new Date(r.createdAt).toLocaleTimeString()}, Content: ${r.message.substring(0, 500)}`).join('\n---\n');
 
+            const templateInstruction = savedTemplate
+                ? `\n\nIMPORTANT — The EDP Lead has saved the following letter as their preferred style template. Match its tone, wording style, format, and overall feel as closely as possible while adapting the content to the current incidents:\n---\n${savedTemplate}\n---`
+                : '';
+
             const prompt = `You are writing a parent notification letter for an after-school program (EDP - Extended Day Program) at Cajon Valley School District. Write a professional, warm, and concise letter to "${guardianName}" about their child "${studentName}" for the date ${date}.
 
 Here are the incident reports to summarize:
@@ -376,7 +385,7 @@ Requirements:
 - End positively with a note about partnership and contact information
 - Sign off as "EDP Team — Cajon Valley School District"
 - Do NOT use any markdown formatting (no **, no ##, etc.)
-- Keep it concise — aim for 150-250 words`;
+- Keep it concise — aim for 150-250 words${templateInstruction}`;
 
             const result = await model.generateContent(prompt);
             return result.response.text();
@@ -386,7 +395,7 @@ Requirements:
             showToast(`Gemini error: ${errMsg.substring(0, 100)}`, 'error');
             return null;
         }
-    }, [showToast]);
+    }, [showToast, savedTemplate]);
 
     const enterDraftMode = useCallback(async (reports: ParentReport[]) => {
         const studentObj = students.find(s => s.id === reports[0]?.studentId);
@@ -849,6 +858,25 @@ Requirements:
                                                                             <button onClick={handleGenerateText} disabled={isGeneratingAI} style={{ padding: '4px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'transparent', fontSize: '12px', fontWeight: '600', cursor: isGeneratingAI ? 'default' : 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', opacity: isGeneratingAI ? 0.6 : 1 }}>
                                                                                 <span className="material-icons-round" style={{ fontSize: '14px' }}>{isGeneratingAI ? 'hourglass_empty' : 'auto_fix_high'}</span>
                                                                                 {isGeneratingAI ? 'Generating...' : 'Generate Text'}
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    if (savedTemplate) {
+                                                                                        setSavedTemplate(null);
+                                                                                        try { localStorage.removeItem('edp-report-template'); } catch { }
+                                                                                        showToast('Template cleared — Gemini will use default style', 'info');
+                                                                                    } else if (draftMessage.trim()) {
+                                                                                        setSavedTemplate(draftMessage);
+                                                                                        try { localStorage.setItem('edp-report-template', draftMessage); } catch { }
+                                                                                        showToast('Template saved! Future reports will match this style', 'success');
+                                                                                    }
+                                                                                }}
+                                                                                disabled={!savedTemplate && !draftMessage.trim()}
+                                                                                style={{ padding: '4px 12px', borderRadius: '6px', border: savedTemplate ? '1px solid #10b981' : '1px solid var(--border-subtle)', background: savedTemplate ? 'rgba(16,185,129,0.1)' : 'transparent', fontSize: '12px', fontWeight: '600', cursor: (!savedTemplate && !draftMessage.trim()) ? 'default' : 'pointer', color: savedTemplate ? '#10b981' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', opacity: (!savedTemplate && !draftMessage.trim()) ? 0.4 : 1 }}
+                                                                                title={savedTemplate ? 'Click to clear saved template' : 'Save current draft as style template for future AI generation'}
+                                                                            >
+                                                                                <span className="material-icons-round" style={{ fontSize: '14px' }}>{savedTemplate ? 'bookmark_added' : 'bookmark_border'}</span>
+                                                                                {savedTemplate ? 'Template Saved' : 'Save As Template'}
                                                                             </button>
                                                                         </div>
                                                                     </div>
