@@ -45,6 +45,18 @@
       });
     }
   </script>
+
+  <!-- Portrait orientation lock (works on Android Chrome / Firefox) -->
+  <script>
+    // Only attempt on small screens (phones), leave tablets/desktop alone
+    if (window.screen.width <= 768 || window.screen.height <= 768) {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('portrait').catch(() => {
+          // Silently fail if browser denies (e.g. desktop, or requires fullscreen)
+        });
+      }
+    }
+  </script>
 </body>
 
 </html>
