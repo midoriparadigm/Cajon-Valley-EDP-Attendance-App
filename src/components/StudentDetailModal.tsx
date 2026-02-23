@@ -507,12 +507,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                         ) : (
                                                             <>
                                                                 {/* Two-column layout for desktop - eliminates scrolling */}
-                                                                <div style={{
-                                                                    display: 'grid',
-                                                                    gridTemplateColumns: 'minmax(550px, 1fr) minmax(500px, 1fr)',
-                                                                    gap: '12px',
-                                                                    maxHeight: 'calc(100vh - 180px)'
-                                                                }}>
+                                                                <div className="responsive-modal-grid">
                                                                     {/* LEFT COLUMN: Staff, Details, Actions, Buttons */}
                                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', height: '100%', overflow: 'hidden' }}>
                                                                         {/* Staff Selection - stacked vertically */}

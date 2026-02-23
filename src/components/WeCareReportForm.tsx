@@ -33,7 +33,7 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
     };
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div className="responsive-modal-grid">
             {/* LEFT COLUMN: Activity, Additional Info, Buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', height: '100%' }}>
                 <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flexShrink: 0 }}>

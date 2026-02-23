@@ -223,13 +223,16 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
     };
 
     return (
-        <div style={{
-            display: 'grid',
-            gridTemplateColumns: witnessDone ? 'minmax(550px, 1fr) minmax(500px, 1fr)' : '1fr',
-            gap: '20px',
-            maxHeight: '60vh',
-            height: '60vh'
-        }}>
+        <div
+            className={witnessDone ? "responsive-modal-grid" : ""}
+            style={!witnessDone ? {
+                display: 'grid',
+                gridTemplateColumns: '1fr',
+                gap: '20px',
+                maxHeight: '60vh',
+                height: '60vh'
+            } : undefined}
+        >
             {/* LEFT COLUMN */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflow: 'hidden' }}>
 

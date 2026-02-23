@@ -238,3 +238,20 @@ button {
 .spinning {
   animation: spin 1s linear infinite;
 }
+
+/* Modal responsive layouts */
+.responsive-modal-grid {
+  display: grid;
+  /* Use fluid columns so it can shrink if slightly constrained on desktop */
+  grid-template-columns: minmax(400px, 1fr) minmax(350px, 1fr);
+  gap: 12px;
+  max-height: calc(100vh - 180px);
+}
+
+@media (max-width: 1024px) {
+  .responsive-modal-grid {
+    grid-template-columns: 1fr !important;
+    max-height: none !important;
+    gap: 8px !important;
+  }
+}
