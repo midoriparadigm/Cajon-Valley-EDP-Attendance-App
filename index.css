@@ -293,8 +293,8 @@ button {
   max-width: 300px;
 }
 
-/* Target smartphones in landscape (width up to 950px, height up to 500px) */
-@media screen and (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
+/* Target smartphones in landscape — triggers on any phone-width screen (excludes tablets/desktop) */
+@media screen and (max-width: 950px) and (orientation: landscape) {
   .landscape-overlay {
     display: flex;
   }
