@@ -557,12 +557,6 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                             />
                                                                         </div>
 
-                                                                        {/* Buttons at bottom of left column */}
-                                                                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                                                                            <button onClick={cancelTicket} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                                                                            <button onClick={saveBehavior} style={{ flex: 1, padding: '10px', backgroundColor: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>{editedStudent.behaviorSubmittedAt ? 'Save Edit' : 'Submit'}</button>
-                                                                        </div>
-
                                                                     </div>
 
                                                                     {/* RIGHT COLUMN: Guidelines and Behavior Checklist */}

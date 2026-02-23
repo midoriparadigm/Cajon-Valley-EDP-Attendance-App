@@ -35,7 +35,7 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
     return (
         <div className="responsive-modal-grid">
             {/* LEFT COLUMN: Activity, Additional Info, Buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', height: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ backgroundColor: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', flexShrink: 0 }}>
                     <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Activity</label>
                     <select
@@ -74,11 +74,6 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
                     <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Additional Information</label>
                     <textarea placeholder="Details about the incident..." value={info} onChange={e => setInfo(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', flex: 1, minHeight: 0, backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontFamily: 'inherit', outline: 'none', lineHeight: '1.4', fontSize: '13px', resize: 'none' }} />
                 </div>
-
-                <div style={{ display: 'flex', gap: '12px', flexShrink: 0 }}>
-                    <button onClick={(e) => { e.stopPropagation(); onCancel(); }} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                    <button onClick={(e) => { e.stopPropagation(); onSave({ activity: activity === 'Other' ? activityOther : activity, info, firstAid }); }} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#ec4899', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>{isEditing ? 'Save Edit' : 'Save Report'}</button>
-                </div>
             </div>
 
             {/* RIGHT COLUMN: First Aid Provided Checklist */}
@@ -111,6 +106,11 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
                         </div>
                     </div>
                 </div>
+            </div>
+            {/* Action Buttons at bottom of modal */}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                <button onClick={(e) => { e.stopPropagation(); onCancel(); }} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={(e) => { e.stopPropagation(); onSave({ activity: activity === 'Other' ? activityOther : activity, info, firstAid }); }} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: '#ec4899', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>{isEditing ? 'Save Edit' : 'Save Report'}</button>
             </div>
         </div>
     );

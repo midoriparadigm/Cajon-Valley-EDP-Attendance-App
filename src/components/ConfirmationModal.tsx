@@ -73,6 +73,7 @@ const ConfirmationModal = (props: ConfirmationModalProps) => {
                 ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
                 const capturedPhoto = canvas.toDataURL('image/jpeg', 0.8);
                 setPhoto(capturedPhoto);
+                stopCamera(); // Instantly turn off the camera hardware light
                 setStep('verifying');
 
                 // Simulate verification
