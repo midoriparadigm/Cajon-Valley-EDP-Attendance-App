@@ -94,6 +94,8 @@ html {
   /* Prevent horizontal scroll */
   overflow-x: hidden;
   width: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -251,5 +253,53 @@ button {
   .responsive-modal-grid {
     grid-template-columns: 1fr !important;
     gap: 8px !important;
+  }
+}
+
+/* Mobile landscape warning overlay */
+.landscape-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10000;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+
+.landscape-overlay .material-icons-round {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: var(--color-primary);
+}
+
+.landscape-overlay h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.landscape-overlay p {
+  margin: 0;
+  font-size: 16px;
+  opacity: 0.8;
+  max-width: 300px;
+}
+
+/* Target smartphones in landscape (width up to 950px, height up to 500px) */
+@media screen and (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
+  .landscape-overlay {
+    display: flex;
+  }
+
+  #root {
+    display: none !important;
   }
 }
