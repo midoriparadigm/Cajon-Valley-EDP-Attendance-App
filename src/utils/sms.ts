@@ -24,7 +24,11 @@ export const sendSmsMock = async (
             : `${student_names} has been checked in by ${staff_name} at ${time}.`;
     }
 
-    console.log(`[SMS Mock] To: ${phone} | ${message}`);
+    // Dev-only log — redacted to avoid PII (phone/message) appearing in production console
+    if (import.meta.env.DEV) {
+        console.log(`[SMS Mock] type=${templateType} | phone=***REDACTED***`);
+    }
+
 
     // Simulate async network delay
     return new Promise((resolve) => {

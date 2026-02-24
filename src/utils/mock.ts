@@ -110,12 +110,27 @@ export class PasskeyService {
 
         try {
             const assertion = await navigator.credentials.get({ publicKey: getOptions });
-            // In production, validate this assertion on your backend
-            return "thomasv@cajonvalley.net";
+            // ⚠️ PRODUCTION TODO: Send `assertion` to a backend endpoint that
+            // verifies the authenticatorData, clientDataJSON, and signature
+            // against the stored public key for this rpId, then returns the
+            // verified user email. NEVER trust the client to identify itself.
+            //
+            // Example backend flow:
+            //   POST /api/auth/passkey/verify
+            //   Body: { assertion: JSON.stringify(assertion) }
+            //   Returns: { email: "verified@cajonvalley.net" }
+            //
+            // Until backend verification is implemented, throw so this code
+            // path is never silently used as real authentication.
+            throw new Error(
+                'PasskeyService.authenticate(): backend assertion verification not implemented. ' +
+                'Do not use this as real authentication until a server-side verifier is in place.'
+            );
         } catch (err) {
             console.error("Passkey authentication failed:", err);
             return null;
         }
+
     }
 
     /**

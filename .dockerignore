@@ -4,3 +4,7 @@ dist
 .gitignore
 *.md
 .DS_Store
+# Never bake local .env files into the Docker image — secrets are passed as build ARGs
+.env
+.env.local
+.env.*.local

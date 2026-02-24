@@ -2,30 +2,41 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
-  # Build the Docker image with the API key as a build arg
+  # Build the Docker image — all VITE_ vars passed as build args from Cloud Build substitutions.
+  # Secrets are stored in Cloud Build substitutions (encrypted) or Secret Manager,
+  # never hardcoded in this file.
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '--build-arg'
+      - 'VITE_SUPABASE_URL=${_VITE_SUPABASE_URL}'
+      - '--build-arg'
+      - 'VITE_SUPABASE_ANON_KEY=${_VITE_SUPABASE_ANON_KEY}'
+      - '--build-arg'
       - 'VITE_GEMINI_API_KEY=${_VITE_GEMINI_API_KEY}'
+      - '--build-arg'
+      - 'VITE_GAS_WEBHOOK_URL=${_VITE_GAS_WEBHOOK_URL}'
+      - '--build-arg'
+      - 'VITE_GAS_AUTH_TOKEN=${_VITE_GAS_AUTH_TOKEN}'
       - '-t'
       - '${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/edp-attendance-app:$COMMIT_SHA'
       - '-t'
       - '${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/edp-attendance-app:latest'
       - '.'
 
-  # Push the image to Artifact Registry
+  # Push image tagged with commit SHA (pinned, immutable)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - '${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/edp-attendance-app:$COMMIT_SHA'
 
+  # Push latest tag
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - '${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/edp-attendance-app:latest'
 
-  # Deploy to Cloud Run
+  # Deploy to Cloud Run — always deploy the pinned SHA tag, not :latest
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -40,14 +51,20 @@ steps:
       - 'managed'
       - '--port'
       - '8080'
-      - '--allow-unauthenticated'
+      - '--allow-unauthenticated'   # Public app — auth is handled inside Supabase
 
 images:
   - '${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/edp-attendance-app:$COMMIT_SHA'
   - '${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/edp-attendance-app:latest'
 
+# Substitution variables — set values in the Cloud Build trigger UI or Secret Manager.
+# NEVER hardcode actual values here; this file is committed to the repository.
 substitutions:
+  _VITE_SUPABASE_URL: ''
+  _VITE_SUPABASE_ANON_KEY: ''
   _VITE_GEMINI_API_KEY: ''
+  _VITE_GAS_WEBHOOK_URL: ''
+  _VITE_GAS_AUTH_TOKEN: ''
   _AR_HOSTNAME: us-central1-docker.pkg.dev
   _AR_PROJECT_ID: upbeat-bolt-484517-g4
   _AR_REPOSITORY: cloud-run-source-deploy
