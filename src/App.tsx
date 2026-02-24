@@ -52,11 +52,7 @@ const App = () => {
                 console.error('Fetch failed:', err);
             }
         };
-
-        // RLS prevents unauthenticated access, only fetch when a user is logged in
-        if (user) {
-            fetchInitialData();
-        }
+        fetchInitialData();
 
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session?.user?.email) {
