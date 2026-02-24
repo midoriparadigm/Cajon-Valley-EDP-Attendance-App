@@ -571,7 +571,7 @@ Requirements:
                         </button>
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '0' }}>
-                        {activeSection === 'roster' && <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}><RosterManager onImport={onImport} onAdd={onAddStudent} showToast={showToast} /></div>}
+                        {activeSection === 'roster' && <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}><RosterManager onImport={onImport} onAdd={onAddStudent} showToast={showToast} darkMode={darkMode} /></div>}
                         {activeSection === 'permissions' && (
                             <div style={{ padding: '20px' }}>
                                 <div style={{ maxWidth: '800px', margin: '0 auto' }}>

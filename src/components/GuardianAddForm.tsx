@@ -20,8 +20,18 @@ const GuardianAddForm = ({ onSave, onCancel, onDelete, initialContact, unavailab
     const [notifySms, setNotifySms] = useState(initialContact?.notifySms || false);
     const [notifyEmail, setNotifyEmail] = useState(initialContact?.notifyEmail || false);
 
-    // Available types: The current type (if editing) OR types not in unavailableTypes
-    const availableTypes = ['Contact 1', 'Contact 2', 'Contact 3', 'Contact 4', 'Contact 5'].filter(t => t === initialContact?.type || !unavailableTypes.includes(t));
+    // When adding a new guardian: only offer the next sequential slot.
+    // When editing: only allow the existing type (no reassignment).
+    const availableTypes = (() => {
+        if (initialContact) {
+            // Editing: lock to current type
+            return [initialContact.type];
+        }
+        // Adding: find the next slot not in unavailableTypes
+        const ALL = ['Contact 1', 'Contact 2', 'Contact 3', 'Contact 4', 'Contact 5'];
+        const next = ALL.find(t => !unavailableTypes.includes(t));
+        return next ? [next] : [];
+    })();
 
     useEffect(() => {
         if (!initialContact && availableTypes.length > 0 && !availableTypes.includes(type)) {
