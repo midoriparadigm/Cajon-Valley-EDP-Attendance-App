@@ -350,14 +350,39 @@ const App = () => {
             showToast('Head Injury draft created', 'info');
         }
 
-        // Auto-create behavior report draft
-        if (oldStudent && oldStudent.behavior === 'none' && updatedStudent.behavior !== 'none') {
+        // Auto-create behavior report draft when ticket is SUBMITTED (not just when behavior selected)
+        const behaviorJustSubmitted = oldStudent && !oldStudent.behaviorSubmittedAt && updatedStudent.behaviorSubmittedAt;
+        if (behaviorJustSubmitted) {
+            const behaviorLabelMap: Record<string, string> = { green: 'Level 1 (Green)', yellow: 'Level 2 (Yellow)', red: 'Level 3 (Red)' };
+            const ticketLevel = behaviorLabelMap[updatedStudent.behavior as string] || updatedStudent.behavior;
+            const behaviorList = (updatedStudent.behaviorIssues || []).length > 0
+                ? updatedStudent.behaviorIssues.map((b: string) => `• ${b}`).join('\n')
+                : '• General behavior concern';
+            const behaviorMessage = [
+                `BEHAVIOR REPORT`,
+                ``,
+                `Student: ${updatedStudent.firstName} ${updatedStudent.lastName}`,
+                `Date: ${new Date().toLocaleDateString()}`,
+                `Time: ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`,
+                `Ticket Level: ${ticketLevel}`,
+                `Handling Staff: ${updatedStudent.behaviorStaff || 'EDP Staff'}`,
+                `Staff Closest to Situation: ${updatedStudent.behaviorStaffSupport || 'N/A'}`,
+                ``,
+                `Checked Behaviors:`,
+                behaviorList,
+                ``,
+                `Details of the Incident:`,
+                updatedStudent.behaviorDescription || 'No details provided.',
+                ``,
+                `Actions Taken by Staff:`,
+                updatedStudent.behaviorActions || 'No actions recorded.',
+            ].join('\n');
             const behaviorReport: ParentReport = {
                 id: Date.now().toString(),
                 studentId: updatedStudent.id,
                 studentName: `${updatedStudent.firstName} ${updatedStudent.lastName}`,
                 type: 'behavior',
-                message: `BEHAVIOR REPORT\n\nStudent: ${updatedStudent.firstName} ${updatedStudent.lastName}\nDate: ${new Date().toLocaleDateString()}`,
+                message: behaviorMessage,
                 method: 'both',
                 status: 'draft',
                 createdAt: new Date().toISOString(),
