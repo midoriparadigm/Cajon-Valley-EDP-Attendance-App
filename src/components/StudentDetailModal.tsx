@@ -605,6 +605,20 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                             </>
                                                         )}
 
+                                                        {/* Action Buttons — shown when actively editing a behavior ticket */}
+                                                        {editedStudent.behavior !== 'none' && !editedStudent.behaviorSubmittedAt && (
+                                                            <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                                                                <button
+                                                                    onClick={() => { setEditedStudent({ ...editedStudent, behavior: 'none', behaviorIssues: [], behaviorDescription: '', behaviorActions: '' }); setShowTicketOptions(false); }}
+                                                                    style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}
+                                                                >Cancel</button>
+                                                                <button
+                                                                    onClick={saveBehavior}
+                                                                    style={{ flex: 1, padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: '#10b981', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
+                                                                >Submit</button>
+                                                            </div>
+                                                        )}
+
                                                         {editedStudent.behavior === 'none' && showTicketOptions && (
                                                             <button onClick={() => setShowTicketOptions(false)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
                                                         )}
