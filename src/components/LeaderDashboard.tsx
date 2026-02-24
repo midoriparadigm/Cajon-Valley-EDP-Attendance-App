@@ -50,6 +50,12 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
     const [activeSection, setActiveSection] = useState<'roster' | 'permissions' | 'batch' | 'blocking' | 'reports' | 'biometric' | null>(null);
     const [localStaff, setLocalStaff] = useState<Staff[]>(staffList);
     const [sunriseBatchTime, setSunriseBatchTime] = useState(defaultBatchTime || '08:00');
+    const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 768);
+    useEffect(() => {
+        const handler = () => setIsDesktop(window.innerWidth >= 768);
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, []);
     const [showScheduleConfirm, setShowScheduleConfirm] = useState(false);
     const [countdown, setCountdown] = useState<string>('00:00:00:00');
     const [selectedDraft, setSelectedDraft] = useState<ParentReport | null>(null);
@@ -681,38 +687,80 @@ Requirements:
                                                 <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)' }}>Checkout Time</label>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                     <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)' }}>Set as Default</span>
-                                                    <button title="Set current time as default" onClick={() => setIsBatchDefaultEnabled(!isBatchDefaultEnabled)} style={{ width: '36px', height: '20px', borderRadius: '10px', backgroundColor: isBatchDefaultEnabled ? 'var(--color-success)' : '#d1d5db', position: 'relative', border: '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '1px', left: isBatchDefaultEnabled ? '18px' : '1px', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                                                    <button
+                                                        title="Set current time as default"
+                                                        onClick={() => setIsBatchDefaultEnabled(!isBatchDefaultEnabled)}
+                                                        style={{ width: '40px', height: '24px', borderRadius: '12px', backgroundColor: isBatchDefaultEnabled ? 'var(--color-toggle-active)' : '#d1d5db', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s', padding: 0, flexShrink: 0 }}
+                                                    >
+                                                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: isBatchDefaultEnabled ? '18px' : '2px', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }} />
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', justifyContent: 'center' }}>
-                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                                    <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Hour</div>
-                                                    <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
-                                                        {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
-                                                            <div key={h} onClick={() => { const [_, m] = sunriseBatchTime.split(':'); setSunriseBatchTime(`${String(h)}:${m || '00'}`); }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[0] === String(h) ? '800' : '600', color: sunriseBatchTime.split(':')[0] === String(h) ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
-                                                                {h}
-                                                            </div>
-                                                        ))}
+                                            {isDesktop ? (
+                                                /* ── Desktop: dropdown selects ── */
+                                                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', justifyContent: 'center' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                                        <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Hour</div>
+                                                        <select
+                                                            title="Checkout hour"
+                                                            value={sunriseBatchTime.split(':')[0] || '8'}
+                                                            onChange={e => { const [, m] = sunriseBatchTime.split(':'); setSunriseBatchTime(`${e.target.value}:${m || '00'}`); }}
+                                                            style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: '#8b5cf6', fontWeight: '800', fontSize: '20px', cursor: 'pointer', outline: 'none', minWidth: '72px', textAlign: 'center' }}
+                                                        >
+                                                            {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                                                                <option key={h} value={String(h)}>{h}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-muted)', paddingBottom: '8px' }}>:</div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                                        <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Min</div>
+                                                        <select
+                                                            title="Checkout minute"
+                                                            value={sunriseBatchTime.split(':')[1] || '00'}
+                                                            onChange={e => { const [h] = sunriseBatchTime.split(':'); setSunriseBatchTime(`${h || '8'}:${e.target.value}`); }}
+                                                            style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: '#8b5cf6', fontWeight: '800', fontSize: '20px', cursor: 'pointer', outline: 'none', minWidth: '80px', textAlign: 'center' }}
+                                                        >
+                                                            {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(m => (
+                                                                <option key={m} value={m}>{m}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '10px', backgroundColor: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', marginBottom: '0' }}>
+                                                        <span className="material-icons-round" style={{ fontSize: '18px' }}>wb_sunny</span>
+                                                        <span style={{ fontWeight: '800', fontSize: '15px' }}>AM</span>
                                                     </div>
                                                 </div>
-                                                <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-muted)', marginTop: '12px' }}>:</div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                                    <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Min</div>
-                                                    <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
-                                                        {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(m => (
-                                                            <div key={m} onClick={() => { const [h] = sunriseBatchTime.split(':'); setSunriseBatchTime(`${h || '8'}:${m}`); }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[1] === m ? '800' : '600', color: sunriseBatchTime.split(':')[1] === m ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
-                                                                {m}
-                                                            </div>
-                                                        ))}
+                                            ) : (
+                                                /* ── Mobile: original scroll dials ── */
+                                                <div style={{ display: 'flex', gap: '20px', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                        <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Hour</div>
+                                                        <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
+                                                            {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                                                                <div key={h} onClick={() => { const [, m] = sunriseBatchTime.split(':'); setSunriseBatchTime(`${String(h)}:${m || '00'}`); }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[0] === String(h) ? '800' : '600', color: sunriseBatchTime.split(':')[0] === String(h) ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
+                                                                    {h}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-muted)', marginTop: '12px' }}>:</div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                        <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Min</div>
+                                                        <div style={{ height: '120px', overflowY: 'auto', width: '60px', scrollSnapType: 'y mandatory', border: '1px solid var(--border-subtle)', borderRadius: '12px', backgroundColor: 'var(--bg-card)', padding: '40px 0' }} className="hide-scrollbar">
+                                                            {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(m => (
+                                                                <div key={m} onClick={() => { const [h] = sunriseBatchTime.split(':'); setSunriseBatchTime(`${h || '8'}:${m}`); }} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: sunriseBatchTime.split(':')[1] === m ? '800' : '600', color: sunriseBatchTime.split(':')[1] === m ? '#8b5cf6' : 'var(--text-secondary)', cursor: 'pointer', scrollSnapAlign: 'center', transition: 'all 0.2s' }}>
+                                                                    {m}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', borderRadius: '12px', backgroundColor: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', marginTop: '12px' }}>
+                                                        <span className="material-icons-round" style={{ fontSize: '20px' }}>wb_sunny</span>
+                                                        <span style={{ fontWeight: '800', fontSize: '15px' }}>AM</span>
                                                     </div>
                                                 </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', borderRadius: '12px', backgroundColor: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', marginTop: '12px' }}>
-                                                    <span className="material-icons-round" style={{ fontSize: '20px' }}>wb_sunny</span>
-                                                    <span style={{ fontWeight: '800', fontSize: '15px' }}>AM</span>
-                                                </div>
-                                            </div>
+                                            )}
                                             <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; } .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0', fontSize: '14px' }}>
