@@ -85,21 +85,27 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
                             {options.map(opt => {
                                 const isSelected = firstAid.includes(opt);
                                 return (
-                                    <div key={opt} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid var(--bg-app)' }}>
+                                    <div
+                                        key={opt}
+                                        onClick={() => { if (!isEditing) toggleOption(opt); }}
+                                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px 4px 4px', borderBottom: '1px solid var(--bg-app)', cursor: isEditing ? 'not-allowed' : 'pointer', borderRadius: '4px', transition: 'background 0.15s' }}
+                                        onMouseEnter={e => { if (!isEditing) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--bg-hover)'; }}
+                                        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent'; }}
+                                    >
                                         <span style={{ fontSize: '13px', color: 'var(--text-main)', flex: 1, paddingRight: '4px', fontWeight: '500' }}>{opt}</span>
-                                        <button
-                                            disabled={isEditing}
-                                            onClick={() => toggleOption(opt)}
+                                        <div
                                             style={{
                                                 width: '36px', height: '26px', borderRadius: '6px', flexShrink: 0,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                 border: isSelected ? '2px solid #ec4899' : '1px solid var(--border-subtle)',
                                                 backgroundColor: isSelected ? 'rgba(236, 72, 153, 0.15)' : 'var(--bg-card)',
                                                 color: isSelected ? '#ec4899' : 'var(--text-secondary)',
-                                                fontWeight: '800', fontSize: '14px', cursor: isEditing ? 'not-allowed' : 'pointer',
+                                                fontWeight: '800', fontSize: '14px',
                                                 opacity: isEditing ? 0.5 : 1,
+                                                pointerEvents: 'none',
                                                 transition: 'all 0.2s ease'
                                             }}
-                                        >{isSelected ? '✓' : '—'}</button>
+                                        >{isSelected ? '✓' : '—'}</div>
                                     </div>
                                 );
                             })}

@@ -576,24 +576,31 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                                         const isChecked = editedStudent.behaviorIssues?.includes(item) || false;
                                                                                         const isDisabled = !!editedStudent.behaviorSubmittedAt;
                                                                                         return (
-                                                                                            <div key={item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2px 0', borderBottom: '1px solid var(--bg-app)' }}>
+                                                                                            <div
+                                                                                                key={item}
+                                                                                                onClick={() => {
+                                                                                                    if (isDisabled) return;
+                                                                                                    const issues = editedStudent.behaviorIssues.includes(item) ? editedStudent.behaviorIssues.filter(i => i !== item) : [...editedStudent.behaviorIssues, item];
+                                                                                                    setEditedStudent({ ...editedStudent, behaviorIssues: issues });
+                                                                                                }}
+                                                                                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2px 6px 2px 4px', borderBottom: '1px solid var(--bg-app)', cursor: isDisabled ? 'not-allowed' : 'pointer', borderRadius: '4px', transition: 'background 0.15s' }}
+                                                                                                onMouseEnter={e => { if (!isDisabled) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--bg-hover)'; }}
+                                                                                                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent'; }}
+                                                                                            >
                                                                                                 <span style={{ fontSize: '13px', color: 'var(--text-main)', flex: 1, paddingRight: '4px', fontWeight: '500' }}>{item}</span>
-                                                                                                <button
-                                                                                                    disabled={isDisabled}
-                                                                                                    onClick={() => {
-                                                                                                        const issues = editedStudent.behaviorIssues.includes(item) ? editedStudent.behaviorIssues.filter(i => i !== item) : [...editedStudent.behaviorIssues, item];
-                                                                                                        setEditedStudent({ ...editedStudent, behaviorIssues: issues });
-                                                                                                    }}
+                                                                                                <div
                                                                                                     style={{
                                                                                                         width: '36px', height: '26px', borderRadius: '6px', flexShrink: 0,
+                                                                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                                                                         border: isChecked ? '2px solid var(--color-success)' : '1px solid var(--border-subtle)',
                                                                                                         backgroundColor: isChecked ? 'var(--color-success-bg)' : 'var(--bg-card)',
                                                                                                         color: isChecked ? 'var(--color-success)' : 'var(--text-secondary)',
-                                                                                                        fontWeight: '800', fontSize: '14px', cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                                                                                        fontWeight: '800', fontSize: '14px',
                                                                                                         opacity: isDisabled ? 0.5 : 1,
+                                                                                                        pointerEvents: 'none',
                                                                                                         transition: 'all 0.2s ease'
                                                                                                     }}
-                                                                                                >{isChecked ? '✓' : '—'}</button>
+                                                                                                >{isChecked ? '✓' : '—'}</div>
                                                                                             </div>
                                                                                         );
                                                                                     })}
