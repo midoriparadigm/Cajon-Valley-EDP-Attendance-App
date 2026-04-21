@@ -286,7 +286,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                     <>
                         {completedLogs.length > 0 ? (
                             /* Cumulative summary box */
-                            <div style={{ backgroundColor: '#fef2f2', borderRadius: '8px', padding: '16px', border: '1px solid #ef4444', display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', flex: 1, minHeight: 0 }}>
+                            <div style={{ backgroundColor: '#fef2f2', borderRadius: '8px', padding: '16px', border: '1px solid #ef4444', display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '35vh', minHeight: 0 }}>
                                 {/* Header */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span className="material-icons-round" style={{ fontSize: '16px', color: '#ef4444' }}>local_hospital</span>
