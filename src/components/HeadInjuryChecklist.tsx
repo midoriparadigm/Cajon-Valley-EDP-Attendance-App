@@ -338,6 +338,18 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                         ) : witnessDone && isLead && !isReadOnly && hasYesSymptoms && !surveyCompleted ? (
                             <button onClick={handleYesDone} style={{ width: '100%', padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', flexShrink: 0 }}>Done (Issues Found)</button>
                         ) : null}
+
+                        {/* ACTION BUTTONS — directly beneath witness statement / summary */}
+                        {witnessDone && isLead && !isReadOnly && (
+                            <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+                                <button onClick={handleCancelReport} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                                {!surveyCompleted ? (
+                                    <button onClick={handleNoToAll} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>"No" to All</button>
+                                ) : (
+                                    <button onClick={handleSaveLog} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Assessment</button>
+                                )}
+                            </div>
+                        )}
                     </>
                 )}
             </div>
@@ -427,17 +439,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                 </div>
             )}
 
-            {/* ACTION BUTTONS at bottom of modal */}
-            {witnessDone && isLead && !isReadOnly && (
-                <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-                    <button onClick={handleCancelReport} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                    {!surveyCompleted ? (
-                        <button onClick={handleNoToAll} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>"No" to All</button>
-                    ) : (
-                        <button onClick={handleSaveLog} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Assessment</button>
-                    )}
-                </div>
-            )}
+
         </div>
     );
 };
