@@ -228,9 +228,7 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
             style={!witnessDone ? {
                 display: 'grid',
                 gridTemplateColumns: '1fr',
-                gap: '20px',
-                maxHeight: '60vh',
-                height: '60vh'
+                gap: '20px'
             } : undefined}
         >
             {/* LEFT COLUMN */}
