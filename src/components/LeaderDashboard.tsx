@@ -364,7 +364,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
         }
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
             const guardianName = studentObj?.guardians?.[0]
                 ? `${studentObj.guardians[0].firstName} ${studentObj.guardians[0].lastName}`
                 : 'Parent/Guardian';
