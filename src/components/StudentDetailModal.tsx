@@ -613,16 +613,32 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                         )}
 
                                                         {/* Action Buttons — shown when actively editing a behavior ticket */}
-                                                        {editedStudent.behavior !== 'none' && !editedStudent.behaviorSubmittedAt && (
+                                                        {editedStudent.behavior !== 'none' && (!editedStudent.behaviorSubmittedAt || isEditingBehavior) && (
                                                             <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
                                                                 <button
-                                                                    onClick={() => { setEditedStudent({ ...editedStudent, behavior: 'none', behaviorIssues: [], behaviorDescription: '', behaviorActions: '' }); setShowTicketOptions(false); }}
+                                                                    onClick={() => {
+                                                                        if (isEditingBehavior) {
+                                                                            setEditedStudent({
+                                                                                ...editedStudent,
+                                                                                behavior: student.behavior,
+                                                                                behaviorIssues: student.behaviorIssues || [],
+                                                                                behaviorDescription: student.behaviorDescription || '',
+                                                                                behaviorActions: student.behaviorActions || '',
+                                                                                behaviorStaff: student.behaviorStaff,
+                                                                                behaviorStaffSupport: student.behaviorStaffSupport,
+                                                                            });
+                                                                            setIsEditingBehavior(false);
+                                                                        } else {
+                                                                            setEditedStudent({ ...editedStudent, behavior: 'none', behaviorIssues: [], behaviorDescription: '', behaviorActions: '' });
+                                                                            setShowTicketOptions(false);
+                                                                        }
+                                                                    }}
                                                                     style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}
                                                                 >Cancel</button>
                                                                 <button
                                                                     onClick={saveBehavior}
                                                                     style={{ flex: 1, padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: '#10b981', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
-                                                                >Submit</button>
+                                                                >{isEditingBehavior ? 'Save Changes' : 'Submit'}</button>
                                                             </div>
                                                         )}
 
