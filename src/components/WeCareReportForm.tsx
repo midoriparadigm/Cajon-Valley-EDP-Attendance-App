@@ -28,7 +28,6 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
     const options = ['Washed/Cleaned', 'Ice', 'Band-Aid', 'Rest', 'Other'];
 
     const toggleOption = (opt: string) => {
-        if (isEditing) return; // Locked in edit mode
         setFirstAid(prev => prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt]);
     };
 
@@ -41,14 +40,12 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
                     <select
                         value={activity}
                         onChange={e => {
-                            if (isEditing) return;
                             setActivity(e.target.value);
                             if (e.target.value !== 'Other') {
                                 setActivityOther('');
                             }
                         }}
-                        disabled={isEditing}
-                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', cursor: isEditing ? 'not-allowed' : 'pointer', opacity: isEditing ? 0.6 : 1, outline: 'none' }}
+                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '14px', cursor: 'pointer', opacity: 1, outline: 'none' }}
                     >
                         <option value="">Select an activity...</option>
                         {activityOptions.map(opt => (
@@ -63,9 +60,8 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
                         <input
                             placeholder="Enter activity name..."
                             value={activityOther}
-                            onChange={e => { if (!isEditing) setActivityOther(e.target.value); }}
-                            disabled={isEditing}
-                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: isEditing ? 'var(--bg-app)' : 'var(--bg-card)', color: 'var(--text-main)', opacity: isEditing ? 0.6 : 1, cursor: isEditing ? 'not-allowed' : 'text' }}
+                            onChange={e => setActivityOther(e.target.value)}
+                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', opacity: 1, cursor: 'text' }}
                         />
                     </div>
                 )}
@@ -87,9 +83,9 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
                                 return (
                                     <div
                                         key={opt}
-                                        onClick={() => { if (!isEditing) toggleOption(opt); }}
-                                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px 4px 4px', borderBottom: '1px solid var(--bg-app)', cursor: isEditing ? 'not-allowed' : 'pointer', borderRadius: '4px', transition: 'background 0.15s' }}
-                                        onMouseEnter={e => { if (!isEditing) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--bg-hover)'; }}
+                                        onClick={() => toggleOption(opt)}
+                                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px 4px 4px', borderBottom: '1px solid var(--bg-app)', cursor: 'pointer', borderRadius: '4px', transition: 'background 0.15s' }}
+                                        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--bg-hover)'; }}
                                         onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent'; }}
                                     >
                                         <span style={{ fontSize: '13px', color: 'var(--text-main)', flex: 1, paddingRight: '4px', fontWeight: '500' }}>{opt}</span>
@@ -101,7 +97,7 @@ const WeCareReportForm = ({ student, currentStaffName, onSave, onCancel, darkMod
                                                 backgroundColor: isSelected ? 'rgba(236, 72, 153, 0.15)' : 'var(--bg-card)',
                                                 color: isSelected ? '#ec4899' : 'var(--text-secondary)',
                                                 fontWeight: '800', fontSize: '14px',
-                                                opacity: isEditing ? 0.5 : 1,
+                                                opacity: 1,
                                                 pointerEvents: 'none',
                                                 transition: 'all 0.2s ease'
                                             }}
