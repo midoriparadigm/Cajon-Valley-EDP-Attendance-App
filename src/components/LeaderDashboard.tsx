@@ -373,10 +373,10 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
             const reportSummaries = reports.map(r => `Type: ${r.type}, Created: ${new Date(r.createdAt).toLocaleTimeString()}, Content: ${r.message.substring(0, 500)}`).join('\n---\n');
 
             const templateInstruction = (savedTemplate && !ignoreTemplate)
-                ? `\n\nIMPORTANT — The EDP Lead has saved the following letter as their preferred style template. Match its tone, wording style, format, and overall feel as closely as possible while adapting the content to the current incidents:\n---\n${savedTemplate}\n---`
+                ? `\n\nIMPORTANT STYLE TEMPLATE — The EDP Lead has saved the following letter as a style reference. Match its tone, writing style, and overall feel as closely as possible. Do NOT copy its structure or incidents verbatim. You MUST adapt it to cover all of the current incidents listed above (including behavior, head injury, or we care reports) and write a single, cohesive, unified letter starting with "Dear ${guardianName},":\n---\n${savedTemplate}\n---`
                 : '';
 
-            const prompt = `You are writing a parent notification letter for an after-school program (EDP - Extended Day Program) at Cajon Valley School District. Write a professional, warm, and concise letter to "${guardianName}" about their child "${studentName}" for the date ${date}.
+            const prompt = `You are writing a parent notification letter for an after-school program (EDP - Extended Day Program) at Cajon Valley School District. Write a professional, warm, and concise letter to "${guardianName}" about their child "${studentName}" for the date ${date}. You MUST summarize all of the provided incident reports in a cohesive, unified narrative letter.
 
 Here are the incident reports to summarize:
 ${reportSummaries}
