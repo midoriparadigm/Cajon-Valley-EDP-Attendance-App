@@ -216,6 +216,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
             setEditedStudent({
                 ...editedStudent,
                 behavior: status,
+                behaviorIssues: editedStudent.behaviorIssues || [],
                 behaviorTimestamp: stamp,
                 behaviorStaff: currentStaff.name,
                 behaviorStaffSupport: currentStaff.name
@@ -232,6 +233,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
         setEditedStudent({
             ...editedStudent,
             behavior: 'green',
+            behaviorIssues: editedStudent.behaviorIssues || [],
             behaviorTimestamp: stamp,
             behaviorStaff: currentStaff.name,
             behaviorStaffSupport: currentStaff.name
@@ -568,19 +570,21 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                         </div>
 
                                                                         {/* Behavior checklist - styled like Head Injury questionnaire */}
-                                                                        <div style={{ backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '4px', border: '1px solid var(--border-subtle)', flex: '1', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                                            <div style={{ backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '4px', border: '1px solid var(--border-subtle)', flex: '1', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                                                                             <div style={{ backgroundColor: 'var(--bg-card)', padding: '6px', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column' }}>
                                                                                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Behaviors</label>
                                                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
                                                                                     {BEHAVIOR_CHECKLISTS[editedStudent.behavior as 'green']?.map((item) => {
-                                                                                        const isChecked = editedStudent.behaviorIssues?.includes(item) || false;
-                                                                                        const isDisabled = !!editedStudent.behaviorSubmittedAt;
+                                                                                        const issuesList = editedStudent.behaviorIssues || [];
+                                                                                        const isChecked = issuesList.includes(item);
+                                                                                        const isDisabled = !isEditingBehavior;
                                                                                         return (
                                                                                             <div
                                                                                                 key={item}
                                                                                                 onClick={() => {
                                                                                                     if (isDisabled) return;
-                                                                                                    const issues = editedStudent.behaviorIssues.includes(item) ? editedStudent.behaviorIssues.filter(i => i !== item) : [...editedStudent.behaviorIssues, item];
+                                                                                                    const currentIssues = editedStudent.behaviorIssues || [];
+                                                                                                    const issues = currentIssues.includes(item) ? currentIssues.filter(i => i !== item) : [...currentIssues, item];
                                                                                                     setEditedStudent({ ...editedStudent, behaviorIssues: issues });
                                                                                                 }}
                                                                                                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2px 6px 2px 4px', borderBottom: '1px solid var(--bg-app)', cursor: isDisabled ? 'not-allowed' : 'pointer', borderRadius: '4px', transition: 'background 0.15s' }}
@@ -608,43 +612,42 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                                </div>
-                                                            </>
-                                                        )}
+                                                                        {/* Action Buttons — shown when actively editing a behavior ticket */}
+                                                                        {editedStudent.behavior !== 'none' && (!editedStudent.behaviorSubmittedAt || isEditingBehavior) && (
+                                                                            <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        if (isEditingBehavior) {
+                                                                                            setEditedStudent({
+                                                                                                ...editedStudent,
+                                                                                                behavior: student.behavior,
+                                                                                                behaviorIssues: student.behaviorIssues || [],
+                                                                                                behaviorDescription: student.behaviorDescription || '',
+                                                                                                behaviorActions: student.behaviorActions || '',
+                                                                                                behaviorStaff: student.behaviorStaff,
+                                                                                                behaviorStaffSupport: student.behaviorStaffSupport,
+                                                                                            });
+                                                                                            setIsEditingBehavior(false);
+                                                                                        } else {
+                                                                                            setEditedStudent({ ...editedStudent, behavior: 'none', behaviorIssues: [], behaviorDescription: '', behaviorActions: '' });
+                                                                                            setShowTicketOptions(false);
+                                                                                        }
+                                                                                    }}
+                                                                                    style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}
+                                                                                >Cancel</button>
+                                                                                <button
+                                                                                    onClick={saveBehavior}
+                                                                                    style={{ flex: 1, padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: '#10b981', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
+                                                                                >{isEditingBehavior ? 'Save Changes' : 'Submit'}</button>
+                                                                            </div>
+                                                                        )}
 
-                                                        {/* Action Buttons — shown when actively editing a behavior ticket */}
-                                                        {editedStudent.behavior !== 'none' && (!editedStudent.behaviorSubmittedAt || isEditingBehavior) && (
-                                                            <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        if (isEditingBehavior) {
-                                                                            setEditedStudent({
-                                                                                ...editedStudent,
-                                                                                behavior: student.behavior,
-                                                                                behaviorIssues: student.behaviorIssues || [],
-                                                                                behaviorDescription: student.behaviorDescription || '',
-                                                                                behaviorActions: student.behaviorActions || '',
-                                                                                behaviorStaff: student.behaviorStaff,
-                                                                                behaviorStaffSupport: student.behaviorStaffSupport,
-                                                                            });
-                                                                            setIsEditingBehavior(false);
-                                                                        } else {
-                                                                            setEditedStudent({ ...editedStudent, behavior: 'none', behaviorIssues: [], behaviorDescription: '', behaviorActions: '' });
-                                                                            setShowTicketOptions(false);
-                                                                        }
-                                                                    }}
-                                                                    style={{ flex: 1, padding: '14px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}
-                                                                >Cancel</button>
-                                                                <button
-                                                                    onClick={saveBehavior}
-                                                                    style={{ flex: 1, padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: '#10b981', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
-                                                                >{isEditingBehavior ? 'Save Changes' : 'Submit'}</button>
-                                                            </div>
-                                                        )}
-
-                                                        {editedStudent.behavior === 'none' && showTicketOptions && (
-                                                            <button onClick={() => setShowTicketOptions(false)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
-                                                        )}
+                                                                        {editedStudent.behavior === 'none' && showTicketOptions && (
+                                                                            <button onClick={() => setShowTicketOptions(false)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: darkMode ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+                                                                        )}
+                                                                    </div>
+                                                                </>
+                                                            )}
                                                     </div>
                                                 )}
                                             </div>
