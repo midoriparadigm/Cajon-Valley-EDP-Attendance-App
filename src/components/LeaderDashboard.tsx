@@ -355,7 +355,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
         return msg;
     }, []);
 
-    const generateWithGemini = useCallback(async (reports: ParentReport[], studentObj?: Student): Promise<string | null> => {
+    const generateWithGemini = useCallback(async (reports: ParentReport[], studentObj?: Student, ignoreTemplate: boolean = false): Promise<string | null> => {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
         if (!apiKey) {
             console.warn('[Gemini] No API key found. Set VITE_GEMINI_API_KEY in .env file.');
@@ -372,7 +372,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
             const date = new Date().toLocaleDateString();
             const reportSummaries = reports.map(r => `Type: ${r.type}, Created: ${new Date(r.createdAt).toLocaleTimeString()}, Content: ${r.message.substring(0, 500)}`).join('\n---\n');
 
-            const templateInstruction = savedTemplate
+            const templateInstruction = (savedTemplate && !ignoreTemplate)
                 ? `\n\nIMPORTANT — The EDP Lead has saved the following letter as their preferred style template. Match its tone, wording style, format, and overall feel as closely as possible while adapting the content to the current incidents:\n---\n${savedTemplate}\n---`
                 : '';
 
@@ -411,6 +411,15 @@ Requirements:
         setDraftMethod('both');
         setInlineDraftMode(true);
 
+        // If there is an existing draft, just load it immediately instead of calling Gemini
+        const existingDraft = reports.find(r => r.status === 'draft');
+        if (existingDraft) {
+            setDraftMessage(existingDraft.message);
+            setMessageHistory([existingDraft.message]);
+            setHistoryIndex(0);
+            return;
+        }
+
         // First set a template message immediately
         const templateMsg = generateTemplateMessage(reports, studentObj);
 
@@ -428,8 +437,15 @@ Requirements:
     const handleGenerateText = useCallback(async () => {
         if (isGeneratingAI) return;
         setIsGeneratingAI(true);
+
+        // Clear saved template so the pill de-highlights and we get a fresh default generation
+        setSavedTemplate(null);
+        try {
+            localStorage.removeItem('edp-report-template');
+        } catch {}
+
         const studentObj = students.find(s => s.id === draftSourceReports[0]?.studentId);
-        const aiMsg = await generateWithGemini(draftSourceReports, studentObj);
+        const aiMsg = await generateWithGemini(draftSourceReports, studentObj, true);
         if (aiMsg) {
             setDraftMessage(aiMsg);
             const newHistory = [...messageHistory.slice(0, historyIndex + 1), aiMsg];
