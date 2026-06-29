@@ -412,7 +412,7 @@ Requirements:
         setInlineDraftMode(true);
 
         // If there is an existing draft, just load it immediately instead of calling Gemini
-        const existingDraft = reports.find(r => r.status === 'draft');
+        const existingDraft = reports.find(r => r.status === 'draft' && r.id.startsWith('draft-'));
         if (existingDraft) {
             setDraftMessage(existingDraft.message);
             setMessageHistory([existingDraft.message]);
