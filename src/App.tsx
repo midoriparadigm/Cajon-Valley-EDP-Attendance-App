@@ -1,5 +1,5 @@
 // src/App.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase, mapDbToStudent } from './supabaseClient';
 import type { Student, Staff, ParentReport, BiometricLog, ProgramType, AttendanceStatus } from './types';
@@ -14,6 +14,28 @@ import StudentDetailModal from './components/StudentDetailModal';
 import ConfirmationModal from './components/ConfirmationModal';
 import LeaderDashboard from './components/LeaderDashboard';
 import ParentReportModal from './components/ParentReportModal';
+import DongleStatusPill from './components/DongleStatusPill';
+import DongleTestModal from './components/DongleTestModal';
+import { injectStudentBarcode, describeInjectFailure } from './services/scannerDongleService';
+import { gdLogBehaviorTicket, gdLogBiometric, gdLogCheckIn, gdLogCheckOut, gdLogHeadInjury, gdLogParentReport, gdLogWeCareReport, gdSyncStudentProfile, gdUploadPhoto } from './services/googleDriveService';
+
+const PROFILE_FIELDS: (keyof Student)[] = ['firstName', 'lastName', 'grade', 'elopId', 'asesId', 'programs', 'guardians', 'hasSnack', 'isCheckInBlocked', 'yearbookPhotoUrl'];
+
+/** Audit events implied by a student record change. */
+function logStudentChanges(before: Student, after: Student, staff: Staff) {
+    if (PROFILE_FIELDS.some(f => JSON.stringify(before[f]) !== JSON.stringify(after[f]))) {
+        gdSyncStudentProfile(after);
+    }
+    const behaviorSubmitted = !before.behaviorSubmittedAt && after.behaviorSubmittedAt;
+    const behaviorEdited = (after.behaviorEditCount ?? 0) > (before.behaviorEditCount ?? 0);
+    if (behaviorSubmitted || behaviorEdited) gdLogBehaviorTicket(after, staff);
+
+    const weCareSubmitted = !before.weCareSubmittedAt && after.weCareSubmittedAt;
+    const weCareEdited = (after.weCareEditCount ?? 0) > (before.weCareEditCount ?? 0);
+    if (weCareSubmitted || weCareEdited) gdLogWeCareReport(after, staff);
+
+    if ((after.headInjuryLogs?.length ?? 0) > (before.headInjuryLogs?.length ?? 0)) gdLogHeadInjury(after, staff);
+}
 
 const App = () => {
     const [staffList, setStaffList] = useState<Staff[]>(INITIAL_STAFF);
@@ -38,6 +60,10 @@ const App = () => {
     const [biometricLogs, setBiometricLogs] = useState<BiometricLog[]>([]);
     const [rosterStatusFilter, setRosterStatusFilter] = useState<'all' | 'checked_in' | 'checked_out'>('all');
     const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+    const [showDongleModal, setShowDongleModal] = useState(false);
+    // Latest students for timers/closures that would otherwise see stale state (audit logging)
+    const studentsRef = useRef(students);
+    studentsRef.current = students;
 
     // Fetch initial data from Supabase
     useEffect(() => {
@@ -140,6 +166,11 @@ const App = () => {
             const now = new Date();
             const currentTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
             if (currentTime === scheduledBatchCheckoutTime) {
+                if (user) {
+                    studentsRef.current
+                        .filter(s => s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent')
+                        .forEach(s => gdLogCheckOut({ ...s, sunriseStatus: 'checked_out', sunriseCheckOutTime: `Auto-Check-Out at ${scheduledBatchCheckoutTime}` }, user, 'sunrise', undefined, true));
+                }
                 setStudents(prev => prev.map(s => {
                     if (s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent') {
                         return { ...s, sunriseStatus: 'checked_out' as AttendanceStatus, sunriseCheckOutTime: `Auto-Check-Out at ${scheduledBatchCheckoutTime}` };
@@ -151,7 +182,7 @@ const App = () => {
             }
         }, 1000);
         return () => clearInterval(interval);
-    }, [scheduledBatchCheckoutTime, program]);
+    }, [scheduledBatchCheckoutTime, program, user]);
 
     const showToast = (msg: string, type: 'success' | 'info' | 'warning' | 'error') => {
         setToast({ msg, type });
@@ -212,6 +243,19 @@ const App = () => {
         const timeString = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
         const staffName = user ? `${user.name} (${user.organization})` : 'Staff';
 
+        // Type the student's ID into the SIS portal via the scanner dongle.
+        // Started first for minimal latency; never blocks the check-in.
+        const scanTarget = students.find(s => s.id === studentId);
+        const scanPromise = scanTarget ? injectStudentBarcode(scanTarget) : null;
+
+        if (user && scanTarget) {
+            const checkedIn: Student = program === 'sunrise'
+                ? { ...scanTarget, sunriseStatus: 'present', sunriseTime: timeString, sunriseStaff: staffName }
+                : { ...scanTarget, sunsetStatus: 'present', sunsetTime: timeString, sunsetStaff: staffName };
+            gdLogCheckIn(checkedIn, user, program);
+            if (photo) gdUploadPhoto(checkedIn, photo, 'check-in', user);
+        }
+
         setStudents(prev => prev.map(s => {
             if (s.id === studentId) {
                 const update = program === 'sunrise'
@@ -259,12 +303,18 @@ const App = () => {
                     previousPhoto: student.lastCheckInPhoto || mockPhotos.previous
                 };
                 setBiometricLogs(prev => [newLog, ...prev]);
+                if (user) gdLogBiometric(newLog, user);
                 if (biometricData.visualAnomalyDetected) {
                     showToast('Visual Anomaly Detected - Review in dashboard', 'warning');
                 }
                 PasskeyService.uploadToDrive(photo || '', studentId);
             }
         }
+        // Attached after the success toast so a dongle warning is shown last
+        scanPromise?.then(result => {
+            const warning = describeInjectFailure(result);
+            if (warning) showToast(warning, 'warning');
+        });
         setShowConfirmId(null);
         setSearchQuery('');
     };
@@ -292,6 +342,13 @@ const App = () => {
         setTimeout(() => {
             const now = new Date();
             const timeString = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            const student = studentsRef.current.find(s => s.id === studentId);
+            if (user && student) {
+                const checkedOut: Student = program === 'sunrise'
+                    ? { ...student, sunriseStatus: 'checked_out', sunriseCheckOutTime: timeString }
+                    : { ...student, sunsetStatus: 'checked_out', sunsetCheckOutTime: timeString };
+                gdLogCheckOut(checkedOut, user, program, checkOutBy);
+            }
             setStudents(prev => prev.map(s => {
                 if (s.id === studentId) {
                     const update = program === 'sunrise'
@@ -332,6 +389,8 @@ const App = () => {
             console.error('Failed to update student:', err);
             showToast('Failed to save changes to DB', 'error');
         }
+
+        if (user && oldStudent) logStudentChanges(oldStudent, updatedStudent, user);
 
         // Auto-create head injury report draft
         if (oldStudent && !oldStudent.headInjury && updatedStudent.headInjury) {
@@ -393,6 +452,14 @@ const App = () => {
         }
     };
 
+    const logParentReport = (report: ParentReport, previous?: ParentReport) => {
+        if (!user) return;
+        // Log new reports and status changes (draft -> sent), not every draft keystroke
+        if (previous && previous.status === report.status) return;
+        const student = students.find(s => s.id === report.studentId);
+        if (student) gdLogParentReport(student, report, user);
+    };
+
     if (!user) return <StaffLogin onLogin={setUser} onToggleDemo={() => setIsDemoMode(!isDemoMode)} isDemoMode={isDemoMode} staffList={staffList} />;
 
     const activeStudent = students.find(s => s.id === activeStudentId);
@@ -412,6 +479,7 @@ const App = () => {
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <DongleStatusPill onOpen={() => setShowDongleModal(true)} isLeadMode={isLeadMode} />
                         <div onClick={() => setIsLeadMode(!isLeadMode)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '16px', backgroundColor: isLeadMode ? 'rgba(139,92,246,0.1)' : 'var(--bg-hover)', border: `1px solid ${isLeadMode ? '#8b5cf6' : 'var(--border-subtle)'}`, cursor: 'pointer' }}>
                             <span className="material-icons-round" style={{ fontSize: '16px', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>{isLeadMode ? 'admin_panel_settings' : 'person'}</span>
                             <span style={{ fontSize: '11px', fontWeight: '700', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>{isLeadMode ? 'LEAD' : 'STAFF'}</span>
@@ -529,20 +597,25 @@ const App = () => {
 
             {activeStudentId && activeStudent && createPortal(
                 <div style={{ position: 'fixed', top: '80px', left: 0, right: 0, bottom: 0, zIndex: 1000, backgroundColor: 'var(--bg-app)', overflowY: 'auto' }}>
-                    <StudentDetailModal student={activeStudent} onClose={() => setActiveStudentId(null)} onSave={handleSaveStudent} onCheckOut={handleCheckOut} currentStaff={user} program={program} isLeadMode={isLeadMode} darkMode={darkMode} onUpdateReport={(report) => setParentReports(prev => [...prev, report])} showToast={showToast} staffList={staffList} parentReports={parentReports} />
+                    <StudentDetailModal student={activeStudent} onClose={() => setActiveStudentId(null)} onSave={handleSaveStudent} onCheckOut={handleCheckOut} currentStaff={user} program={program} isLeadMode={isLeadMode} darkMode={darkMode} onUpdateReport={(report) => { setParentReports(prev => [...prev, report]); logParentReport(report); }} showToast={showToast} staffList={staffList} parentReports={parentReports} />
                 </div>,
                 document.body
             )}
 
             {showLeaderDashboard && createPortal(
                 <div key={dashboardKey} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
-                    <LeaderDashboard user={user} students={students} staffList={staffList} parentReports={parentReports} biometricLogs={biometricLogs} onClose={() => setShowLeaderDashboard(false)} onImport={(newStudents) => setStudents([...students, ...newStudents])} onAddStudent={(newStudent) => setStudents([...students, newStudent])} onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)} onUpdateStudent={handleSaveStudent} onUpdateReport={(updatedReport) => setParentReports(prev => prev.some(r => r.id === updatedReport.id) ? prev.map(r => r.id === updatedReport.id ? updatedReport : r) : [...prev, updatedReport])} onDeleteReport={(reportId) => setParentReports(prev => prev.filter(r => r.id !== reportId))} onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)} showToast={showToast} isBatchDefaultEnabled={isBatchDefaultEnabled} setIsBatchDefaultEnabled={setIsBatchDefaultEnabled} defaultBatchTime={defaultBatchTime} setDefaultBatchTime={setDefaultBatchTime} scheduledBatchCheckoutTime={scheduledBatchCheckoutTime} darkMode={darkMode} />
+                    <LeaderDashboard user={user} students={students} staffList={staffList} parentReports={parentReports} biometricLogs={biometricLogs} onClose={() => setShowLeaderDashboard(false)} onImport={(newStudents) => { setStudents([...students, ...newStudents]); newStudents.forEach(gdSyncStudentProfile); }} onAddStudent={(newStudent) => { setStudents([...students, newStudent]); gdSyncStudentProfile(newStudent); }} onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)} onUpdateStudent={handleSaveStudent} onUpdateReport={(updatedReport) => { logParentReport(updatedReport, parentReports.find(r => r.id === updatedReport.id)); setParentReports(prev => prev.some(r => r.id === updatedReport.id) ? prev.map(r => r.id === updatedReport.id ? updatedReport : r) : [...prev, updatedReport]); }} onDeleteReport={(reportId) => setParentReports(prev => prev.filter(r => r.id !== reportId))} onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)} showToast={showToast} isBatchDefaultEnabled={isBatchDefaultEnabled} setIsBatchDefaultEnabled={setIsBatchDefaultEnabled} defaultBatchTime={defaultBatchTime} setDefaultBatchTime={setDefaultBatchTime} scheduledBatchCheckoutTime={scheduledBatchCheckoutTime} darkMode={darkMode} />
                 </div>,
                 document.body
             )}
 
             {reportData && (
-                <ParentReportModal student={reportData.student} type={reportData.type} onClose={() => setReportData(null)} onSend={(report) => { setParentReports(prev => [...prev, report]); showToast('Report sent!', 'success'); setReportData(null); }} onSaveDraft={(report) => { setParentReports(prev => [...prev, report]); showToast('Draft saved!', 'info'); setReportData(null); }} staffId={user?.id || 'unknown'} />
+                <ParentReportModal student={reportData.student} type={reportData.type} onClose={() => setReportData(null)} onSend={(report) => { setParentReports(prev => [...prev, report]); logParentReport(report); showToast('Report sent!', 'success'); setReportData(null); }} onSaveDraft={(report) => { setParentReports(prev => [...prev, report]); logParentReport(report); showToast('Draft saved!', 'info'); setReportData(null); }} staffId={user?.id || 'unknown'} />
+            )}
+
+            {showDongleModal && createPortal(
+                <DongleTestModal onClose={() => setShowDongleModal(false)} isLeadMode={isLeadMode} />,
+                document.body
             )}
 
             {toast && <Toast message={toast.msg} type={toast.type} />}
