@@ -1,19 +1,53 @@
 // src/App.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { supabase, mapDbToStudent } from './supabaseClient';
+import { supabase, mapDbToStudent, isSupabaseConfigured, runDbWrite } from './supabaseClient';
 import type { Student, Staff, ParentReport, BiometricLog, ProgramType, AttendanceStatus } from './types';
-import { GRADES } from './constants';
+import { GRADES, STUDENT_PHOTOS_ENABLED, UNDO_WINDOW_MS } from './constants';
 import { INITIAL_STAFF, INITIAL_STUDENTS } from './utils/mockData';
 import { sendSmsMock } from './utils/sms';
 import { MockDatabase, PasskeyService } from './utils/mock';
-import { playAlarm } from './utils/helpers';
+import { playAlarm, uuidv4, isUuid, formatClockTime, localDateIso } from './utils/helpers';
+import { recordEvents } from './services/auditLog';
 import Toast from './components/Toast';
 import StaffLogin from './components/StaffLogin';
 import StudentDetailModal from './components/StudentDetailModal';
 import ConfirmationModal from './components/ConfirmationModal';
 import LeaderDashboard from './components/LeaderDashboard';
 import ParentReportModal from './components/ParentReportModal';
+import GroupCheckInBar from './components/GroupCheckInBar';
+import UndoBar from './components/UndoBar';
+
+const statusFor = (s: Student, p: ProgramType): AttendanceStatus => (p === 'sunrise' ? s.sunriseStatus : s.sunsetStatus);
+const fullName = (s: Student) => `${s.firstName} ${s.lastName}`;
+
+/**
+ * A quick or group check-in that can still be undone. Guardian arrival texts
+ * are held until the undo window closes, so an undone mis-tap never tells a
+ * family their child arrived.
+ */
+interface PendingCheckIn {
+    ids: string[];
+    program: ProgramType;
+    time: string;
+    staffName: string;
+    batchId?: string;
+    message: string;
+}
+
+/** Sends arrival texts for students from `pending` who are still checked in. */
+const sendArrivalTexts = (pending: PendingCheckIn, roster: Student[]) => {
+    const ids = new Set(pending.ids);
+    const programLabel = pending.program === 'sunrise' ? 'Sunrise' : 'Sunset';
+    roster
+        .filter(s => ids.has(s.id) && statusFor(s, pending.program) === 'present')
+        .forEach(s => {
+            const contact1 = s.guardians.find(g => g.type === 'Contact 1');
+            if (contact1?.phone) {
+                sendSmsMock(contact1.phone, 'checkin_notification', { student_name: s.firstName, time: pending.time, staff_name: pending.staffName, program: programLabel });
+            }
+        });
+};
 
 const App = () => {
     const [staffList, setStaffList] = useState<Staff[]>(INITIAL_STAFF);
@@ -38,14 +72,29 @@ const App = () => {
     const [biometricLogs, setBiometricLogs] = useState<BiometricLog[]>([]);
     const [rosterStatusFilter, setRosterStatusFilter] = useState<'all' | 'checked_in' | 'checked_out'>('all');
     const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+    const [isGroupMode, setIsGroupMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+    const [pendingCheckIn, setPendingCheckIn] = useState<PendingCheckIn | null>(null);
 
-    // Fetch initial data from Supabase
+    // Latest values for timers and async callbacks, which would otherwise close
+    // over the render they were created in.
+    const studentsRef = useRef(students);
+    studentsRef.current = students;
+    const pendingRef = useRef(pendingCheckIn);
+    pendingRef.current = pendingCheckIn;
+    const checkInWriteRef = useRef<Promise<boolean> | null>(null);
+
+    // Load the roster from Supabase once per signed-in user. This used to depend
+    // on staffList too, so toggling a staff permission re-fetched and replaced the
+    // whole roster — silently dropping any locally added or imported students.
     useEffect(() => {
+        if (!isSupabaseConfigured) return;
+        let cancelled = false;
         const fetchInitialData = async () => {
             try {
                 const { data, error } = await supabase.from('students').select('*');
-                if (error) console.error('Error fetching students:', error);
-                if (data && data.length > 0) {
+                if (error) console.error('Error fetching students:', error.message);
+                if (!cancelled && data && data.length > 0) {
                     setStudents(data.map(mapDbToStudent));
                 }
             } catch (err) {
@@ -53,7 +102,12 @@ const App = () => {
             }
         };
         fetchInitialData();
+        return () => { cancelled = true; };
+    }, [user?.id]);
 
+    // Keep `user` in step with the Supabase auth session.
+    useEffect(() => {
+        if (!isSupabaseConfigured) return;
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session?.user?.email) {
                 const staffMember = staffList.find(s => s.email === session.user.email);
@@ -77,6 +131,7 @@ const App = () => {
 
     // Supabase Realtime subscription
     useEffect(() => {
+        if (!isSupabaseConfigured) return;
         const channel = supabase
             .channel('students-realtime')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, (payload) => {
@@ -140,14 +195,28 @@ const App = () => {
             const now = new Date();
             const currentTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
             if (currentTime === scheduledBatchCheckoutTime) {
+                const isInBuilding = (s: Student) => s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent';
+                const checkOutLabel = `Auto-Check-Out at ${scheduledBatchCheckoutTime}`;
+                const affected = studentsRef.current.filter(isInBuilding);
                 setStudents(prev => prev.map(s => {
-                    if (s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent') {
-                        return { ...s, sunriseStatus: 'checked_out' as AttendanceStatus, sunriseCheckOutTime: `Auto-Check-Out at ${scheduledBatchCheckoutTime}` };
+                    if (isInBuilding(s)) {
+                        return { ...s, sunriseStatus: 'checked_out' as AttendanceStatus, sunriseCheckOutTime: checkOutLabel };
                     }
                     return s;
                 }));
                 showToast(`Batch checkout executed at ${scheduledBatchCheckoutTime}`, 'success');
                 setScheduledBatchCheckoutTime(null);
+
+                const dbIds = isSupabaseConfigured ? affected.map(s => s.id).filter(isUuid) : [];
+                if (dbIds.length > 0) {
+                    runDbWrite('Batch checkout', () => supabase.from('students').update({ sunrise_status: 'checked_out', sunrise_checkout_time: checkOutLabel }).in('id', dbIds));
+                }
+                const batchId = uuidv4();
+                recordEvents(affected.map(s => ({
+                    studentId: s.id, studentName: fullName(s), type: 'checked_out', program: 'sunrise',
+                    staffName: 'Scheduled batch checkout', batchId,
+                    detail: `Sunrise batch checkout at ${scheduledBatchCheckoutTime} · ${affected.length} students`,
+                })));
             }
         }, 1000);
         return () => clearInterval(interval);
@@ -186,32 +255,240 @@ const App = () => {
         });
     }, [students, selectedGrade, searchQuery, program, user, rosterStatusFilter]);
 
-    const handleStudentAction = (student: Student) => {
+    const currentStaffName = () => (user ? `${user.name} (${user.organization})` : 'Staff');
+
+    const canCheckIn = () => {
         if (user && user.role !== 'Lead') {
             const staffMember = staffList.find(s => s.id === user.id);
-            if (staffMember?.canCheckIn === false) {
-                showToast("You do not have permission to check-in students.", "error");
-                return;
-            }
+            if (staffMember?.canCheckIn === false) return false;
+        }
+        return true;
+    };
+
+    /** Sends the held arrival texts and closes the undo window. */
+    const settlePendingCheckIn = () => {
+        const pending = pendingRef.current;
+        if (!pending) return;
+        pendingRef.current = null;
+        sendArrivalTexts(pending, studentsRef.current);
+        setPendingCheckIn(null);
+    };
+
+    useEffect(() => {
+        if (!pendingCheckIn) return;
+        const timer = setTimeout(settlePendingCheckIn, UNDO_WINDOW_MS);
+        return () => clearTimeout(timer);
+    }, [pendingCheckIn]);
+
+    /**
+     * Checks in one student (a quick tap) or a whole group in one action.
+     *
+     * Every student gets the same timestamp and staff name, the roster updates in
+     * a single state change, and the database receives one `update … in (ids)`
+     * rather than N requests. Students who were blocked or checked in by someone
+     * else since being selected are skipped and reported, never double-recorded.
+     */
+    const checkInStudents = async (requestedIds: string[]) => {
+        if (!canCheckIn()) {
+            showToast("You do not have permission to check-in students.", "error");
+            return;
+        }
+        const p = program;
+        const wanted = new Set(requestedIds);
+        const eligible = studentsRef.current.filter(s => wanted.has(s.id) && statusFor(s, p) === 'absent' && !s.isCheckInBlocked);
+        const skipped = wanted.size - eligible.length;
+        if (eligible.length === 0) {
+            showToast('No one to check in — already checked in or blocked', 'warning');
+            return;
+        }
+
+        settlePendingCheckIn(); // a new check-in closes the previous undo window
+
+        const now = new Date();
+        const time = formatClockTime(now);
+        const staffName = currentStaffName();
+        const isGroup = eligible.length > 1;
+        const batchId = isGroup ? uuidv4() : undefined;
+        const ids = new Set(eligible.map(s => s.id));
+
+        setStudents(prev => prev.map(s => {
+            if (!ids.has(s.id) || statusFor(s, p) !== 'absent') return s;
+            const update = p === 'sunrise'
+                ? { sunriseStatus: 'present' as AttendanceStatus, sunriseTime: time, sunriseStaff: staffName }
+                : { sunsetStatus: 'present' as AttendanceStatus, sunsetTime: time, sunsetStaff: staffName };
+            return { ...s, ...update, checkInSmsSent: true, checkInSmsTime: time };
+        }));
+        setPendingCheckIn({
+            ids: [...ids], program: p, time, staffName, batchId,
+            message: isGroup
+                ? `${eligible.length} students checked in · ${time}`
+                : `${eligible[0].firstName} ${eligible[0].lastName.charAt(0)}. checked in · ${time}`,
+        });
+        setSelectedIds(new Set());
+        setIsGroupMode(false);
+        setSearchQuery('');
+
+        const dbIds = isSupabaseConfigured ? [...ids].filter(isUuid) : [];
+        // A fresh day: clear checkout fields left over from a previous day.
+        const dbUpdate = p === 'sunrise'
+            ? { sunrise_status: 'present', sunrise_checkin_time: time, sunrise_staff: staffName, sunrise_checkout_time: null, sunrise_date: localDateIso(now) }
+            : { sunset_status: 'present', sunset_checkin_time: time, sunset_staff: staffName, sunset_checkout_time: null, sunset_date: localDateIso(now) };
+        const write = dbIds.length > 0
+            ? runDbWrite('Check-in', () => supabase.from('students').update(dbUpdate).in('id', dbIds))
+            : Promise.resolve(true);
+        checkInWriteRef.current = write; // an Undo must not overtake this write
+        const saved = await write;
+        const audit = await recordEvents(eligible.map(s => ({
+            studentId: s.id, studentName: fullName(s), type: 'check_in', program: p, staffName,
+            occurredAt: now.toISOString(), batchId,
+            detail: isGroup ? `Group check-in · ${eligible.length} students` : undefined,
+        })));
+
+        if (!saved || audit.failed > 0) {
+            showToast('Checked in on this device — saving to the database failed', 'warning');
+        } else if (skipped > 0) {
+            showToast(`${skipped} not checked in (already in or blocked)`, 'warning');
+        }
+    };
+
+    /**
+     * Reverts the most recent quick/group check-in while its undo window is open.
+     * The undo is itself recorded — the original check-in event stays on file.
+     */
+    const undoCheckIn = async () => {
+        const pending = pendingRef.current;
+        if (!pending) return;
+        pendingRef.current = null;
+        setPendingCheckIn(null); // held arrival texts are dropped, never sent
+
+        const { program: p, time } = pending;
+        const ids = new Set(pending.ids);
+        // Only revert check-ins that are still exactly what we recorded — never a
+        // student who has since been checked out or re-checked by someone else.
+        const stillOurs = (s: Student) => ids.has(s.id) && statusFor(s, p) === 'present' && (p === 'sunrise' ? s.sunriseTime : s.sunsetTime) === time;
+        const reverted = studentsRef.current.filter(stillOurs);
+        if (reverted.length === 0) return;
+
+        setStudents(prev => prev.map(s => {
+            if (!stillOurs(s)) return s;
+            const update = p === 'sunrise'
+                ? { sunriseStatus: 'absent' as AttendanceStatus, sunriseTime: undefined, sunriseStaff: undefined }
+                : { sunsetStatus: 'absent' as AttendanceStatus, sunsetTime: undefined, sunsetStaff: undefined };
+            return { ...s, ...update, checkInSmsSent: false, checkInSmsTime: undefined };
+        }));
+        showToast(reverted.length === 1 ? `Check-in undone for ${reverted[0].firstName}` : `Check-in undone for ${reverted.length} students`, 'info');
+
+        let saved = true;
+        const dbIds = isSupabaseConfigured ? reverted.map(s => s.id).filter(isUuid) : [];
+        if (dbIds.length > 0) {
+            // Two separate requests can arrive out of order; let the check-in land
+            // first so the revert is the last write, not the one that gets undone.
+            await checkInWriteRef.current;
+            const dbUpdate = p === 'sunrise'
+                ? { sunrise_status: 'absent', sunrise_checkin_time: null, sunrise_staff: null }
+                : { sunset_status: 'absent', sunset_checkin_time: null, sunset_staff: null };
+            saved = await runDbWrite('Undo check-in', () => supabase.from('students').update(dbUpdate).in('id', dbIds));
+        }
+        const audit = await recordEvents(reverted.map(s => ({
+            studentId: s.id, studentName: fullName(s), type: 'check_in_undone', program: p,
+            staffName: currentStaffName(), batchId: pending.batchId,
+            detail: `Reverses the ${time} check-in (undone within ${UNDO_WINDOW_MS / 1000}s)`,
+        })));
+        if (!saved || audit.failed > 0) {
+            showToast('Undone on this device — saving to the database failed', 'warning');
+        }
+    };
+
+    const exitGroupMode = () => {
+        setIsGroupMode(false);
+        setSelectedIds(new Set());
+    };
+
+    const toggleGroupMode = () => {
+        if (isGroupMode) { exitGroupMode(); return; }
+        if (!canCheckIn()) {
+            showToast("You do not have permission to check-in students.", "error");
+            return;
+        }
+        setIsGroupMode(true);
+    };
+
+    const toggleSelected = (student: Student) => {
+        if (student.isCheckInBlocked) {
+            showToast(`${student.firstName} is blocked from check-in. Contact Lead.`, 'error');
+            return;
+        }
+        if (statusFor(student, program) !== 'absent') return;
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(student.id)) next.delete(student.id);
+            else next.add(student.id);
+            return next;
+        });
+    };
+
+    // Esc leaves group mode on Chromebooks/desktops.
+    useEffect(() => {
+        if (!isGroupMode) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') exitGroupMode(); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isGroupMode]);
+
+    const eligibleVisible = useMemo(
+        () => filteredStudents.filter(s => statusFor(s, program) === 'absent' && !s.isCheckInBlocked),
+        [filteredStudents, program],
+    );
+    const allVisibleSelected = eligibleVisible.length > 0 && eligibleVisible.every(s => selectedIds.has(s.id));
+    // Someone else may check a selected student in meanwhile — count only who is still eligible.
+    const selectedEligibleCount = useMemo(
+        () => students.filter(s => selectedIds.has(s.id) && statusFor(s, program) === 'absent' && !s.isCheckInBlocked).length,
+        [students, selectedIds, program],
+    );
+    const toggleSelectAllVisible = () => setSelectedIds(prev => {
+        const next = new Set(prev);
+        if (allVisibleSelected) eligibleVisible.forEach(s => next.delete(s.id));
+        else eligibleVisible.forEach(s => next.add(s.id));
+        return next;
+    });
+
+    /**
+     * Tap on a roster card (`intent: 'tap'`) or its ⋮ button (`'details'`).
+     * In group mode a tap selects; otherwise a tap checks an absent student in.
+     * ⋮ always opens the student's details and never checks anyone in.
+     */
+    const handleStudentAction = (student: Student, intent: 'tap' | 'details' = 'tap') => {
+        if (isGroupMode && intent === 'tap') {
+            toggleSelected(student);
+            return;
+        }
+        if (!canCheckIn()) {
+            showToast("You do not have permission to check-in students.", "error");
+            return;
         }
         const latestStudent = students.find(s => s.id === student.id) || student;
+        if (intent === 'details' || statusFor(latestStudent, program) !== 'absent') {
+            setActiveStudentId(student.id);
+            return;
+        }
         if (latestStudent.isCheckInBlocked) {
             showToast("This student is blocked from check-in. Contact Lead.", "error");
             return;
         }
-        const status = program === 'sunrise' ? student.sunriseStatus : student.sunsetStatus;
-        if (status === 'absent') {
+        if (STUDENT_PHOTOS_ENABLED) {
             setShowConfirmId(student.id);
         } else {
-            setActiveStudentId(student.id);
+            checkInStudents([student.id]);
         }
     };
 
+    /** Photo/face-verification check-in — only reachable when STUDENT_PHOTOS_ENABLED. */
     const handleCheckIn = async (studentId: string, photo?: string, biometricData?: any) => {
         const now = new Date();
-        const timeString = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-        const staffName = user ? `${user.name} (${user.organization})` : 'Staff';
+        const timeString = formatClockTime(now);
+        const staffName = currentStaffName();
 
+        settlePendingCheckIn();
         setStudents(prev => prev.map(s => {
             if (s.id === studentId) {
                 const update = program === 'sunrise'
@@ -222,26 +499,27 @@ const App = () => {
             return s;
         }));
 
-        try {
-            const updateData = program === 'sunrise'
-                ? { sunrise_status: 'present', sunrise_checkin_time: timeString, sunrise_staff: staffName, checkin_photo: photo }
-                : { sunset_status: 'present', sunset_checkin_time: timeString, sunset_staff: staffName, checkin_photo: photo };
-
-            const student = students.find(s => s.id === studentId);
-            if (student) {
-                const contact1 = student.guardians.find(g => g.type === 'Contact 1');
-                if (contact1?.phone) {
-                    sendSmsMock(contact1.phone, 'checkin_notification', { student_name: student.firstName, time: timeString, staff_name: staffName, program: program.charAt(0).toUpperCase() + program.slice(1) });
-                }
+        const student = students.find(s => s.id === studentId);
+        if (student) {
+            const contact1 = student.guardians.find(g => g.type === 'Contact 1');
+            if (contact1?.phone) {
+                sendSmsMock(contact1.phone, 'checkin_notification', { student_name: student.firstName, time: timeString, staff_name: staffName, program: program.charAt(0).toUpperCase() + program.slice(1) });
             }
-
-            await supabase.from('students').update(updateData).eq('id', studentId);
-        } catch (err) {
-            console.error('Failed to update Supabase:', err);
-            showToast('Offline mode: Change saved locally', 'info');
         }
 
-        const student = students.find(s => s.id === studentId);
+        if (isSupabaseConfigured && isUuid(studentId)) {
+            // The photo stays on this device. The schema stores image URLs only,
+            // never raw image data, so checkin_photo is not written here.
+            const updateData = program === 'sunrise'
+                ? { sunrise_status: 'present', sunrise_checkin_time: timeString, sunrise_staff: staffName, sunrise_checkout_time: null, sunrise_date: localDateIso(now) }
+                : { sunset_status: 'present', sunset_checkin_time: timeString, sunset_staff: staffName, sunset_checkout_time: null, sunset_date: localDateIso(now) };
+            const saved = await runDbWrite('Check-in', () => supabase.from('students').update(updateData).eq('id', studentId));
+            if (!saved) showToast('Checked in on this device — saving to the database failed', 'warning');
+        }
+        if (student) {
+            recordEvents([{ studentId, studentName: fullName(student), type: 'check_in', program, staffName, occurredAt: now.toISOString(), detail: photo ? 'Photo captured at check-in' : undefined }]);
+        }
+
         if (student) {
             showToast(`Checked-In: ${student.firstName}`, 'success');
             if (biometricData) {
@@ -270,9 +548,13 @@ const App = () => {
     };
 
     const handleCheckOut = async (studentId: string, smsTime: string, checkOutBy?: string) => {
+        const p = program;
+        const student = studentsRef.current.find(s => s.id === studentId);
+        const persist = isSupabaseConfigured && isUuid(studentId);
+
         setStudents(prev => prev.map(s => {
             if (s.id === studentId) {
-                const update = program === 'sunrise'
+                const update = p === 'sunrise'
                     ? { sunriseStatus: 'pending_parent' as AttendanceStatus }
                     : { sunsetStatus: 'pending_parent' as AttendanceStatus };
                 return { ...s, ...update, smsSentTime: smsTime, lastCheckOutBy: checkOutBy };
@@ -280,31 +562,37 @@ const App = () => {
             return s;
         }));
 
-        try {
-            const updateData = program === 'sunrise'
+        if (persist) {
+            const updateData = p === 'sunrise'
                 ? { sunrise_status: 'pending_parent', sms_sent_time: smsTime, last_checkout_by: checkOutBy }
                 : { sunset_status: 'pending_parent', sms_sent_time: smsTime, last_checkout_by: checkOutBy };
-            await supabase.from('students').update(updateData).eq('id', studentId);
-        } catch (err) {
-            console.error('Supabase update failed:', err);
+            await runDbWrite('Check-out', () => supabase.from('students').update(updateData).eq('id', studentId));
+        }
+        if (student) {
+            recordEvents([{ studentId, studentName: fullName(student), type: 'checkout_requested', program: p, staffName: checkOutBy || 'Staff', detail: 'Guardian pickup text simulated — SMS provider not connected' }]);
         }
 
-        setTimeout(() => {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        // Stand-in for the guardian's text reply until an SMS provider is wired up.
+        setTimeout(async () => {
+            const timeString = formatClockTime();
             setStudents(prev => prev.map(s => {
                 if (s.id === studentId) {
-                    const update = program === 'sunrise'
+                    const update = p === 'sunrise'
                         ? { sunriseStatus: 'checked_out' as AttendanceStatus, sunriseCheckOutTime: timeString }
                         : { sunsetStatus: 'checked_out' as AttendanceStatus, sunsetCheckOutTime: timeString };
-                    const dbUpdate = program === 'sunrise'
-                        ? { sunrise_status: 'checked_out', sunrise_checkout_time: timeString }
-                        : { sunset_status: 'checked_out', sunset_checkout_time: timeString };
-                    supabase.from('students').update(dbUpdate).eq('id', studentId);
                     return { ...s, ...update };
                 }
                 return s;
             }));
+            if (persist) {
+                const dbUpdate = p === 'sunrise'
+                    ? { sunrise_status: 'checked_out', sunrise_checkout_time: timeString }
+                    : { sunset_status: 'checked_out', sunset_checkout_time: timeString };
+                await runDbWrite('Check-out', () => supabase.from('students').update(dbUpdate).eq('id', studentId));
+            }
+            if (student) {
+                recordEvents([{ studentId, studentName: fullName(student), type: 'checked_out', program: p, staffName: checkOutBy || 'Staff', detail: 'Guardian confirmation simulated — SMS provider not connected' }]);
+            }
         }, 5000);
     };
 
@@ -312,7 +600,7 @@ const App = () => {
         const oldStudent = students.find(s => s.id === updatedStudent.id);
         setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
 
-        try {
+        if (isSupabaseConfigured && isUuid(updatedStudent.id)) {
             const updateData: any = {
                 first_name: updatedStudent.firstName,
                 last_name: updatedStudent.lastName,
@@ -327,10 +615,11 @@ const App = () => {
                 head_injury: updatedStudent.headInjury,
                 head_injury_logs: updatedStudent.headInjuryLogs,
             };
-            await supabase.from('students').update(updateData).eq('id', updatedStudent.id);
-        } catch (err) {
-            console.error('Failed to update student:', err);
-            showToast('Failed to save changes to DB', 'error');
+            // supabase-js reports most failures in `error` rather than throwing, so
+            // the old try/catch alone never saw a rejected update; runDbWrite
+            // handles both.
+            const saved = await runDbWrite('Save student', () => supabase.from('students').update(updateData).eq('id', updatedStudent.id));
+            if (!saved) showToast('Failed to save changes to DB', 'error');
         }
 
         // Auto-create head injury report draft
@@ -348,6 +637,7 @@ const App = () => {
             };
             setParentReports(prev => [...prev, headInjuryReport]);
             showToast('Head Injury draft created', 'info');
+            recordEvents([{ studentId: updatedStudent.id, studentName: fullName(updatedStudent), type: 'head_injury_started', program, staffName: currentStaffName() }]);
         }
 
         // Auto-create behavior report draft when ticket is SUBMITTED (not just when behavior selected)
@@ -390,7 +680,23 @@ const App = () => {
             };
             setParentReports(prev => [...prev, behaviorReport]);
             showToast('Behavior report draft created', 'info');
+            const issueCount = (updatedStudent.behaviorIssues || []).length;
+            recordEvents([{
+                studentId: updatedStudent.id, studentName: fullName(updatedStudent), type: 'behavior_submitted', program,
+                staffName: currentStaffName(), detail: `${ticketLevel} · ${issueCount} behavior${issueCount === 1 ? '' : 's'} noted`,
+            }]);
         }
+    };
+
+    const handleLogout = () => {
+        settlePendingCheckIn();
+        exitGroupMode();
+        // Without signOut() the Supabase session survived "Logout": the auth effect
+        // above re-read it and signed a listed staff member straight back in, and a
+        // reload did the same — on a shared site Chromebook the next person
+        // inherited the previous person's identity.
+        if (isSupabaseConfigured) void supabase.auth.signOut();
+        setUser(null);
     };
 
     if (!user) return <StaffLogin onLogin={setUser} onToggleDemo={() => setIsDemoMode(!isDemoMode)} isDemoMode={isDemoMode} staffList={staffList} />;
@@ -416,18 +722,18 @@ const App = () => {
                             <span className="material-icons-round" style={{ fontSize: '16px', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>{isLeadMode ? 'admin_panel_settings' : 'person'}</span>
                             <span style={{ fontSize: '11px', fontWeight: '700', color: isLeadMode ? '#8b5cf6' : 'var(--text-secondary)' }}>{isLeadMode ? 'LEAD' : 'STAFF'}</span>
                         </div>
-                        <button onClick={() => { setActiveStudentId(null); setShowLeaderDashboard(false); setShowConfirmId(null); setReportData(null); }} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} title="Home">
+                        <button onClick={() => { setActiveStudentId(null); setShowLeaderDashboard(false); setShowConfirmId(null); setReportData(null); exitGroupMode(); }} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} title="Home">
                             <span className="material-icons-round" style={{ fontSize: '20px' }}>home</span>
                         </button>
                         {isLeadMode && (
-                            <button onClick={() => { setShowLeaderDashboard(true); setDashboardKey(prev => prev + 1); }} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} title="Dashboard">
+                            <button onClick={() => { exitGroupMode(); setShowLeaderDashboard(true); setDashboardKey(prev => prev + 1); }} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} title="Dashboard">
                                 <span className="material-icons-round" style={{ fontSize: '20px' }}>dashboard</span>
                             </button>
                         )}
                         <button onClick={() => setDarkMode(!darkMode)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} title="Toggle Theme">
                             <span className="material-icons-round" style={{ fontSize: '20px' }}>{darkMode ? 'light_mode' : 'dark_mode'}</span>
                         </button>
-                        <button onClick={() => setUser(null)} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer' }} title="Logout">
+                        <button onClick={handleLogout} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-danger)', cursor: 'pointer' }} title="Logout">
                             <span className="material-icons-round" style={{ fontSize: '20px' }}>logout</span>
                         </button>
                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#374151', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700' }}>{user.name.charAt(0)}</div>
@@ -453,6 +759,15 @@ const App = () => {
                             {GRADES.map(g => (
                                 <button key={g} onClick={() => setSelectedGrade(prev => prev === g ? 'All' : g)} style={{ padding: '10px 16px', borderRadius: '12px', border: 'none', backgroundColor: selectedGrade === g ? 'var(--text-main)' : (darkMode ? 'rgba(255,255,255,0.1)' : '#e5e7eb'), color: selectedGrade === g ? 'var(--bg-card)' : (darkMode ? 'rgba(255,255,255,0.7)' : 'var(--text-main)'), fontWeight: '800', fontSize: '14px', cursor: 'pointer', minWidth: '48px', transition: 'all 0.2s' }}>{g}</button>
                             ))}
+                            <button
+                                onClick={toggleGroupMode}
+                                aria-pressed={isGroupMode}
+                                title="Select several students and check them in together"
+                                style={{ marginLeft: 'auto', padding: '10px 16px', borderRadius: '12px', border: 'none', backgroundColor: isGroupMode ? 'var(--color-primary)' : (darkMode ? 'rgba(255,255,255,0.1)' : '#e5e7eb'), color: isGroupMode ? 'white' : (darkMode ? 'rgba(255,255,255,0.7)' : 'var(--text-main)'), fontWeight: '800', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                            >
+                                <span className="material-icons-round" style={{ fontSize: '18px' }}>{isGroupMode ? 'close' : 'group_add'}</span>
+                                {isGroupMode ? 'Cancel group' : 'Select group'}
+                            </button>
                         </div>
                     </div>
                 )}
@@ -466,11 +781,27 @@ const App = () => {
                         </div>
                     ) : (
                         filteredStudents.map(student => {
-                            const status = program === 'sunrise' ? student.sunriseStatus : student.sunsetStatus;
+                            const status = statusFor(student, program);
                             const isPresent = status === 'present';
                             const isCheckedOut = status === 'checked_out' || status === 'pending_parent';
+                            const isAbsent = status === 'absent';
+                            const isSelectable = isAbsent && !student.isCheckInBlocked;
+                            const isSelected = isGroupMode && selectedIds.has(student.id);
+                            const onActivate = () => { if (isAbsent) handleStudentAction(student); };
                             return (
-                                <div key={student.id} className="student-card" onClick={() => !isPresent && !isCheckedOut ? handleStudentAction(student) : null} style={{ backgroundColor: 'var(--bg-card)', padding: '16px', borderRadius: '16px', marginBottom: '12px', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: `4px solid ${isPresent || isCheckedOut ? (status === 'checked_out' ? '#9ca3af' : '#10b981') : 'transparent'}`, cursor: isPresent || isCheckedOut ? 'default' : 'pointer', opacity: student.isCheckInBlocked ? 0.5 : 1 }}>
+                                <div
+                                    key={student.id}
+                                    className="student-card"
+                                    role={isAbsent ? 'button' : undefined}
+                                    tabIndex={isAbsent ? 0 : undefined}
+                                    aria-pressed={isGroupMode && isAbsent ? isSelected : undefined}
+                                    aria-label={isAbsent ? `${isGroupMode ? 'Select' : 'Check in'} ${fullName(student)}` : undefined}
+                                    onClick={onActivate}
+                                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate(); } }}
+                                    // The selection tint is layered over the card colour: a translucent
+                                    // background alone let a light page show through in dark mode.
+                                    style={{ background: isSelected ? 'linear-gradient(rgba(59,130,246,0.18), rgba(59,130,246,0.18)), var(--bg-card)' : 'var(--bg-card)', padding: '16px', borderRadius: '16px', marginBottom: '12px', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: `4px solid ${isSelected ? 'var(--color-primary)' : isPresent || isCheckedOut ? (status === 'checked_out' ? '#9ca3af' : '#10b981') : 'transparent'}`, cursor: isAbsent ? 'pointer' : 'default', opacity: student.isCheckInBlocked ? 0.5 : (isGroupMode && !isSelectable ? 0.55 : 1) }}
+                                >
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                         <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '700', color: 'var(--text-secondary)' }}>{student.grade}</div>
                                         <div>
@@ -484,8 +815,18 @@ const App = () => {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                         {student.headInjury && <span className="material-icons-round" style={{ color: '#ef4444' }}>personal_injury</span>}
                                         {student.behavior !== 'none' && <span className="material-icons-round" style={{ color: '#10b981' }}>warning</span>}
-                                        {status === 'absent' ? (
-                                            <span className="material-icons-round" style={{ color: 'var(--border-subtle)' }}>radio_button_unchecked</span>
+                                        {isAbsent ? (
+                                            isGroupMode ? (
+                                                <span className="material-icons-round" style={{ color: isSelected ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '26px' }}>
+                                                    {isSelected ? 'check_circle' : 'radio_button_unchecked'}
+                                                </span>
+                                            ) : student.isCheckInBlocked ? (
+                                                <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--color-danger)', textTransform: 'uppercase' }}>Blocked</span>
+                                            ) : (
+                                                <span style={{ padding: '6px 12px', borderRadius: '999px', border: '1px dashed var(--text-muted)', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                                                    Tap to check in
+                                                </span>
+                                            )
                                         ) : (
                                             <div style={{ textAlign: 'right' }}>
                                                 <div style={{ fontSize: '12px', fontWeight: '700', color: status === 'checked_out' ? '#9ca3af' : status === 'pending_parent' ? '#8b5cf6' : '#10b981', textTransform: 'uppercase' }}>
@@ -500,7 +841,7 @@ const App = () => {
                                             </div>
                                         )}
                                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                            {(isPresent || isCheckedOut) && (
+                                            {STUDENT_PHOTOS_ENABLED && (isPresent || isCheckedOut) && (
                                                 <>
                                                     {student.checkInPhoto && (
                                                         <img src={student.checkInPhoto} alt="Check-in" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #8b5cf6', objectFit: 'cover' }} />
@@ -510,7 +851,7 @@ const App = () => {
                                                     )}
                                                 </>
                                             )}
-                                            <button onClick={(e) => { e.stopPropagation(); handleStudentAction(student); }} style={{ background: 'none', border: 'none', padding: '8px', cursor: 'pointer', color: 'var(--text-secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <button title="Student details" aria-label={`Details for ${fullName(student)}`} onClick={(e) => { e.stopPropagation(); handleStudentAction(student, 'details'); }} onKeyDown={e => e.stopPropagation()} style={{ background: 'none', border: 'none', padding: '8px', cursor: 'pointer', color: 'var(--text-secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <span className="material-icons-round">more_vert</span>
                                             </button>
                                         </div>
@@ -536,7 +877,7 @@ const App = () => {
 
             {showLeaderDashboard && createPortal(
                 <div key={dashboardKey} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
-                    <LeaderDashboard user={user} students={students} staffList={staffList} parentReports={parentReports} biometricLogs={biometricLogs} onClose={() => setShowLeaderDashboard(false)} onImport={(newStudents) => setStudents([...students, ...newStudents])} onAddStudent={(newStudent) => setStudents([...students, newStudent])} onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)} onUpdateStudent={handleSaveStudent} onUpdateReport={(updatedReport) => setParentReports(prev => prev.some(r => r.id === updatedReport.id) ? prev.map(r => r.id === updatedReport.id ? updatedReport : r) : [...prev, updatedReport])} onDeleteReport={(reportId) => setParentReports(prev => prev.filter(r => r.id !== reportId))} onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)} showToast={showToast} isBatchDefaultEnabled={isBatchDefaultEnabled} setIsBatchDefaultEnabled={setIsBatchDefaultEnabled} defaultBatchTime={defaultBatchTime} setDefaultBatchTime={setDefaultBatchTime} scheduledBatchCheckoutTime={scheduledBatchCheckoutTime} darkMode={darkMode} />
+                    <LeaderDashboard user={user} students={students} staffList={staffList} parentReports={parentReports} biometricLogs={biometricLogs} onClose={() => setShowLeaderDashboard(false)} onImport={(newStudents) => setStudents(prev => [...prev, ...newStudents])} onAddStudent={(newStudent) => setStudents(prev => [...prev, newStudent])} onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)} onUpdateStudent={handleSaveStudent} onUpdateReport={(updatedReport) => setParentReports(prev => prev.some(r => r.id === updatedReport.id) ? prev.map(r => r.id === updatedReport.id ? updatedReport : r) : [...prev, updatedReport])} onDeleteReport={(reportId) => setParentReports(prev => prev.filter(r => r.id !== reportId))} onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)} showToast={showToast} isBatchDefaultEnabled={isBatchDefaultEnabled} setIsBatchDefaultEnabled={setIsBatchDefaultEnabled} defaultBatchTime={defaultBatchTime} setDefaultBatchTime={setDefaultBatchTime} scheduledBatchCheckoutTime={scheduledBatchCheckoutTime} darkMode={darkMode} />
                 </div>,
                 document.body
             )}
@@ -545,7 +886,22 @@ const App = () => {
                 <ParentReportModal student={reportData.student} type={reportData.type} onClose={() => setReportData(null)} onSend={(report) => { setParentReports(prev => [...prev, report]); showToast('Report sent!', 'success'); setReportData(null); }} onSaveDraft={(report) => { setParentReports(prev => [...prev, report]); showToast('Draft saved!', 'info'); setReportData(null); }} staffId={user?.id || 'unknown'} />
             )}
 
-            {toast && <Toast message={toast.msg} type={toast.type} />}
+            {isGroupMode && !showLeaderDashboard && (
+                <GroupCheckInBar
+                    selectedCount={selectedEligibleCount}
+                    eligibleVisibleCount={eligibleVisible.length}
+                    allVisibleSelected={allVisibleSelected}
+                    onToggleSelectAll={toggleSelectAllVisible}
+                    onCancel={exitGroupMode}
+                    onConfirm={() => checkInStudents([...selectedIds])}
+                />
+            )}
+
+            {pendingCheckIn && !isGroupMode && !showLeaderDashboard && (
+                <UndoBar message={pendingCheckIn.message} onUndo={undoCheckIn} />
+            )}
+
+            {toast && <Toast message={toast.msg} type={toast.type} bottomOffset={isGroupMode || pendingCheckIn ? 120 : 40} />}
         </>
     );
 };

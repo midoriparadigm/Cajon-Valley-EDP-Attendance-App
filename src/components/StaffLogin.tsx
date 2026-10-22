@@ -1,7 +1,7 @@
 // src/components/StaffLogin.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import type { Staff } from '../types';
-import { supabase } from '../supabaseClient';
+import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import { PasskeyService } from '../utils/mock';
 
 interface StaffLoginProps {
@@ -166,7 +166,30 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: StaffLogin
                     </div>
                 )}
 
-                {PasskeyService.isSupported() && step === 'email' && (
+                {/* A build with no database (e.g. `docker compose up` without VITE_* vars)
+                    has nothing to sign in to and no student data to protect, so it
+                    offers the built-in sample roster instead of a login that cannot work. */}
+                {!isSupabaseConfigured && (
+                    <div style={{ padding: '20px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', textAlign: 'center', marginBottom: '24px' }}>
+                        <span className="material-icons-round" style={{ fontSize: '32px', color: 'var(--color-warning)' }}>cloud_off</span>
+                        <div style={{ fontWeight: '800', color: 'var(--text-main)', margin: '8px 0 4px' }}>No database connected</div>
+                        <p style={{ margin: '0 0 16px', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                            This build has no Supabase settings. You can explore the app with built-in sample students — nothing is saved.
+                        </p>
+                        <button
+                            onClick={() => {
+                                const lead = staffList.find(s => s.role === 'Lead') ?? staffList[0];
+                                if (!isDemoMode) onToggleDemo();
+                                if (lead) onLogin(lead);
+                            }}
+                            style={{ width: '100%', padding: '14px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: 'none', fontSize: '16px', fontWeight: '700', cursor: 'pointer' }}
+                        >
+                            Explore with sample data
+                        </button>
+                    </div>
+                )}
+
+                {isSupabaseConfigured && PasskeyService.isSupported() && step === 'email' && (
                     <button
                         onClick={handlePasskeyLogin}
                         disabled={isAuthenticating}
@@ -195,7 +218,7 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: StaffLogin
                     </button>
                 )}
 
-                {step === 'email' && (
+                {isSupabaseConfigured && step === 'email' && (
                     <>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
                             <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}></div>

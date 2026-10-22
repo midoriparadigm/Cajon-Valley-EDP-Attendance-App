@@ -9,10 +9,49 @@ import type {
     CompositeStudent,
     Student
 } from './types';
+import { localDateIso } from './utils/helpers';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '';
+const supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
+
+/**
+ * False when the bundle was built without Supabase settings — e.g. a plain
+ * `docker compose up` with no VITE_* variables exported. createClient() throws
+ * on an empty URL, which used to crash the whole bundle at import time and
+ * leave a blank page. Callers check this flag and skip network work instead;
+ * the app then runs on its built-in sample roster only.
+ */
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+
+// `.invalid` is reserved (RFC 2606) and never resolves, and callers never issue
+// requests when unconfigured — the placeholder only keeps createClient happy.
+export const supabase = createClient(
+    isSupabaseConfigured ? supabaseUrl : 'https://not-configured.invalid',
+    isSupabaseConfigured ? supabaseAnonKey : 'not-configured',
+);
+
+/**
+ * Runs a Supabase request and reports success. PostgREST failures arrive in
+ * `error`, but some failures *throw* instead (e.g. a payload that cannot be
+ * serialized to JSON) — both are logged under `label` and returned as false,
+ * so a failed write can never become an unhandled rejection.
+ */
+export const runDbWrite = async (
+    label: string,
+    request: () => PromiseLike<{ error: { message: string } | null }>,
+): Promise<boolean> => {
+    try {
+        const { error } = await request();
+        if (error) {
+            console.warn(`[${label}] database write failed:`, error.message);
+            return false;
+        }
+        return true;
+    } catch (err) {
+        console.warn(`[${label}] database write failed:`, err instanceof Error ? err.message : err);
+        return false;
+    }
+};
 
 // =============================================================================
 // DATA FETCHING FUNCTIONS (Supabase v2 patterns)
@@ -120,36 +159,46 @@ export async function fetchAllStudentsWithRelations(
 // =============================================================================
 
 /**
- * Maps database student record to frontend Student model
+ * Maps database student record to frontend Student model.
+ *
+ * Each program's attendance columns belong to the day in sunrise_date /
+ * sunset_date. A program whose date is not today is shown as absent with no
+ * times, so yesterday's check-ins never appear on today's roster.
  */
-export const mapDbToStudent = (dbStudent: any): Student => ({
-    id: dbStudent.id,
-    firstName: dbStudent.first_name,
-    lastName: dbStudent.last_name,
-    grade: dbStudent.grade,
-    elopId: dbStudent.elop_id || '',
-    asesId: dbStudent.ases_id || '',
-    guardians: dbStudent.guardians || [],
-    programs: dbStudent.programs || [],
-    yearbookPhotoUrl: dbStudent.yearbook_photo_url,
-    sunriseStatus: dbStudent.sunrise_status || 'absent',
-    sunsetStatus: dbStudent.sunset_status || 'absent',
-    sunriseTime: dbStudent.sunrise_checkin_time,
-    sunsetTime: dbStudent.sunset_checkin_time,
-    sunriseCheckOutTime: dbStudent.sunrise_checkout_time,
-    sunsetCheckOutTime: dbStudent.sunset_checkout_time,
-    hasSnack: dbStudent.has_snack || false,
-    behavior: dbStudent.behavior || 'none',
-    behaviorIssues: dbStudent.behavior_issues || [],
-    headInjury: dbStudent.head_injury || false,
-    headInjuryLogs: dbStudent.head_injury_logs || [],
-    sunriseStaff: dbStudent.sunrise_staff,
-    sunsetStaff: dbStudent.sunset_staff,
-    lastCheckOutBy: dbStudent.last_checkout_by,
-    smsSentTime: dbStudent.sms_sent_time,
-    checkInPhoto: dbStudent.checkin_photo,
-    behaviorTimestamp: dbStudent.behavior_timestamp,
-    behaviorStaff: dbStudent.behavior_staff,
-    behaviorDescription: dbStudent.behavior_description,
-    isCheckInBlocked: dbStudent.is_checkin_blocked || false
-});
+export const mapDbToStudent = (dbStudent: any): Student => {
+    const today = localDateIso();
+    const sunriseToday = dbStudent.sunrise_date === today;
+    const sunsetToday = dbStudent.sunset_date === today;
+    const eitherToday = sunriseToday || sunsetToday;
+    return {
+        id: dbStudent.id,
+        firstName: dbStudent.first_name,
+        lastName: dbStudent.last_name,
+        grade: dbStudent.grade,
+        elopId: dbStudent.elop_id || '',
+        asesId: dbStudent.ases_id || '',
+        guardians: dbStudent.guardians || [],
+        programs: dbStudent.programs || [],
+        yearbookPhotoUrl: dbStudent.yearbook_photo_url,
+        sunriseStatus: (sunriseToday && dbStudent.sunrise_status) || 'absent',
+        sunsetStatus: (sunsetToday && dbStudent.sunset_status) || 'absent',
+        sunriseTime: sunriseToday ? dbStudent.sunrise_checkin_time : undefined,
+        sunsetTime: sunsetToday ? dbStudent.sunset_checkin_time : undefined,
+        sunriseCheckOutTime: sunriseToday ? dbStudent.sunrise_checkout_time : undefined,
+        sunsetCheckOutTime: sunsetToday ? dbStudent.sunset_checkout_time : undefined,
+        hasSnack: dbStudent.has_snack || false,
+        behavior: dbStudent.behavior || 'none',
+        behaviorIssues: dbStudent.behavior_issues || [],
+        headInjury: dbStudent.head_injury || false,
+        headInjuryLogs: dbStudent.head_injury_logs || [],
+        sunriseStaff: sunriseToday ? dbStudent.sunrise_staff : undefined,
+        sunsetStaff: sunsetToday ? dbStudent.sunset_staff : undefined,
+        lastCheckOutBy: eitherToday ? dbStudent.last_checkout_by : undefined,
+        smsSentTime: eitherToday ? dbStudent.sms_sent_time : undefined,
+        checkInPhoto: dbStudent.checkin_photo,
+        behaviorTimestamp: dbStudent.behavior_timestamp,
+        behaviorStaff: dbStudent.behavior_staff,
+        behaviorDescription: dbStudent.behavior_description,
+        isCheckInBlocked: dbStudent.is_checkin_blocked || false
+    };
+};

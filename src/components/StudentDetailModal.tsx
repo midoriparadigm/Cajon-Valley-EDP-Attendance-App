@@ -1,7 +1,7 @@
 // src/components/StudentDetailModal.tsx
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { Student, Staff, GuardianContact, HeadInjuryLog, ParentReport, ProgramType, BiometricLog, BehaviorStatus, AttendanceStatus } from '../types';
-import { BEHAVIOR_CHECKLISTS, BEHAVIOR_ROLE_DESCRIPTIONS } from '../constants';
+import { BEHAVIOR_CHECKLISTS, BEHAVIOR_ROLE_DESCRIPTIONS, STUDENT_PHOTOS_ENABLED } from '../constants';
 import { sendSmsMock } from '../utils/sms';
 import { MockDatabase } from '../utils/mock';
 import { playAlarm } from '../utils/helpers';
@@ -323,7 +323,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)' }}>
-                        {student.yearbookPhotoUrl ? (
+                        {STUDENT_PHOTOS_ENABLED && student.yearbookPhotoUrl ? (
                             <img src={student.yearbookPhotoUrl} alt={student.firstName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-hover)', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: '800' }}>

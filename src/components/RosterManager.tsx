@@ -1,13 +1,19 @@
 // src/components/RosterManager.tsx
 import React, { useState, useRef } from 'react';
 import type { Student, GuardianContact, SubProgram } from '../types';
-import { GRADES } from '../constants';
+import { GRADES, STUDENT_PHOTOS_ENABLED } from '../constants';
+import { parseRosterCsv, RosterCsvError } from '../utils/csv';
 import GuardianAddForm from './GuardianAddForm';
+
+/** Guard against a mis-selected file (a roster of ~1000 students is well under 1 MB). */
+const MAX_CSV_BYTES = 5 * 1024 * 1024;
 
 interface RosterManagerProps {
     onImport: (s: Student[]) => void;
     onAdd: (s: Student) => void;
     showToast: (msg: string, type: any) => void;
+    /** Current roster — CSV rows whose ELOP/ASES ID is already here are skipped. */
+    existingStudents: Student[];
     darkMode?: boolean;
 }
 
@@ -20,19 +26,86 @@ const EMPTY_STUDENT = () => ({
     guardians: [] as GuardianContact[],
 });
 
-const RosterManager = ({ onImport, onAdd, showToast, darkMode = false }: RosterManagerProps) => {
+const RosterManager = ({ onImport, onAdd, showToast, existingStudents, darkMode = false }: RosterManagerProps) => {
     const [manualStudent, setManualStudent] = useState(EMPTY_STUDENT());
     const [isAddingGuardian, setIsAddingGuardian] = useState(false);
     const [editingGuardianIndex, setEditingGuardianIndex] = useState<number | null>(null);
+    const [isImporting, setIsImporting] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const newStudents: Student[] = [
-                { id: 'new1', elopId: '9001', firstName: 'New', lastName: 'Student', grade: '1', guardians: [{ type: 'Contact 1', firstName: 'Guardian', lastName: 'Name', phone: '', email: '' }], programs: ['ELOP'], sunriseStatus: 'absent', sunsetStatus: 'absent', hasSnack: false, behavior: 'none', behaviorIssues: [], headInjury: false, headInjuryLogs: [] }
-            ];
-            onImport(newStudents);
-            alert('Roster Imported Successfully');
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Clear the input so selecting the same file again re-fires onChange
+        // (otherwise a corrected re-upload of the same filename is ignored).
+        const resetInput = () => {
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        };
+
+        if (!/\.csv$/i.test(file.name)) {
+            showToast('Please choose a .csv file', 'error');
+            resetInput();
+            return;
         }
+        if (file.size === 0) {
+            showToast('That file is empty', 'error');
+            resetInput();
+            return;
+        }
+        if (file.size > MAX_CSV_BYTES) {
+            showToast('That file is too large to import (max 5 MB)', 'error');
+            resetInput();
+            return;
+        }
+
+        setIsImporting(true);
+        const reader = new FileReader();
+
+        reader.onerror = () => {
+            showToast('Could not read that file — please try again', 'error');
+            setIsImporting(false);
+            resetInput();
+        };
+
+        reader.onload = () => {
+            try {
+                const { students, errors, missingGuardianCount } = parseRosterCsv(String(reader.result ?? ''), { existing: existingStudents });
+
+                if (errors.length > 0) {
+                    // Full detail in the console; the toast stays short.
+                    console.warn('[Roster Import] Skipped rows:', errors);
+                }
+
+                if (students.length === 0) {
+                    showToast('No valid student rows found — check the CSV columns', 'error');
+                    return;
+                }
+
+                onImport(students);
+
+                const notes: string[] = [];
+                if (errors.length > 0) notes.push(`${errors.length} row(s) skipped`);
+                if (missingGuardianCount > 0) notes.push(`${missingGuardianCount} without a guardian`);
+
+                showToast(
+                    `Imported ${students.length} student${students.length === 1 ? '' : 's'}` +
+                    (notes.length > 0 ? ` — ${notes.join(', ')}` : ''),
+                    notes.length > 0 ? 'warning' : 'success',
+                );
+            } catch (err) {
+                showToast(
+                    err instanceof RosterCsvError ? err.message : 'Could not parse that CSV file',
+                    'error',
+                );
+                if (!(err instanceof RosterCsvError)) console.error('[Roster Import] Parse failed:', err);
+            } finally {
+                setIsImporting(false);
+                resetInput();
+            }
+        };
+
+        reader.readAsText(file);
     };
 
     const handleSaveGuardian = (g: GuardianContact) => {
@@ -62,7 +135,19 @@ const RosterManager = ({ onImport, onAdd, showToast, darkMode = false }: RosterM
             <div style={{ display: 'grid', gap: '16px' }}>
                 <div>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '600' }}>Bulk Import CSV</label>
-                    <input type="file" accept=".csv" onChange={handleFileUpload} style={{ flex: 1 }} />
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv,text/csv"
+                        onChange={handleFileUpload}
+                        disabled={isImporting}
+                        style={{ flex: 1 }}
+                    />
+                    <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        {isImporting
+                            ? 'Reading file…'
+                            : 'Columns: first_name, last_name, grade, elop_id and/or ases_id. Optional: parent_name, parent_phone, parent_email.'}
+                    </div>
                 </div>
             </div>
             <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
@@ -176,7 +261,9 @@ const RosterManager = ({ onImport, onAdd, showToast, darkMode = false }: RosterM
                             asesId: manualStudent.asesId,
                             guardians: manualStudent.guardians,
                             programs: newPrograms,
-                            yearbookPhotoUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${manualStudent.firstName}${['William', 'Liam', 'Noah', 'James', 'Lucas', 'Oliver'].includes(manualStudent.firstName) ? '&gender=male' : ''}`,
+                            yearbookPhotoUrl: STUDENT_PHOTOS_ENABLED
+                                ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${manualStudent.firstName}${['William', 'Liam', 'Noah', 'James', 'Lucas', 'Oliver'].includes(manualStudent.firstName) ? '&gender=male' : ''}`
+                                : undefined,
                             sunriseStatus: 'absent',
                             sunsetStatus: 'absent',
                             hasSnack: false,
