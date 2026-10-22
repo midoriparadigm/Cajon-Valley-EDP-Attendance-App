@@ -1,7 +1,7 @@
 // src/App.tsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { supabase, mapDbToStudent, isSupabaseConfigured, runDbWrite } from './supabaseClient';
+import { supabase, mapDbToStudent, isSupabaseConfigured, runDbWrite, resolveStaffProfile } from './supabaseClient';
 import type { Student, Staff, ParentReport, BiometricLog, ProgramType, AttendanceStatus } from './types';
 import { GRADES, STUDENT_PHOTOS_ENABLED, UNDO_WINDOW_MS } from './constants';
 import { INITIAL_STAFF, INITIAL_STUDENTS } from './utils/mockData';
@@ -83,6 +83,9 @@ const App = () => {
     const pendingRef = useRef(pendingCheckIn);
     pendingRef.current = pendingCheckIn;
     const checkInWriteRef = useRef<Promise<boolean> | null>(null);
+    // False after an explicit logout: if signOut() could not reach Supabase the
+    // saved session survives, and restoring it would sign the person straight back in.
+    const restoreSessionRef = useRef(true);
 
     // Load the roster from Supabase once per signed-in user. This used to depend
     // on staffList too, so toggling a staff permission re-fetched and replaced the
@@ -105,28 +108,26 @@ const App = () => {
         return () => { cancelled = true; };
     }, [user?.id]);
 
-    // Keep `user` in step with the Supabase auth session.
+    // Keep `user` in step with the Supabase auth session: restore a saved session
+    // on load, and drop the user when the session ends (e.g. signed out in another
+    // tab). Signing in goes through StaffLogin, which resolves the staff profile —
+    // the same lookup is used here, so a reload keeps the same name and role.
     useEffect(() => {
         if (!isSupabaseConfigured) return;
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session?.user?.email) {
-                const staffMember = staffList.find(s => s.email === session.user.email);
-                if (staffMember) setUser(staffMember);
-            }
+        let cancelled = false;
+        if (!user && restoreSessionRef.current) {
+            supabase.auth.getSession().then(async ({ data: { session } }) => {
+                if (!session?.user || cancelled) return;
+                const profile = await resolveStaffProfile(session.user, staffList);
+                if (!cancelled && restoreSessionRef.current) setUser(profile);
+            });
+        }
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+            if (event === 'SIGNED_OUT') setUser(null);
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (session?.user?.email) {
-                if (!user || user.email !== session.user.email) {
-                    const staffMember = staffList.find(s => s.email === session.user.email);
-                    if (staffMember) setUser(staffMember);
-                }
-            } else if (event === 'SIGNED_OUT') {
-                setUser(null);
-            }
-        });
-
-        return () => { subscription.unsubscribe(); };
+        return () => { cancelled = true; subscription.unsubscribe(); };
     }, [user, staffList]);
 
     // Supabase Realtime subscription
@@ -259,8 +260,10 @@ const App = () => {
 
     const canCheckIn = () => {
         if (user && user.role !== 'Lead') {
-            const staffMember = staffList.find(s => s.id === user.id);
-            if (staffMember?.canCheckIn === false) return false;
+            // The dashboard's live toggles live in staffList; staff loaded from the
+            // database are not in it, so fall back to their own profile.
+            const staffMember = staffList.find(s => s.id === user.id) ?? user;
+            if (staffMember.canCheckIn === false) return false;
         }
         return true;
     };
@@ -695,11 +698,17 @@ const App = () => {
         // above re-read it and signed a listed staff member straight back in, and a
         // reload did the same — on a shared site Chromebook the next person
         // inherited the previous person's identity.
+        restoreSessionRef.current = false;
         if (isSupabaseConfigured) void supabase.auth.signOut();
         setUser(null);
     };
 
-    if (!user) return <StaffLogin onLogin={setUser} onToggleDemo={() => setIsDemoMode(!isDemoMode)} isDemoMode={isDemoMode} staffList={staffList} />;
+    const handleLogin = (staff: Staff) => {
+        restoreSessionRef.current = true;
+        setUser(staff);
+    };
+
+    if (!user) return <StaffLogin onLogin={handleLogin} onToggleDemo={() => setIsDemoMode(!isDemoMode)} isDemoMode={isDemoMode} staffList={staffList} />;
 
     const activeStudent = students.find(s => s.id === activeStudentId);
     const confirmStudent = students.find(s => s.id === showConfirmId);

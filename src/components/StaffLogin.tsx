@@ -1,7 +1,7 @@
 // src/components/StaffLogin.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import type { Staff } from '../types';
-import { supabase, isSupabaseConfigured } from '../supabaseClient';
+import { supabase, isSupabaseConfigured, resolveStaffProfile } from '../supabaseClient';
 import { PasskeyService } from '../utils/mock';
 
 interface StaffLoginProps {
@@ -17,7 +17,17 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: StaffLogin
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [step, setStep] = useState<'email' | 'password' | 'signup' | 'setup_passkey'>('email');
     const [error, setError] = useState<string | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
     const [pendingUser, setPendingUser] = useState<Staff | null>(null);
+
+    const finishLogin = (user: Staff) => {
+        if (PasskeyService.isSupported()) {
+            setPendingUser(user);
+            setStep('setup_passkey');
+        } else {
+            onLogin(user);
+        }
+    };
 
     const handlePasskeyLogin = async () => {
         setIsAuthenticating(true);
@@ -35,52 +45,41 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: StaffLogin
         }
     };
 
-    const checkEmail = async (e: React.FormEvent) => {
+    // Every email goes to the password step. This used to branch on the built-in
+    // sample staff list: any real staff email was sent to "Create your account"
+    // and could never sign in — and the branch also revealed which emails exist.
+    const checkEmail = (e: React.FormEvent) => {
         e.preventDefault();
-        setIsAuthenticating(true);
         setError(null);
+        setNotice(null);
+        setStep('password');
+    };
 
-        const exists = staffList.find(s => s.email === email);
-
-        setIsAuthenticating(false);
-        if (exists) {
-            setStep('password');
-        } else {
-            setStep('signup');
-        }
+    const switchStep = (next: 'password' | 'signup') => {
+        setError(null);
+        setNotice(null);
+        setPassword('');
+        setStep(next);
     };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsAuthenticating(true);
         setError(null);
+        setNotice(null);
 
         try {
             const { data, error: authError } = await supabase.auth.signInWithPassword({
-                email,
+                email: email.trim(),
                 password,
             });
 
             if (authError) throw authError;
-
-            const staffMember = staffList.find(s => s.email === email);
-            const user = staffMember || {
-                id: data.user?.id || 'new',
-                name: email.split('@')[0],
-                role: 'Assistant' as const,
-                organization: 'EDP',
-                email: email,
-                canCheckIn: true
-            };
-
-            if (PasskeyService.isSupported()) {
-                setPendingUser(user);
-                setStep('setup_passkey');
-            } else {
-                onLogin(user);
-            }
+            finishLogin(await resolveStaffProfile(data.user, staffList));
         } catch (err: any) {
-            setError(err.message || "Invalid password.");
+            setError(/invalid login credentials/i.test(err?.message || '')
+                ? 'Email or password is incorrect.'
+                : (err?.message || 'Sign-in failed.'));
         } finally {
             setIsAuthenticating(false);
         }
@@ -90,32 +89,34 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: StaffLogin
         e.preventDefault();
         setIsAuthenticating(true);
         setError(null);
+        setNotice(null);
 
         try {
             const { data, error: authError } = await supabase.auth.signUp({
-                email,
+                email: email.trim(),
                 password,
             });
 
             if (authError) throw authError;
 
-            const user: Staff = {
-                id: data.user?.id || 'new',
-                name: email.split('@')[0],
-                role: 'Assistant',
-                organization: 'EDP',
-                email: email,
-                canCheckIn: true
-            };
-
-            if (PasskeyService.isSupported()) {
-                setPendingUser(user);
-                setStep('setup_passkey');
-            } else {
-                onLogin(user);
+            // With email confirmation on there is no session until the link is
+            // clicked. The app used to let the person in anyway — with no session,
+            // so every database read failed and they saw the sample roster.
+            if (!data.session || !data.user) {
+                setPassword('');
+                setStep('password');
+                setNotice(`Check ${email.trim()} for a confirmation link, then sign in.`);
+                return;
             }
+            finishLogin(await resolveStaffProfile(data.user, staffList));
         } catch (err: any) {
-            setError(err.message || "Signup failed.");
+            if (/already registered|already been registered|already exists/i.test(err?.message || '')) {
+                setPassword('');
+                setStep('password');
+                setNotice('An account already exists for this email — sign in instead.');
+            } else {
+                setError(err?.message || 'Signup failed.');
+            }
         } finally {
             setIsAuthenticating(false);
         }
@@ -163,6 +164,12 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: StaffLogin
                 {error && (
                     <div style={{ padding: '12px', backgroundColor: 'var(--color-danger-bg)', color: 'var(--color-danger)', borderRadius: '12px', fontSize: '14px', textAlign: 'center', marginBottom: '24px', fontWeight: '600' }}>
                         {error}
+                    </div>
+                )}
+
+                {notice && (
+                    <div role="status" style={{ padding: '12px', backgroundColor: 'var(--color-primary)', color: 'white', borderRadius: '12px', fontSize: '14px', textAlign: 'center', marginBottom: '24px', fontWeight: '600' }}>
+                        {notice}
                     </div>
                 )}
 
@@ -248,11 +255,11 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: StaffLogin
                 {(step === 'password' || step === 'signup') && (
                     <form onSubmit={step === 'password' ? handleLogin : handleSignUp}>
                         <div style={{ marginBottom: '24px' }}>
-                            <button type="button" onClick={() => setStep('email')} style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: 0, marginBottom: '12px' }}>
+                            <button type="button" onClick={() => { setNotice(null); setError(null); setStep('email'); }} style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: 0, marginBottom: '12px' }}>
                                 <span className="material-icons-round" style={{ fontSize: '18px' }}>arrow_back</span> {email}
                             </button>
                             <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>
-                                {step === 'password' ? 'Welcome back!' : 'Create your account'}
+                                {step === 'password' ? 'Sign in' : 'Create your account'}
                             </h2>
                         </div>
 
@@ -269,9 +276,15 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: StaffLogin
                             />
                         </div>
 
-                        <button disabled={isAuthenticating} type="submit" style={{ width: '100%', padding: '16px', backgroundColor: '#3b82f6', color: 'white', borderRadius: 'var(--radius-xl)', border: 'none', fontSize: '16px', fontWeight: '700', cursor: 'pointer', marginBottom: '24px', boxShadow: '0 4px 12px rgba(59,130,246,0.3)' }}>
+                        <button disabled={isAuthenticating} type="submit" style={{ width: '100%', padding: '16px', backgroundColor: '#3b82f6', color: 'white', borderRadius: 'var(--radius-xl)', border: 'none', fontSize: '16px', fontWeight: '700', cursor: 'pointer', marginBottom: '16px', boxShadow: '0 4px 12px rgba(59,130,246,0.3)' }}>
                             {isAuthenticating ? 'Authenticating...' : (step === 'password' ? 'Login with Email' : 'Set Password & Sign Up')}
                         </button>
+                        <div style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
+                            {step === 'password' ? 'New to EDP Attendance? ' : 'Already have an account? '}
+                            <button type="button" onClick={() => switchStep(step === 'password' ? 'signup' : 'password')} style={{ background: 'none', border: 'none', padding: 0, color: '#3b82f6', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
+                                {step === 'password' ? 'Create an account' : 'Sign in'}
+                            </button>
+                        </div>
                     </form>
                 )}
 

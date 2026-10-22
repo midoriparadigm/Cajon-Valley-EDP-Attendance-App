@@ -7,7 +7,8 @@ import type {
     BehaviorLogDB,
     HeadInjuryLogDB,
     CompositeStudent,
-    Student
+    Student,
+    Staff
 } from './types';
 import { localDateIso } from './utils/helpers';
 
@@ -153,6 +154,62 @@ export async function fetchAllStudentsWithRelations(
         head_injury_logs_db: headInjuryLogs?.filter((h: HeadInjuryLogDB) => h.student_id === student.id) ?? [],
     }));
 }
+
+// =============================================================================
+// STAFF PROFILE (who is signed in)
+// =============================================================================
+
+/** Maps a public.staff row to the frontend Staff model. */
+export const mapDbToStaff = (row: any): Staff => ({
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    organization: row.organization || 'EDP',
+    email: row.email || undefined,
+    phone: row.phone || undefined,
+    assignedGrades: row.assigned_grades || [],
+    canCheckIn: row.can_check_in ?? true,
+    canAdminTasks: row.can_admin_tasks ?? false,
+    canCheckOut: row.can_check_out ?? true,
+    canHir: row.can_hir ?? true,
+    canWeCare: row.can_we_care ?? true,
+    hasPasskey: row.has_passkey ?? false,
+});
+
+/**
+ * The staff profile for a signed-in Supabase user, in order of preference:
+ *   1. their row in public.staff (id = auth user id) — name, role, permissions;
+ *   2. the built-in sample staff list, matched by email (keeps demo accounts working);
+ *   3. a default Assistant profile — the previous behavior for anyone else.
+ *
+ * Login used to consult only the sample list, so any real staff email was sent
+ * to "Create your account" and could never reach the password step.
+ */
+export const resolveStaffProfile = async (
+    authUser: { id: string; email?: string | null },
+    knownStaff: Staff[],
+): Promise<Staff> => {
+    try {
+        const { data, error } = await supabase.from('staff').select('*').eq('id', authUser.id).limit(1);
+        if (error) console.warn('[Login] staff profile lookup failed:', error.message);
+        else if (data && data.length > 0) return mapDbToStaff(data[0]);
+    } catch (err) {
+        console.warn('[Login] staff profile lookup failed:', err instanceof Error ? err.message : err);
+    }
+
+    const email = (authUser.email || '').trim().toLowerCase();
+    const listed = knownStaff.find(s => (s.email || '').toLowerCase() === email);
+    if (listed) return listed;
+
+    return {
+        id: authUser.id,
+        name: email.split('@')[0] || 'Staff',
+        role: 'Assistant',
+        organization: 'EDP',
+        email: authUser.email || undefined,
+        canCheckIn: true,
+    };
+};
 
 // =============================================================================
 // DATA MAPPING FUNCTIONS (Database → Frontend models)
