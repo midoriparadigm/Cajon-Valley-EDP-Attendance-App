@@ -344,7 +344,10 @@ const HeadInjuryChecklist = ({ student, onUpdate, currentStaffName, isLead, dark
                                 {!surveyCompleted ? (
                                     <button onClick={handleNoToAll} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>"No" to All</button>
                                 ) : (
-                                    <button onClick={handleSaveLog} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Assessment</button>
+                                    /* Arrow wrapper: passing handleSaveLog directly handed it the click
+                                       event as `commentOverride`, so the event object was saved as the
+                                       assessment's notes — and could not be serialized to the database. */
+                                    <button onClick={() => handleSaveLog()} style={{ flex: 1, padding: '14px', backgroundColor: 'var(--color-danger)', border: 'none', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>Save Assessment</button>
                                 )}
                             </div>
                         )}
