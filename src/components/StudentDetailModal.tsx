@@ -19,7 +19,8 @@ interface StudentDetailModalProps {
     student: Student;
     onClose: () => void;
     onSave: (s: Student) => void;
-    onCheckOut: (id: string, smsTime: string, checkOutBy?: string) => void;
+    /** Resolves true if the check-out went ahead; the database may refuse it. */
+    onCheckOut: (id: string, smsTime: string, checkOutBy?: string, releasedTo?: string) => Promise<boolean>;
     currentStaff: Staff;
     program: ProgramType;
     isLeadMode: boolean;
@@ -278,7 +279,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
         setIsEditingBehavior(true);
     };
 
-    const handleLocalCheckOut = () => {
+    const handleLocalCheckOut = async () => {
         const now = new Date();
         const timeStr = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
@@ -287,6 +288,16 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
             showToast(`${activeGuardian.firstName} is not approved for pickup yet`, 'error');
             return;
         }
+        setShowCheckOutConfirm(false);
+        const staffName = currentStaff ? `${currentStaff.name} (${currentStaff.organization})` : 'Staff';
+        const releasedTo = activeGuardian ? `${activeGuardian.type}: ${activeGuardian.firstName} ${activeGuardian.lastName}` : undefined;
+
+        // The app writes the check-out (the database can refuse it, e.g. if the
+        // child was already checked out elsewhere); the roster shown here follows
+        // the app's student record. Pickup texts go out only once it went ahead.
+        const done = await onCheckOut(student.id, timeStr, staffName, releasedTo);
+        if (!done) return;
+
         const activePhone = activeGuardian?.phone || '619-549-0572';
         const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
@@ -311,15 +322,6 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                 });
             }
         }
-
-        const pendingUpdate = program === 'sunrise'
-            ? { sunriseStatus: 'pending_parent' as AttendanceStatus }
-            : { sunsetStatus: 'pending_parent' as AttendanceStatus };
-
-        setEditedStudent(prev => ({ ...prev, ...pendingUpdate, smsSentTime: timeStr }));
-        setShowCheckOutConfirm(false);
-        const staffName = currentStaff ? `${currentStaff.name} (${currentStaff.organization})` : 'Staff';
-        onCheckOut(student.id, timeStr, staffName);
     };
 
     const currentStatus = program === 'sunrise' ? editedStudent.sunriseStatus : editedStudent.sunsetStatus;

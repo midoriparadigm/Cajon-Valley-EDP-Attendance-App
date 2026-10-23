@@ -24,12 +24,53 @@ const supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
  */
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
+/**
+ * Where the signed-in session is kept in localStorage. Named explicitly (rather
+ * than Supabase's derived default) so logout can always remove it — see
+ * signOutAndForget().
+ */
+const AUTH_STORAGE_KEY = 'edp-attendance-auth';
+
+const removeStoredSession = () => {
+    try {
+        Object.keys(localStorage)
+            .filter(k => k.startsWith(AUTH_STORAGE_KEY) || /^sb-.+-auth-token/.test(k))
+            .forEach(k => localStorage.removeItem(k));
+    } catch {
+        // Storage unavailable (private mode, blocked site data) — nothing persisted to remove.
+    }
+};
+
+// Sessions saved by earlier builds under Supabase's default key are no longer
+// read; remove them so an old token does not linger on a shared device.
+try {
+    Object.keys(localStorage).filter(k => /^sb-.+-auth-token/.test(k)).forEach(k => localStorage.removeItem(k));
+} catch { /* storage unavailable */ }
+
 // `.invalid` is reserved (RFC 2606) and never resolves, and callers never issue
 // requests when unconfigured — the placeholder only keeps createClient happy.
 export const supabase = createClient(
     isSupabaseConfigured ? supabaseUrl : 'https://not-configured.invalid',
     isSupabaseConfigured ? supabaseAnonKey : 'not-configured',
+    { auth: { storageKey: AUTH_STORAGE_KEY } },
 );
+
+/**
+ * Signs out, and makes sure the session is gone from this device even when
+ * Supabase cannot be reached. supabase.auth.signOut() returns early on a
+ * network or server error *without* removing the stored session, so a reload
+ * after a failed logout used to sign the previous person straight back in.
+ */
+export const signOutAndForget = async (): Promise<void> => {
+    try {
+        const { error } = await supabase.auth.signOut();
+        if (!error) return;
+        console.warn('[Logout] Supabase sign-out failed; removing the session from this device:', error.message);
+    } catch (err) {
+        console.warn('[Logout] Supabase sign-out failed; removing the session from this device:', err instanceof Error ? err.message : err);
+    }
+    removeStoredSession();
+};
 
 /**
  * Runs a Supabase request and reports success. PostgREST failures arrive in
@@ -51,6 +92,29 @@ export const runDbWrite = async (
     } catch (err) {
         console.warn(`[${label}] database write failed:`, err instanceof Error ? err.message : err);
         return false;
+    }
+};
+
+/**
+ * Like runDbWrite, for a request that ends in `.select(...)`: returns the rows
+ * the database actually changed, or null if the request failed. Conditional
+ * updates use this so the caller learns which students were really updated —
+ * not which ones this device *thought* were eligible.
+ */
+export const runDbRows = async <T>(
+    label: string,
+    request: () => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+): Promise<T[] | null> => {
+    try {
+        const { data, error } = await request();
+        if (error) {
+            console.warn(`[${label}] database write failed:`, error.message);
+            return null;
+        }
+        return data ?? [];
+    } catch (err) {
+        console.warn(`[${label}] database write failed:`, err instanceof Error ? err.message : err);
+        return null;
     }
 };
 
@@ -184,17 +248,26 @@ export const mapDbToStaff = (row: any): Staff => ({
  *
  * Login used to consult only the sample list, so any real staff email was sent
  * to "Create your account" and could never reach the password step.
+ *
+ * Returns null when the lookup itself fails (network, server, permissions).
+ * Callers must refuse sign-in then: falling through to the default profile
+ * would hand a restricted staff member (no check-in, limited grades) an
+ * unrestricted one just because the database was briefly unreachable.
  */
 export const resolveStaffProfile = async (
     authUser: { id: string; email?: string | null },
     knownStaff: Staff[],
-): Promise<Staff> => {
+): Promise<Staff | null> => {
     try {
         const { data, error } = await supabase.from('staff').select('*').eq('id', authUser.id).limit(1);
-        if (error) console.warn('[Login] staff profile lookup failed:', error.message);
-        else if (data && data.length > 0) return mapDbToStaff(data[0]);
+        if (error) {
+            console.warn('[Login] staff profile lookup failed:', error.message);
+            return null;
+        }
+        if (data && data.length > 0) return mapDbToStaff(data[0]);
     } catch (err) {
         console.warn('[Login] staff profile lookup failed:', err instanceof Error ? err.message : err);
+        return null;
     }
 
     const email = (authUser.email || '').trim().toLowerCase();

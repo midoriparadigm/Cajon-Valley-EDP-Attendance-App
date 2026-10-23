@@ -1,7 +1,7 @@
 // src/components/StaffLogin.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import type { Staff } from '../types';
-import { supabase, isSupabaseConfigured, resolveStaffProfile } from '../supabaseClient';
+import { supabase, isSupabaseConfigured, resolveStaffProfile, signOutAndForget } from '../supabaseClient';
 import { PasskeyService } from '../utils/mock';
 
 interface StaffLoginProps {
@@ -27,6 +27,17 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: StaffLogin
         } else {
             onLogin(user);
         }
+    };
+
+    /** Loads the staff profile for a fresh session; refuses sign-in if it can't be read. */
+    const completeSignIn = async (authUser: { id: string; email?: string | null }) => {
+        const profile = await resolveStaffProfile(authUser, staffList);
+        if (!profile) {
+            await signOutAndForget();
+            setError("Couldn't load your staff profile. Check your connection and try again.");
+            return;
+        }
+        finishLogin(profile);
     };
 
     const handlePasskeyLogin = async () => {
@@ -75,7 +86,7 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: StaffLogin
             });
 
             if (authError) throw authError;
-            finishLogin(await resolveStaffProfile(data.user, staffList));
+            await completeSignIn(data.user);
         } catch (err: any) {
             setError(/invalid login credentials/i.test(err?.message || '')
                 ? 'Email or password is incorrect.'
@@ -108,7 +119,7 @@ const StaffLogin = ({ onLogin, onToggleDemo, isDemoMode, staffList }: StaffLogin
                 setNotice(`Check ${email.trim()} for a confirmation link, then sign in.`);
                 return;
             }
-            finishLogin(await resolveStaffProfile(data.user, staffList));
+            await completeSignIn(data.user);
         } catch (err: any) {
             if (/already registered|already been registered|already exists/i.test(err?.message || '')) {
                 setPassword('');

@@ -7,15 +7,20 @@
 // Storage:
 //   • Always kept in memory for this session, so the Daily Records view works
 //     even with the built-in sample roster.
-//   • When Supabase is configured AND the student is a real database record
-//     (uuid id), the event is also inserted into public.attendance_events. That
-//     table has no UPDATE or DELETE policy and a trigger that rejects both, and
-//     its recorded_by column is filled server-side from auth.uid() — so the
+//   • When Supabase is configured AND the student is a real database row (see
+//     dbStudents.ts), the event is also inserted into public.attendance_events.
+//     That table has no UPDATE or DELETE policy and a trigger that rejects
+//     both, and its recorded_by column is checked against auth.uid() — so the
 //     database, not this client, decides who an event is attributed to.
+//
+// Callers record an event only after the attendance change it describes has
+// been confirmed by the database, so a "check-in" entry never describes a
+// check-in that failed to save.
 
 import { useSyncExternalStore } from 'react';
 import { supabase, isSupabaseConfigured, runDbWrite } from '../supabaseClient';
 import { uuidv4, isUuid } from '../utils/helpers';
+import { isDbStudent } from './dbStudents';
 import type { ProgramType } from '../types';
 
 export type AuditEventType =
@@ -51,9 +56,15 @@ export interface AuditEvent {
     detail?: string;
     /** True once the database has accepted the event. */
     persisted: boolean;
+    /**
+     * True when the event is intentionally kept on this device only: sample
+     * students, students added or imported this session, or no database
+     * configured. An event that is neither persisted nor localOnly FAILED to save.
+     */
+    localOnly: boolean;
 }
 
-export type NewAuditEvent = Omit<AuditEvent, 'id' | 'occurredAt' | 'persisted'> & { occurredAt?: string };
+export type NewAuditEvent = Omit<AuditEvent, 'id' | 'occurredAt' | 'persisted' | 'localOnly'> & { occurredAt?: string };
 
 // ── In-memory store ──────────────────────────────────────────────────────────
 
@@ -73,6 +84,9 @@ const subscribe = (listener: () => void) => {
 /** Live list of this session's events (oldest first). */
 export const useAuditEvents = (): readonly AuditEvent[] =>
     useSyncExternalStore(subscribe, () => events);
+
+/** Forgets this session's events — on logout, so the next person on the device can't see them. */
+export const clearSessionEvents = () => setEvents([]);
 
 // ── Writing ──────────────────────────────────────────────────────────────────
 
@@ -111,6 +125,7 @@ const fromRow = (r: AttendanceEventRow): AuditEvent => ({
     batchId: r.batch_id ?? undefined,
     detail: r.detail ?? undefined,
     persisted: true,
+    localOnly: false,
 });
 
 export interface RecordResult {
@@ -118,13 +133,14 @@ export interface RecordResult {
     persisted: number;
     /** Should have reached the database but did not — the caller should warn. */
     failed: number;
-    /** Sample-data events that are intentionally kept on this device only. */
+    /** Intentionally kept on this device only (sample / session-only students). */
     localOnly: number;
 }
 
 /**
  * Appends events. Resolves after the database write (if any) finishes; never
- * throws, so a logging failure cannot break a check-in.
+ * throws, so a logging failure cannot break a check-in. Failed events stay in
+ * memory, marked as failed, until logout or reload — there is no retry queue.
  */
 export const recordEvents = async (input: NewAuditEvent[]): Promise<RecordResult> => {
     if (input.length === 0) return { persisted: 0, failed: 0, localOnly: 0 };
@@ -135,10 +151,11 @@ export const recordEvents = async (input: NewAuditEvent[]): Promise<RecordResult
         id: uuidv4(),
         occurredAt: e.occurredAt ?? now,
         persisted: false,
+        localOnly: !(isSupabaseConfigured && isDbStudent(e.studentId)),
     }));
     setEvents([...events, ...created]);
 
-    const remote = isSupabaseConfigured ? created.filter(e => isUuid(e.studentId)) : [];
+    const remote = created.filter(e => !e.localOnly);
     const localOnly = created.length - remote.length;
     if (remote.length === 0) return { persisted: 0, failed: 0, localOnly };
 
@@ -170,34 +187,49 @@ export const filterDayEvents = (list: readonly AuditEvent[], isoDate: string, st
         .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
 };
 
-/**
- * Database events for one day (optionally one student). Returns null when there
- * is no database to ask — sample roster, or Supabase not configured — and also
- * on a read error, which is logged.
- */
-export const fetchRemoteDayEvents = async (isoDate: string, studentId?: string): Promise<AuditEvent[] | null> => {
-    if (!isSupabaseConfigured || (studentId && !isUuid(studentId))) return null;
-    const [start, end] = dayBounds(isoDate);
+export type RemoteDayResult =
+    /** No database to ask (not configured, or a session-only student). */
+    | { status: 'unavailable' }
+    /** The read failed — the view must not present this as "nothing recorded". */
+    | { status: 'error'; message: string }
+    | { status: 'ok'; rows: AuditEvent[]; truncated: boolean };
 
-    let query = supabase
-        .from('attendance_events')
-        .select('id, student_id, student_name, event_type, program, occurred_at, staff_name, batch_id, detail')
-        .gte('occurred_at', start.toISOString())
-        .lt('occurred_at', end.toISOString())
-        .order('occurred_at', { ascending: true })
-        .limit(1000);
-    if (studentId) query = query.eq('student_id', studentId);
+const PAGE_SIZE = 1000;   // Supabase's default per-request row cap
+const MAX_PAGES = 20;     // 20,000 events for one day — far beyond any site
+
+/** Database events for one day (optionally one student), paged until complete. */
+export const fetchRemoteDayEvents = async (isoDate: string, studentId?: string): Promise<RemoteDayResult> => {
+    if (!isSupabaseConfigured || (studentId && !isUuid(studentId))) return { status: 'unavailable' };
+    const [start, end] = dayBounds(isoDate);
+    const rows: AuditEvent[] = [];
 
     try {
-        const { data, error } = await query;
-        if (error) {
-            console.warn('[Audit] attendance_events read failed:', error.message);
-            return null;
+        for (let page = 0; page < MAX_PAGES; page++) {
+            let query = supabase
+                .from('attendance_events')
+                .select('id, student_id, student_name, event_type, program, occurred_at, staff_name, batch_id, detail')
+                .gte('occurred_at', start.toISOString())
+                .lt('occurred_at', end.toISOString())
+                // id breaks ties so pages never overlap or skip rows with equal timestamps.
+                .order('occurred_at', { ascending: true })
+                .order('id', { ascending: true })
+                .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            if (studentId) query = query.eq('student_id', studentId);
+
+            const { data, error } = await query;
+            if (error) {
+                console.warn('[Audit] attendance_events read failed:', error.message);
+                return { status: 'error', message: error.message };
+            }
+            const batch = (data as AttendanceEventRow[]).map(fromRow);
+            rows.push(...batch);
+            if (batch.length < PAGE_SIZE) return { status: 'ok', rows, truncated: false };
         }
-        return (data as AttendanceEventRow[]).map(fromRow);
+        return { status: 'ok', rows, truncated: true };
     } catch (err) {
-        console.warn('[Audit] attendance_events read failed:', err instanceof Error ? err.message : err);
-        return null;
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn('[Audit] attendance_events read failed:', message);
+        return { status: 'error', message };
     }
 };
 

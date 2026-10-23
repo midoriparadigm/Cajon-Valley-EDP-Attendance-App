@@ -13,6 +13,9 @@ View your app in AI Studio: https://ai.studio/apps/drive/13BqyLoA0-bRFRHmUQ7mvu3
 
 **Prerequisites:** Node.js 20.19+ (Vite 6 requirement)
 
+The dev server listens on this machine only. To open it from a phone on the same
+network, start it with `npm run dev -- --host`.
+
 1. `npm install`
 2. Copy `.env.example` to `.env.local` and fill in `VITE_SUPABASE_URL` and
    `VITE_SUPABASE_ANON_KEY` (optional: `VITE_GEMINI_API_KEY` for AI-drafted parent letters).
@@ -34,16 +37,27 @@ without them, the image still starts and runs in sample-data mode.
 
 ## Database
 
-Apply `supabase/schema.sql` in the Supabase SQL editor. The section at the end
-(live roster columns + `attendance_events`) is idempotent and safe to re-run on
-an existing project.
+- **New project:** run `supabase/schema.sql` in the Supabase SQL editor, then
+  each file in `supabase/migrations/` in name order.
+- **Existing project:** run only the migrations you haven't applied. Don't
+  re-run `schema.sql` — its `CREATE POLICY` statements fail on a second run.
+  Each migration is idempotent.
 
-`attendance_events` is the permanent record behind **Leader Dashboard → Daily
-Records**: one row per check-in, undone check-in, pickup, check-out, behavior
-ticket, head-injury report and approved parent report. It is append-only — no
-update or delete is possible through the API, a trigger blocks them even for
-the service role, students with history cannot be deleted, and each row's
-`recorded_by` is set from the signed-in user by the database.
+`attendance_events` (first migration) is the permanent record behind **Leader
+Dashboard → Daily Records**: one row per check-in, undone check-in, pickup,
+check-out, behavior ticket, head-injury report and approved parent report. It
+is append-only — no update or delete through the API, a trigger blocks them even
+for the service role, and students with history cannot be deleted. Inserts must
+carry the signed-in user's id as `recorded_by`.
+
+Known gaps, not yet fixed (they need further migrations):
+- `recorded_at` defaults to the database clock but a client can supply its own,
+  so event times are not yet tamper-proof.
+- Access rules check that someone is signed in, not that they are on the
+  `staff` table — any account can read the roster and write events.
+- An attendance change and its event are two separate requests: the app logs an
+  event only after the database confirms the change, but if the event write
+  then fails, the change stands without its log entry (the app warns).
 
 ## Checking students in
 
@@ -52,7 +66,18 @@ the service role, students with history cannot be deleted, and each row's
   notifies a family.
 - **A group:** tap **Select group**, tap each student (or **Select all shown**
   after filtering by grade), then **Check in N**. Everyone gets the same
-  timestamp; blocked or already-checked-in students are skipped and reported.
+  timestamp.
+- The database has the last word: a check-in only applies to students it
+  confirms are still absent and not blocked, so two devices can't both check in
+  the same child. Anyone it refuses — or everyone, if it can't be reached — is
+  rolled back on screen with a warning. Nothing is logged for a refused check-in.
+- **Check-out:** for students in the database, the staff member's confirmation
+  of who is picking up completes the check-out and records who they were
+  released to. The guardian-text confirmation is only simulated, for sample data.
+- **Logout** removes the session and all loaded student data from the device,
+  even if Supabase can't be reached at that moment.
+- Students added or imported in the app are **not saved to the database yet**;
+  they last for the session and are marked "not saved" in the Daily Record.
 
 ## Pilot configuration
 

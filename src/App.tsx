@@ -1,14 +1,16 @@
 // src/App.tsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { supabase, mapDbToStudent, isSupabaseConfigured, runDbWrite, resolveStaffProfile } from './supabaseClient';
+import { supabase, mapDbToStudent, isSupabaseConfigured, runDbWrite, resolveStaffProfile, signOutAndForget } from './supabaseClient';
 import type { Student, Staff, ParentReport, BiometricLog, ProgramType, AttendanceStatus } from './types';
 import { GRADES, STUDENT_PHOTOS_ENABLED, UNDO_WINDOW_MS } from './constants';
 import { INITIAL_STAFF, INITIAL_STUDENTS } from './utils/mockData';
 import { sendSmsMock } from './utils/sms';
 import { MockDatabase, PasskeyService } from './utils/mock';
-import { playAlarm, uuidv4, isUuid, formatClockTime, localDateIso } from './utils/helpers';
-import { recordEvents } from './services/auditLog';
+import { playAlarm, uuidv4, formatClockTime, localDateIso } from './utils/helpers';
+import { recordEvents, clearSessionEvents } from './services/auditLog';
+import { setDbStudents, addDbStudent, removeDbStudent, isDbStudent, clearDbStudents } from './services/dbStudents';
+import { persistCheckIn, persistUndoCheckIn, persistCheckOut, persistBatchCheckOut } from './services/attendanceWrites';
 import Toast from './components/Toast';
 import StaffLogin from './components/StaffLogin';
 import StudentDetailModal from './components/StudentDetailModal';
@@ -27,13 +29,47 @@ const fullName = (s: Student) => `${s.firstName} ${s.lastName}`;
  * family their child arrived.
  */
 interface PendingCheckIn {
+    /** Identifies this check-in, so a late database answer only edits its own undo bar. */
+    token: string;
     ids: string[];
     program: ProgramType;
+    /** YYYY-MM-DD the check-in belongs to. */
+    date: string;
     time: string;
     staffName: string;
     batchId?: string;
     message: string;
 }
+
+const checkInMessage = (checkedIn: Student[], time: string) => checkedIn.length === 1
+    ? `${checkedIn[0].firstName} ${checkedIn[0].lastName.charAt(0)}. checked in · ${time}`
+    : `${checkedIn.length} students checked in · ${time}`;
+
+/** The roster fields a check-in sets, for one program. */
+const withCheckIn = (s: Student, p: ProgramType, time: string, staffName: string): Student => ({
+    ...s,
+    ...(p === 'sunrise'
+        ? { sunriseStatus: 'present' as AttendanceStatus, sunriseTime: time, sunriseStaff: staffName }
+        : { sunsetStatus: 'present' as AttendanceStatus, sunsetTime: time, sunsetStaff: staffName }),
+    checkInSmsSent: true,
+    checkInSmsTime: time,
+});
+
+/** Clears a check-in for one program (undo, or a write the database rejected). */
+const withoutCheckIn = (s: Student, p: ProgramType): Student => ({
+    ...s,
+    ...(p === 'sunrise'
+        ? { sunriseStatus: 'absent' as AttendanceStatus, sunriseTime: undefined, sunriseStaff: undefined }
+        : { sunsetStatus: 'absent' as AttendanceStatus, sunsetTime: undefined, sunsetStaff: undefined }),
+    checkInSmsSent: false,
+    checkInSmsTime: undefined,
+});
+
+/** True while the student still shows exactly this device's check-in. */
+const showsCheckIn = (s: Student, p: ProgramType, time: string, staffName: string) =>
+    statusFor(s, p) === 'present'
+    && (p === 'sunrise' ? s.sunriseTime : s.sunsetTime) === time
+    && (p === 'sunrise' ? s.sunriseStaff : s.sunsetStaff) === staffName;
 
 /** Sends arrival texts for students from `pending` who are still checked in. */
 const sendArrivalTexts = (pending: PendingCheckIn, roster: Student[]) => {
@@ -82,22 +118,27 @@ const App = () => {
     studentsRef.current = students;
     const pendingRef = useRef(pendingCheckIn);
     pendingRef.current = pendingCheckIn;
-    const checkInWriteRef = useRef<Promise<boolean> | null>(null);
-    // False after an explicit logout: if signOut() could not reach Supabase the
-    // saved session survives, and restoring it would sign the person straight back in.
+    const checkInWriteRef = useRef<Promise<unknown> | null>(null);
+    // Bumped on logout; delayed work (e.g. the sample check-out timer) checks it before writing.
+    const sessionGenRef = useRef(0);
+    // False right after an explicit logout, so a session-restore already in
+    // flight cannot sign the person back in. (signOutAndForget also removes the
+    // stored session, so a reload has nothing to restore.)
     const restoreSessionRef = useRef(true);
 
-    // Load the roster from Supabase once per signed-in user. This used to depend
-    // on staffList too, so toggling a staff permission re-fetched and replaced the
-    // whole roster — silently dropping any locally added or imported students.
+    // Load the roster from Supabase once per signed-in user. Only while signed
+    // in: fetching during logout could reload real students with a session that
+    // is still being torn down. This used to depend on staffList too, so toggling
+    // a staff permission replaced the whole roster and dropped local additions.
     useEffect(() => {
-        if (!isSupabaseConfigured) return;
+        if (!isSupabaseConfigured || !user) return;
         let cancelled = false;
         const fetchInitialData = async () => {
             try {
                 const { data, error } = await supabase.from('students').select('*');
                 if (error) console.error('Error fetching students:', error.message);
                 if (!cancelled && data && data.length > 0) {
+                    setDbStudents(data.map((row: { id: string }) => row.id));
                     setStudents(data.map(mapDbToStudent));
                 }
             } catch (err) {
@@ -119,7 +160,9 @@ const App = () => {
             supabase.auth.getSession().then(async ({ data: { session } }) => {
                 if (!session?.user || cancelled) return;
                 const profile = await resolveStaffProfile(session.user, staffList);
-                if (!cancelled && restoreSessionRef.current) setUser(profile);
+                // No profile = the lookup failed: stay on the login screen rather
+                // than restoring the person with guessed permissions.
+                if (profile && !cancelled && restoreSessionRef.current) setUser(profile);
             });
         }
 
@@ -137,9 +180,11 @@ const App = () => {
             .channel('students-realtime')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, (payload) => {
                 if (payload.eventType === 'UPDATE' && payload.new) {
+                    addDbStudent(payload.new.id);
                     setStudents(prev => prev.map(s => s.id === payload.new.id ? { ...s, ...mapDbToStudent(payload.new) } : s));
                     setLastSyncTime(new Date());
                 } else if (payload.eventType === 'DELETE' && payload.old) {
+                    removeDbStudent(payload.old.id);
                     setStudents(prev => prev.filter(s => s.id !== payload.old.id));
                 }
             })
@@ -196,28 +241,41 @@ const App = () => {
             const now = new Date();
             const currentTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
             if (currentTime === scheduledBatchCheckoutTime) {
-                const isInBuilding = (s: Student) => s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent';
-                const checkOutLabel = `Auto-Check-Out at ${scheduledBatchCheckoutTime}`;
-                const affected = studentsRef.current.filter(isInBuilding);
-                setStudents(prev => prev.map(s => {
-                    if (isInBuilding(s)) {
-                        return { ...s, sunriseStatus: 'checked_out' as AttendanceStatus, sunriseCheckOutTime: checkOutLabel };
-                    }
-                    return s;
-                }));
-                showToast(`Batch checkout executed at ${scheduledBatchCheckoutTime}`, 'success');
+                const scheduled = scheduledBatchCheckoutTime;
                 setScheduledBatchCheckoutTime(null);
+                const isInBuilding = (s: Student) => s.sunriseStatus === 'present' || s.sunriseStatus === 'pending_parent';
+                const checkOutLabel = `Auto-Check-Out at ${scheduled}`;
+                const affected = studentsRef.current.filter(isInBuilding);
+                const markOut = (ids: Set<string>) => setStudents(prev => prev.map(s =>
+                    ids.has(s.id) && isInBuilding(s)
+                        ? { ...s, sunriseStatus: 'checked_out' as AttendanceStatus, sunriseCheckOutTime: checkOutLabel }
+                        : s));
 
-                const dbIds = isSupabaseConfigured ? affected.map(s => s.id).filter(isUuid) : [];
-                if (dbIds.length > 0) {
-                    runDbWrite('Batch checkout', () => supabase.from('students').update({ sunrise_status: 'checked_out', sunrise_checkout_time: checkOutLabel }).in('id', dbIds));
-                }
-                const batchId = uuidv4();
-                recordEvents(affected.map(s => ({
-                    studentId: s.id, studentName: fullName(s), type: 'checked_out', program: 'sunrise',
-                    staffName: 'Scheduled batch checkout', batchId,
-                    detail: `Sunrise batch checkout at ${scheduledBatchCheckoutTime} · ${affected.length} students`,
-                })));
+                // Sample / session-only students change here; database students only
+                // once the database confirms they were still in the building today.
+                const local = affected.filter(s => !isDbStudent(s.id));
+                const dbIds = affected.filter(s => isDbStudent(s.id)).map(s => s.id);
+                markOut(new Set(local.map(s => s.id)));
+
+                (async () => {
+                    const rows = dbIds.length === 0 ? [] : await persistBatchCheckOut(dbIds, checkOutLabel, localDateIso(now));
+                    const confirmed = new Set((rows ?? []).map(r => r.id));
+                    markOut(confirmed);
+                    const done = [...local, ...affected.filter(s => confirmed.has(s.id))];
+                    const batchId = uuidv4();
+                    const audit = await recordEvents(done.map(s => ({
+                        studentId: s.id, studentName: fullName(s), type: 'checked_out', program: 'sunrise',
+                        staffName: 'Scheduled batch checkout', batchId,
+                        detail: `Sunrise batch checkout at ${scheduled} · ${done.length} students`,
+                    })));
+                    if (rows === null) {
+                        showToast(`Batch checkout could not reach the database — ${dbIds.length} students are still checked in`, 'error');
+                    } else if (audit.failed > 0) {
+                        showToast(`Batch checkout done for ${done.length}, but the Daily Record entries failed to save`, 'warning');
+                    } else {
+                        showToast(`Batch checkout executed at ${scheduled} · ${done.length} students`, 'success');
+                    }
+                })();
             }
         }, 1000);
         return () => clearInterval(interval);
@@ -286,10 +344,12 @@ const App = () => {
     /**
      * Checks in one student (a quick tap) or a whole group in one action.
      *
-     * Every student gets the same timestamp and staff name, the roster updates in
-     * a single state change, and the database receives one `update … in (ids)`
-     * rather than N requests. Students who were blocked or checked in by someone
-     * else since being selected are skipped and reported, never double-recorded.
+     * Every student gets the same timestamp and staff name, and the database gets
+     * one conditional `update … in (ids)` that reports which rows it changed. The
+     * board shows the check-in at once; for database students it is then kept or
+     * rolled back by that answer. A child checked in on another device meanwhile,
+     * or blocked since, is rolled back and reported, and only confirmed
+     * check-ins are written to the Daily Record.
      */
     const checkInStudents = async (requestedIds: string[]) => {
         if (!canCheckIn()) {
@@ -308,47 +368,50 @@ const App = () => {
         settlePendingCheckIn(); // a new check-in closes the previous undo window
 
         const now = new Date();
+        const day = localDateIso(now);
         const time = formatClockTime(now);
         const staffName = currentStaffName();
         const isGroup = eligible.length > 1;
         const batchId = isGroup ? uuidv4() : undefined;
+        const token = uuidv4();
         const ids = new Set(eligible.map(s => s.id));
 
-        setStudents(prev => prev.map(s => {
-            if (!ids.has(s.id) || statusFor(s, p) !== 'absent') return s;
-            const update = p === 'sunrise'
-                ? { sunriseStatus: 'present' as AttendanceStatus, sunriseTime: time, sunriseStaff: staffName }
-                : { sunsetStatus: 'present' as AttendanceStatus, sunsetTime: time, sunsetStaff: staffName };
-            return { ...s, ...update, checkInSmsSent: true, checkInSmsTime: time };
-        }));
-        setPendingCheckIn({
-            ids: [...ids], program: p, time, staffName, batchId,
-            message: isGroup
-                ? `${eligible.length} students checked in · ${time}`
-                : `${eligible[0].firstName} ${eligible[0].lastName.charAt(0)}. checked in · ${time}`,
-        });
+        setStudents(prev => prev.map(s => ids.has(s.id) && statusFor(s, p) === 'absent' ? withCheckIn(s, p, time, staffName) : s));
+        setPendingCheckIn({ token, ids: [...ids], program: p, date: day, time, staffName, batchId, message: checkInMessage(eligible, time) });
         setSelectedIds(new Set());
         setIsGroupMode(false);
         setSearchQuery('');
 
-        const dbIds = isSupabaseConfigured ? [...ids].filter(isUuid) : [];
-        // A fresh day: clear checkout fields left over from a previous day.
-        const dbUpdate = p === 'sunrise'
-            ? { sunrise_status: 'present', sunrise_checkin_time: time, sunrise_staff: staffName, sunrise_checkout_time: null, sunrise_date: localDateIso(now) }
-            : { sunset_status: 'present', sunset_checkin_time: time, sunset_staff: staffName, sunset_checkout_time: null, sunset_date: localDateIso(now) };
-        const write = dbIds.length > 0
-            ? runDbWrite('Check-in', () => supabase.from('students').update(dbUpdate).in('id', dbIds))
-            : Promise.resolve(true);
+        const dbIds = eligible.filter(s => isDbStudent(s.id)).map(s => s.id);
+        const write = persistCheckIn(dbIds, p, time, staffName, day);
         checkInWriteRef.current = write; // an Undo must not overtake this write
-        const saved = await write;
-        const audit = await recordEvents(eligible.map(s => ({
+        const { applied, complete } = await write;
+
+        const rejected = new Set(dbIds.filter(id => !applied.has(id)));
+        if (rejected.size > 0) {
+            setStudents(prev => prev.map(s => rejected.has(s.id) && showsCheckIn(s, p, time, staffName) ? withoutCheckIn(s, p) : s));
+            setPendingCheckIn(cur => {
+                if (!cur || cur.token !== token) return cur;
+                const left = eligible.filter(s => cur.ids.includes(s.id) && !rejected.has(s.id));
+                return left.length > 0 ? { ...cur, ids: left.map(s => s.id), message: checkInMessage(left, time) } : null;
+            });
+        }
+
+        const confirmed = eligible.filter(s => !rejected.has(s.id));
+        const audit = await recordEvents(confirmed.map(s => ({
             studentId: s.id, studentName: fullName(s), type: 'check_in', program: p, staffName,
             occurredAt: now.toISOString(), batchId,
-            detail: isGroup ? `Group check-in · ${eligible.length} students` : undefined,
+            detail: !isGroup ? undefined
+                : confirmed.length === eligible.length ? `Group check-in · ${eligible.length} students`
+                : `Group check-in · ${confirmed.length} of ${eligible.length} selected`,
         })));
 
-        if (!saved || audit.failed > 0) {
-            showToast('Checked in on this device — saving to the database failed', 'warning');
+        if (!complete) {
+            showToast(`${rejected.size} not checked in — couldn't reach the database`, 'error');
+        } else if (rejected.size > 0) {
+            showToast(`${rejected.size} not checked in — already checked in on another device, or blocked`, 'warning');
+        } else if (audit.failed > 0) {
+            showToast('Checked in, but the Daily Record entry failed to save', 'warning');
         } else if (skipped > 0) {
             showToast(`${skipped} not checked in (already in or blocked)`, 'warning');
         }
@@ -356,7 +419,9 @@ const App = () => {
 
     /**
      * Reverts the most recent quick/group check-in while its undo window is open.
-     * The undo is itself recorded — the original check-in event stays on file.
+     * A database student is reverted only if their row still carries exactly this
+     * check-in (same day, time and staff) — never a child another device has since
+     * checked out. The undo is itself recorded; the original check-in stays on file.
      */
     const undoCheckIn = async () => {
         const pending = pendingRef.current;
@@ -364,41 +429,42 @@ const App = () => {
         pendingRef.current = null;
         setPendingCheckIn(null); // held arrival texts are dropped, never sent
 
-        const { program: p, time } = pending;
+        const { program: p, time, staffName, date: day } = pending;
         const ids = new Set(pending.ids);
-        // Only revert check-ins that are still exactly what we recorded — never a
-        // student who has since been checked out or re-checked by someone else.
-        const stillOurs = (s: Student) => ids.has(s.id) && statusFor(s, p) === 'present' && (p === 'sunrise' ? s.sunriseTime : s.sunsetTime) === time;
-        const reverted = studentsRef.current.filter(stillOurs);
-        if (reverted.length === 0) return;
+        const candidates = studentsRef.current.filter(s => ids.has(s.id) && showsCheckIn(s, p, time, staffName));
+        if (candidates.length === 0) return;
 
-        setStudents(prev => prev.map(s => {
-            if (!stillOurs(s)) return s;
-            const update = p === 'sunrise'
-                ? { sunriseStatus: 'absent' as AttendanceStatus, sunriseTime: undefined, sunriseStaff: undefined }
-                : { sunsetStatus: 'absent' as AttendanceStatus, sunsetTime: undefined, sunsetStaff: undefined };
-            return { ...s, ...update, checkInSmsSent: false, checkInSmsTime: undefined };
-        }));
-        showToast(reverted.length === 1 ? `Check-in undone for ${reverted[0].firstName}` : `Check-in undone for ${reverted.length} students`, 'info');
-
-        let saved = true;
-        const dbIds = isSupabaseConfigured ? reverted.map(s => s.id).filter(isUuid) : [];
+        const dbIds = candidates.filter(s => isDbStudent(s.id)).map(s => s.id);
+        let rows: { id: string }[] | null = [];
         if (dbIds.length > 0) {
             // Two separate requests can arrive out of order; let the check-in land
             // first so the revert is the last write, not the one that gets undone.
             await checkInWriteRef.current;
-            const dbUpdate = p === 'sunrise'
-                ? { sunrise_status: 'absent', sunrise_checkin_time: null, sunrise_staff: null }
-                : { sunset_status: 'absent', sunset_checkin_time: null, sunset_staff: null };
-            saved = await runDbWrite('Undo check-in', () => supabase.from('students').update(dbUpdate).in('id', dbIds));
+            rows = await persistUndoCheckIn(dbIds, p, time, staffName, day);
         }
+        const revertedInDb = new Set((rows ?? []).map(r => r.id));
+        const reverted = candidates.filter(s => !isDbStudent(s.id) || revertedInDb.has(s.id));
+        const revertedIds = new Set(reverted.map(s => s.id));
+        const kept = candidates.filter(s => !revertedIds.has(s.id));
+
+        setStudents(prev => prev.map(s => revertedIds.has(s.id) && showsCheckIn(s, p, time, staffName) ? withoutCheckIn(s, p) : s));
+        // A check-in that could not be undone stands, so that family still gets the arrival text.
+        if (kept.length > 0) sendArrivalTexts({ ...pending, ids: kept.map(s => s.id) }, studentsRef.current);
+
         const audit = await recordEvents(reverted.map(s => ({
             studentId: s.id, studentName: fullName(s), type: 'check_in_undone', program: p,
             staffName: currentStaffName(), batchId: pending.batchId,
             detail: `Reverses the ${time} check-in (undone within ${UNDO_WINDOW_MS / 1000}s)`,
         })));
-        if (!saved || audit.failed > 0) {
-            showToast('Undone on this device — saving to the database failed', 'warning');
+
+        if (rows === null) {
+            showToast(`Undo couldn't reach the database — ${kept.length} still checked in`, 'error');
+        } else if (kept.length > 0) {
+            showToast(`${kept.length} could not be undone — changed on another device`, 'warning');
+        } else if (audit.failed > 0) {
+            showToast('Undone, but the Daily Record entry failed to save', 'warning');
+        } else {
+            showToast(reverted.length === 1 ? `Check-in undone for ${reverted[0].firstName}` : `Check-in undone for ${reverted.length} students`, 'info');
         }
     };
 
@@ -510,17 +576,20 @@ const App = () => {
             }
         }
 
-        if (isSupabaseConfigured && isUuid(studentId)) {
+        if (isDbStudent(studentId)) {
             // The photo stays on this device. The schema stores image URLs only,
             // never raw image data, so checkin_photo is not written here.
-            const updateData = program === 'sunrise'
-                ? { sunrise_status: 'present', sunrise_checkin_time: timeString, sunrise_staff: staffName, sunrise_checkout_time: null, sunrise_date: localDateIso(now) }
-                : { sunset_status: 'present', sunset_checkin_time: timeString, sunset_staff: staffName, sunset_checkout_time: null, sunset_date: localDateIso(now) };
-            const saved = await runDbWrite('Check-in', () => supabase.from('students').update(updateData).eq('id', studentId));
-            if (!saved) showToast('Checked in on this device — saving to the database failed', 'warning');
+            const { applied, complete } = await persistCheckIn([studentId], program, timeString, staffName, localDateIso(now));
+            if (!applied.has(studentId)) {
+                setStudents(prev => prev.map(s => s.id === studentId && showsCheckIn(s, program, timeString, staffName) ? withoutCheckIn(s, program) : s));
+                showToast(!complete ? "Not checked in — couldn't reach the database" : 'Not checked in — already checked in on another device, or blocked', !complete ? 'error' : 'warning');
+                setShowConfirmId(null);
+                return;
+            }
         }
         if (student) {
-            recordEvents([{ studentId, studentName: fullName(student), type: 'check_in', program, staffName, occurredAt: now.toISOString(), detail: photo ? 'Photo captured at check-in' : undefined }]);
+            const audit = await recordEvents([{ studentId, studentName: fullName(student), type: 'check_in', program, staffName, occurredAt: now.toISOString(), detail: photo ? 'Photo captured at check-in' : undefined }]);
+            if (audit.failed > 0) showToast('Checked in, but the Daily Record entry failed to save', 'warning');
         }
 
         if (student) {
@@ -550,60 +619,70 @@ const App = () => {
         setSearchQuery('');
     };
 
-    const handleCheckOut = async (studentId: string, smsTime: string, checkOutBy?: string) => {
+    /**
+     * Check-out after a staff member confirms who is picking the child up.
+     * Resolves true if the check-out went ahead.
+     *
+     * Database students: the staff member's confirmation at the door IS the
+     * check-out — written once, only if the child is still checked in today, and
+     * recorded with who they were released to. (A simulated 5-second "guardian
+     * replied" timer used to complete real check-outs; there is no SMS provider
+     * yet, so nothing real was confirming them.)
+     *
+     * Sample / session-only students keep the demo of the guardian-text round
+     * trip, clearly labelled as simulated.
+     */
+    const handleCheckOut = async (studentId: string, smsTime: string, checkOutBy?: string, releasedTo?: string): Promise<boolean> => {
         const p = program;
         const student = studentsRef.current.find(s => s.id === studentId);
-        const persist = isSupabaseConfigured && isUuid(studentId);
+        if (!student) return false;
+        const staffName = checkOutBy || currentStaffName();
 
-        setStudents(prev => prev.map(s => {
-            if (s.id === studentId) {
-                const update = p === 'sunrise'
-                    ? { sunriseStatus: 'pending_parent' as AttendanceStatus }
-                    : { sunsetStatus: 'pending_parent' as AttendanceStatus };
-                return { ...s, ...update, smsSentTime: smsTime, lastCheckOutBy: checkOutBy };
+        if (isDbStudent(studentId)) {
+            const time = formatClockTime();
+            const rows = await persistCheckOut(studentId, p, time, staffName, smsTime, localDateIso());
+            if (!rows || rows.length === 0) {
+                showToast(rows === null
+                    ? "Check-out not saved — couldn't reach the database"
+                    : `${student.firstName} is no longer checked in on the database — refresh the roster`, 'error');
+                return false;
             }
-            return s;
-        }));
-
-        if (persist) {
-            const updateData = p === 'sunrise'
-                ? { sunrise_status: 'pending_parent', sms_sent_time: smsTime, last_checkout_by: checkOutBy }
-                : { sunset_status: 'pending_parent', sms_sent_time: smsTime, last_checkout_by: checkOutBy };
-            await runDbWrite('Check-out', () => supabase.from('students').update(updateData).eq('id', studentId));
+            setStudents(prev => prev.map(s => s.id === studentId
+                ? { ...s, ...(p === 'sunrise'
+                    ? { sunriseStatus: 'checked_out' as AttendanceStatus, sunriseCheckOutTime: time }
+                    : { sunsetStatus: 'checked_out' as AttendanceStatus, sunsetCheckOutTime: time }),
+                    smsSentTime: smsTime, lastCheckOutBy: staffName }
+                : s));
+            const audit = await recordEvents([{
+                studentId, studentName: fullName(student), type: 'checked_out', program: p, staffName,
+                detail: `Released to ${releasedTo || 'guardian'} · confirmed by staff at pickup (guardian texts not connected)`,
+            }]);
+            if (audit.failed > 0) showToast('Checked out, but the Daily Record entry failed to save', 'warning');
+            return true;
         }
-        if (student) {
-            recordEvents([{ studentId, studentName: fullName(student), type: 'checkout_requested', program: p, staffName: checkOutBy || 'Staff', detail: 'Guardian pickup text simulated — SMS provider not connected' }]);
-        }
 
-        // Stand-in for the guardian's text reply until an SMS provider is wired up.
-        setTimeout(async () => {
+        // Sample / session-only student: demo of the guardian confirming by text.
+        setStudents(prev => prev.map(s => s.id === studentId
+            ? { ...s, ...(p === 'sunrise' ? { sunriseStatus: 'pending_parent' as AttendanceStatus } : { sunsetStatus: 'pending_parent' as AttendanceStatus }), smsSentTime: smsTime, lastCheckOutBy: staffName }
+            : s));
+        recordEvents([{ studentId, studentName: fullName(student), type: 'checkout_requested', program: p, staffName, detail: `Pickup by ${releasedTo || 'guardian'} · guardian text simulated (sample data)` }]);
+        const gen = sessionGenRef.current;
+        setTimeout(() => {
+            if (sessionGenRef.current !== gen) return; // logged out meanwhile
             const timeString = formatClockTime();
-            setStudents(prev => prev.map(s => {
-                if (s.id === studentId) {
-                    const update = p === 'sunrise'
-                        ? { sunriseStatus: 'checked_out' as AttendanceStatus, sunriseCheckOutTime: timeString }
-                        : { sunsetStatus: 'checked_out' as AttendanceStatus, sunsetCheckOutTime: timeString };
-                    return { ...s, ...update };
-                }
-                return s;
-            }));
-            if (persist) {
-                const dbUpdate = p === 'sunrise'
-                    ? { sunrise_status: 'checked_out', sunrise_checkout_time: timeString }
-                    : { sunset_status: 'checked_out', sunset_checkout_time: timeString };
-                await runDbWrite('Check-out', () => supabase.from('students').update(dbUpdate).eq('id', studentId));
-            }
-            if (student) {
-                recordEvents([{ studentId, studentName: fullName(student), type: 'checked_out', program: p, staffName: checkOutBy || 'Staff', detail: 'Guardian confirmation simulated — SMS provider not connected' }]);
-            }
+            setStudents(prev => prev.map(s => s.id === studentId && statusFor(s, p) === 'pending_parent'
+                ? { ...s, ...(p === 'sunrise' ? { sunriseStatus: 'checked_out' as AttendanceStatus, sunriseCheckOutTime: timeString } : { sunsetStatus: 'checked_out' as AttendanceStatus, sunsetCheckOutTime: timeString }) }
+                : s));
+            recordEvents([{ studentId, studentName: fullName(student), type: 'checked_out', program: p, staffName, detail: 'Guardian confirmation simulated (sample data)' }]);
         }, 5000);
+        return true;
     };
 
     const handleSaveStudent = async (updatedStudent: Student) => {
         const oldStudent = students.find(s => s.id === updatedStudent.id);
         setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
 
-        if (isSupabaseConfigured && isUuid(updatedStudent.id)) {
+        if (isDbStudent(updatedStudent.id)) {
             const updateData: any = {
                 first_name: updatedStudent.firstName,
                 last_name: updatedStudent.lastName,
@@ -694,12 +773,29 @@ const App = () => {
     const handleLogout = () => {
         settlePendingCheckIn();
         exitGroupMode();
-        // Without signOut() the Supabase session survived "Logout": the auth effect
-        // above re-read it and signed a listed staff member straight back in, and a
-        // reload did the same — on a shared site Chromebook the next person
-        // inherited the previous person's identity.
+        sessionGenRef.current += 1; // late timers from this session must not touch the next one
+        // Without a real sign-out the Supabase session survived "Logout" and the
+        // previous staff member was signed straight back in, on this page or after
+        // a reload — on a shared site Chromebook the next person inherited their
+        // identity. signOutAndForget also removes the stored session when Supabase
+        // can't be reached.
         restoreSessionRef.current = false;
-        if (isSupabaseConfigured) void supabase.auth.signOut();
+        if (isSupabaseConfigured) void signOutAndForget();
+        // Student data loaded for one person must not stay on screen or in memory
+        // for whoever uses the device next.
+        setStudents(INITIAL_STUDENTS);
+        setStaffList(INITIAL_STAFF);
+        setParentReports([]);
+        setBiometricLogs([]);
+        setScheduledBatchCheckoutTime(null);
+        setActiveStudentId(null);
+        setShowConfirmId(null);
+        setShowLeaderDashboard(false);
+        setReportData(null);
+        setSearchQuery('');
+        setSelectedGrade(null);
+        clearDbStudents();
+        clearSessionEvents();
         setUser(null);
     };
 

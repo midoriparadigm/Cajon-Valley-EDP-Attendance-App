@@ -6,7 +6,7 @@ import { serializeCsv } from '../utils/csv';
 import { formatClockTime, localDateIso } from '../utils/helpers';
 import {
     AUDIT_EVENT_LABELS, useAuditEvents, filterDayEvents, fetchRemoteDayEvents, mergeEvents,
-    type AuditEvent,
+    type RemoteDayResult,
 } from '../services/auditLog';
 
 interface DailyRecordViewProps {
@@ -19,29 +19,35 @@ const DailyRecordView = ({ students }: DailyRecordViewProps) => {
     const [date, setDate] = useState(todayIso);
     const [query, setQuery] = useState('');
     const [studentId, setStudentId] = useState<string | null>(null);
-    const [remote, setRemote] = useState<AuditEvent[]>([]);
-    const [loading, setLoading] = useState(false);
+    // Each database result remembers the query it answers. While a new
+    // student/day loads, the previous answer is not shown or exported under
+    // the new selection.
+    const [remote, setRemote] = useState<{ key: string; result: RemoteDayResult } | null>(null);
 
     const sessionEvents = useAuditEvents();
     const selectedStudent = students.find(s => s.id === studentId) ?? null;
+    const queryKey = `${date}|${studentId ?? '*'}`;
 
-    // Database rows only change when someone records something, so they are
-    // re-read when the day or student changes, or when this session records a
+    // Re-read when the day or student changes, or when this session records a
     // new event. Session events themselves are merged live below.
     useEffect(() => {
         let cancelled = false;
-        setLoading(isSupabaseConfigured);
-        fetchRemoteDayEvents(date, studentId ?? undefined).then(rows => {
-            if (cancelled) return;
-            setRemote(rows ?? []);
-            setLoading(false);
+        const key = queryKey;
+        fetchRemoteDayEvents(date, studentId ?? undefined).then(result => {
+            if (!cancelled) setRemote({ key, result });
         });
         return () => { cancelled = true; };
     }, [date, studentId, sessionEvents.length]);
 
+    const current = remote && remote.key === queryKey ? remote.result : null;
+    const isLoading = current === null;
+    const readError = current?.status === 'error' ? current.message : null;
+    const truncated = current?.status === 'ok' && current.truncated;
+
     const shown = useMemo(
-        () => mergeEvents(filterDayEvents(sessionEvents, date, studentId ?? undefined), remote),
-        [sessionEvents, remote, date, studentId],
+        // Filter the merged list, not just the session part, so no row from another day or student can slip in.
+        () => filterDayEvents(mergeEvents(sessionEvents, current?.status === 'ok' ? current.rows : []), date, studentId ?? undefined),
+        [sessionEvents, current, date, studentId],
     );
 
     const suggestions = useMemo(() => {
@@ -53,29 +59,40 @@ const DailyRecordView = ({ students }: DailyRecordViewProps) => {
     }, [query, students, selectedStudent]);
 
     const savedCount = shown.filter(e => e.persisted).length;
-    // Per-row "device only" tags are only useful when a day mixes saved and unsaved entries.
-    const isMixed = savedCount > 0 && savedCount < shown.length;
+    const failedCount = shown.filter(e => !e.persisted && !e.localOnly).length;
+    const localCount = shown.filter(e => e.localOnly).length;
+    const isMixed = localCount > 0 && localCount < shown.length;
+
     const badge = shown.length === 0
         ? null
-        : savedCount === shown.length
-            ? { label: 'Locked', icon: 'lock', fg: '#15803d', bg: 'var(--color-success-bg)' }
-            : savedCount === 0
-                ? { label: 'Sample data · not saved', icon: 'science', fg: '#92400e', bg: 'var(--color-warning-bg)' }
-                : { label: `${shown.length - savedCount} not yet saved`, icon: 'sync_problem', fg: '#92400e', bg: 'var(--color-warning-bg)' };
+        : failedCount > 0
+            ? { label: `${failedCount} failed to save`, icon: 'sync_problem', fg: '#b91c1c', bg: 'var(--color-danger-bg)' }
+            : savedCount === shown.length
+                ? { label: 'Locked', icon: 'lock', fg: '#15803d', bg: 'var(--color-success-bg)' }
+                : localCount === shown.length
+                    ? { label: 'Sample data · not saved', icon: 'science', fg: '#92400e', bg: 'var(--color-warning-bg)' }
+                    : { label: `${localCount} not saved · session-only students`, icon: 'science', fg: '#92400e', bg: 'var(--color-warning-bg)' };
+
+    // Exporting while the database part is loading or failed would produce an
+    // incomplete file that looks complete.
+    const canExport = shown.length > 0 && !(isSupabaseConfigured && (isLoading || readError));
 
     const exportCsv = () => {
         const header = ['Date', 'Time', 'Student', 'Program', 'Action', 'Detail', 'Staff', 'Group ID', 'Saved to database'];
-        const rows = shown.map(e => [
-            date,
-            formatClockTime(new Date(e.occurredAt)),
-            e.studentName,
-            e.program ?? '',
-            AUDIT_EVENT_LABELS[e.type],
-            e.detail ?? '',
-            e.staffName,
-            e.batchId ?? '',
-            e.persisted ? 'yes' : 'no',
-        ]);
+        const rows = shown.map(e => {
+            const at = new Date(e.occurredAt);
+            return [
+                localDateIso(at),
+                formatClockTime(at),
+                e.studentName,
+                e.program ?? '',
+                AUDIT_EVENT_LABELS[e.type],
+                e.detail ?? '',
+                e.staffName,
+                e.batchId ?? '',
+                e.persisted ? 'yes' : e.localOnly ? 'no (session only)' : 'no (failed)',
+            ];
+        });
         const blob = new Blob([serializeCsv([header, ...rows])], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -127,29 +144,40 @@ const DailyRecordView = ({ students }: DailyRecordViewProps) => {
                     )}
                 </div>
                 <input type="date" title="Day" value={date} max={todayIso()} onChange={e => e.target.value && setDate(e.target.value)} style={inputStyle} />
-                <button onClick={exportCsv} disabled={shown.length === 0} style={{ ...inputStyle, display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', cursor: shown.length ? 'pointer' : 'default', opacity: shown.length ? 1 : 0.5 }}>
+                <button onClick={exportCsv} disabled={!canExport} title={canExport ? 'Download this record as CSV' : 'Available once the full record has loaded'} style={{ ...inputStyle, display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', cursor: canExport ? 'pointer' : 'default', opacity: canExport ? 1 : 0.5 }}>
                     <span className="material-icons-round" style={{ fontSize: '18px' }}>download</span> CSV
                 </button>
             </div>
+
+            {readError && (
+                <div role="alert" style={{ padding: '12px 14px', borderRadius: '12px', backgroundColor: 'var(--color-danger-bg)', color: '#b91c1c', fontSize: '14px', fontWeight: '600' }}>
+                    Couldn't load saved records from the database. Showing only entries made on this device — this is not the full record.
+                </div>
+            )}
+            {truncated && (
+                <div role="status" style={{ padding: '12px 14px', borderRadius: '12px', backgroundColor: 'var(--color-warning-bg)', color: '#92400e', fontSize: '14px', fontWeight: '600' }}>
+                    This day has more entries than can be shown at once. Narrow to one student to see their full record.
+                </div>
+            )}
 
             <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '14px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
                     <div style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.6px', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
                         Daily record · {selectedStudent ? `${selectedStudent.firstName} ${selectedStudent.lastName.charAt(0)}.` : 'All students'} · {new Date(`${date}T00:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
                     </div>
-                    {badge && (
+                    {badge && !(isSupabaseConfigured && isLoading) && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '999px', backgroundColor: badge.bg, color: badge.fg, fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                             <span className="material-icons-round" style={{ fontSize: '14px' }}>{badge.icon}</span>{badge.label}
                         </span>
                     )}
                 </div>
 
-                {loading && shown.length === 0 ? (
+                {isSupabaseConfigured && isLoading && shown.length === 0 ? (
                     <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading…</div>
                 ) : shown.length === 0 ? (
                     <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                         <span className="material-icons-round" style={{ fontSize: '40px', color: 'var(--text-muted)' }}>history</span>
-                        <div style={{ fontWeight: '700', marginTop: '8px' }}>Nothing recorded for this day</div>
+                        <div style={{ fontWeight: '700', marginTop: '8px' }}>{readError ? 'No entries on this device' : 'Nothing recorded for this day'}</div>
                     </div>
                 ) : (
                     <ol style={{ listStyle: 'none', margin: 0, padding: '8px 0' }}>
@@ -164,7 +192,8 @@ const DailyRecordView = ({ students }: DailyRecordViewProps) => {
                                     {e.program && <span style={{ color: 'var(--text-secondary)' }}> · {e.program === 'sunrise' ? 'Sunrise' : 'Sunset'}</span>}
                                     <span style={{ color: 'var(--text-secondary)' }}> · {e.staffName}</span>
                                     {e.detail && <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>{e.detail}</div>}
-                                    {isMixed && !e.persisted && <div style={{ fontSize: '11px', color: '#b45309', marginTop: '2px', fontWeight: '700' }}>Not yet saved — on this device only</div>}
+                                    {!e.persisted && !e.localOnly && <div style={{ fontSize: '11px', color: '#b91c1c', marginTop: '2px', fontWeight: '700' }}>Failed to save — on this device only</div>}
+                                    {isMixed && e.localOnly && <div style={{ fontSize: '11px', color: '#b45309', marginTop: '2px', fontWeight: '700' }}>Not saved — session-only student</div>}
                                 </span>
                             </li>
                         ))}

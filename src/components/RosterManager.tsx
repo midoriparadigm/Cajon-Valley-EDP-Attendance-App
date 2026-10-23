@@ -89,9 +89,11 @@ const RosterManager = ({ onImport, onAdd, showToast, existingStudents, darkMode 
                 if (missingGuardianCount > 0) notes.push(`${missingGuardianCount} without a guardian`);
 
                 showToast(
-                    `Imported ${students.length} student${students.length === 1 ? '' : 's'}` +
-                    (notes.length > 0 ? ` — ${notes.join(', ')}` : ''),
-                    notes.length > 0 ? 'warning' : 'success',
+                    // Imported students live in this session only until roster
+                    // import is wired to the database — say so rather than imply it's saved.
+                    `Imported ${students.length} student${students.length === 1 ? '' : 's'} for this session — not saved to the database yet` +
+                    (notes.length > 0 ? ` (${notes.join(', ')})` : ''),
+                    'warning',
                 );
             } catch (err) {
                 showToast(
@@ -275,7 +277,7 @@ const RosterManager = ({ onImport, onAdd, showToast, existingStudents, darkMode 
                         setManualStudent(EMPTY_STUDENT());
                         setIsAddingGuardian(false);
                         setEditingGuardianIndex(null);
-                        showToast('Student successfully added!', 'success');
+                        showToast('Student added for this session — not saved to the database yet', 'warning');
                     }} style={{ padding: '10px 24px', backgroundColor: 'var(--text-main)', color: 'var(--bg-card)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>Add Student</button>
                 </div>
             </div>
