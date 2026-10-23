@@ -184,3 +184,9 @@ CREATE INDEX IF NOT EXISTS idx_behavior_student ON public.behavior_logs(student_
 CREATE INDEX IF NOT EXISTS idx_behavior_created ON public.behavior_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_hir_student ON public.head_injury_logs(student_id);
 CREATE INDEX IF NOT EXISTS idx_students_elop_id ON public.students(elop_id);
+
+-- ============================================================================
+-- Later changes live in supabase/migrations/ — apply each file there, in name
+-- order, after this one. On a project that already has this base schema, run
+-- ONLY the migrations: the CREATE POLICY statements above are not re-runnable.
+-- ============================================================================

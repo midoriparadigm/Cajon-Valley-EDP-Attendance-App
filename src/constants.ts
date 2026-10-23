@@ -2,6 +2,20 @@
 
 export const GRADES = ['TK', 'K', '1', '2', '3', '4', '5'];
 
+/**
+ * Student photos, camera capture at check-in, the simulated face-verification
+ * step and the Photo Review dashboard. OFF unless a build explicitly sets
+ * VITE_ENABLE_STUDENT_PHOTOS=true.
+ *
+ * The SDCOE pilot commits to "No student photos. No facial recognition.", so
+ * the default build must not capture, display or request student images —
+ * including avatar URLs, which would send student names to a third-party host.
+ */
+export const STUDENT_PHOTOS_ENABLED = import.meta.env.VITE_ENABLE_STUDENT_PHOTOS === 'true';
+
+/** How long the "Undo" bar stays up after a check-in. */
+export const UNDO_WINDOW_MS = 8000;
+
 // Behavior Checklists based on Tiered District Safety Plan
 export const BEHAVIOR_CHECKLISTS = {
     green: [

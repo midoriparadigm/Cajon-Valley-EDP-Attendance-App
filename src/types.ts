@@ -197,8 +197,19 @@ export interface GuardianContact {
     phone: string;
     email?: string;
     relationship?: string;
+    /** Name of the primary guardian who approved this pickup contact. Set only once approval is recorded. */
     authorizedBy?: string;
     authDate?: string;
+    /**
+     * Pickup approval for non-primary contacts. 'pending' contacts cannot be
+     * chosen at check-out. Undefined = the primary contact, or a contact
+     * entered at enrollment (before approvals were tracked).
+     */
+    authStatus?: 'pending' | 'approved';
+    /** When the approval request was sent to the primary guardian. */
+    authRequestedAt?: string;
+    /** Staff member who recorded the primary guardian's approval. */
+    authRecordedBy?: string;
     notifySms?: boolean;
     notifyEmail?: boolean;
 }

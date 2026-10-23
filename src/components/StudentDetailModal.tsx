@@ -1,7 +1,7 @@
 // src/components/StudentDetailModal.tsx
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { Student, Staff, GuardianContact, HeadInjuryLog, ParentReport, ProgramType, BiometricLog, BehaviorStatus, AttendanceStatus } from '../types';
-import { BEHAVIOR_CHECKLISTS, BEHAVIOR_ROLE_DESCRIPTIONS } from '../constants';
+import { BEHAVIOR_CHECKLISTS, BEHAVIOR_ROLE_DESCRIPTIONS, STUDENT_PHOTOS_ENABLED } from '../constants';
 import { sendSmsMock } from '../utils/sms';
 import { MockDatabase } from '../utils/mock';
 import { playAlarm } from '../utils/helpers';
@@ -10,13 +10,17 @@ import CollapsedBehaviorView from './CollapsedBehaviorView';
 import CollapsedWeCareView from './CollapsedWeCareView';
 import CollapsedHeadInjuryView from './CollapsedHeadInjuryView';
 import GuardianAddForm from './GuardianAddForm';
+
+/** A contact may be chosen at check-out unless their pickup approval is still pending. */
+const isPickupApproved = (g: GuardianContact) => g.type === 'Contact 1' || g.authStatus !== 'pending';
 import WeCareReportForm from './WeCareReportForm';
 
 interface StudentDetailModalProps {
     student: Student;
     onClose: () => void;
     onSave: (s: Student) => void;
-    onCheckOut: (id: string, smsTime: string, checkOutBy?: string) => void;
+    /** Resolves true if the check-out went ahead; the database may refuse it. */
+    onCheckOut: (id: string, smsTime: string, checkOutBy?: string, releasedTo?: string) => Promise<boolean>;
     currentStaff: Staff;
     program: ProgramType;
     isLeadMode: boolean;
@@ -45,33 +49,11 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
     // Guardian Management V2 State
     const [editingGuardianIndex, setEditingGuardianIndex] = useState<number | null>(null);
     const [isAddingGuardian, setIsAddingGuardian] = useState(false);
+    const [confirmApprovalIndex, setConfirmApprovalIndex] = useState<number | null>(null);
 
-    const handleSaveGuardian = (contact: GuardianContact) => {
-        const updatedGuardians = [...(editedStudent.guardians || [])];
+    const primaryGuardian = (editedStudent.guardians || []).find(g => g.type === 'Contact 1');
 
-        if (editingGuardianIndex !== null) {
-            updatedGuardians[editingGuardianIndex] = {
-                ...updatedGuardians[editingGuardianIndex],
-                ...contact,
-            };
-            setEditingGuardianIndex(null);
-        } else {
-            if (contact.type !== 'Contact 1') {
-                const primary = updatedGuardians.find(g => g.type === 'Contact 1');
-                if (primary) {
-                    contact.authorizedBy = `${primary.firstName} ${primary.lastName}`;
-                    contact.authDate = new Date().toLocaleDateString();
-                    sendSmsMock(primary.phone, 'auth_request', {
-                        guardian_name: `${contact.firstName} ${contact.lastName}`,
-                        role_type: contact.type,
-                        student_names: `${editedStudent.firstName}`
-                    });
-                }
-            }
-            updatedGuardians.push(contact);
-            setIsAddingGuardian(false);
-        }
-
+    const commitGuardians = (updatedGuardians: GuardianContact[]) => {
         const updatedStudent = {
             ...editedStudent,
             guardians: updatedGuardians,
@@ -81,18 +63,72 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
         onSave(updatedStudent);
     };
 
+    /**
+     * Asks the primary guardian to approve a pickup contact. Sending the request
+     * is not an approval: the contact stays 'pending' — and cannot be chosen at
+     * check-out — until a Lead records the primary guardian's answer.
+     * (Previously the contact was stamped "Authorized by <primary>" the moment
+     * the request went out, before anyone had replied.)
+     */
+    const requestPickupApproval = (contact: GuardianContact): GuardianContact => {
+        if (primaryGuardian?.phone) {
+            sendSmsMock(primaryGuardian.phone, 'auth_request', {
+                guardian_name: `${contact.firstName} ${contact.lastName}`,
+                role_type: contact.type,
+                student_names: `${editedStudent.firstName}`
+            });
+        }
+        return {
+            ...contact,
+            authStatus: 'pending',
+            authRequestedAt: new Date().toLocaleString([], { month: 'numeric', day: 'numeric', year: '2-digit', hour: 'numeric', minute: '2-digit' }),
+            authorizedBy: undefined,
+            authDate: undefined,
+            authRecordedBy: undefined,
+        };
+    };
+
+    const handleSaveGuardian = (contact: GuardianContact) => {
+        const updatedGuardians = [...(editedStudent.guardians || [])];
+
+        if (editingGuardianIndex !== null) {
+            const previous = updatedGuardians[editingGuardianIndex];
+            const merged = { ...previous, ...contact };
+            // A new name is a different person, so an earlier approval must not carry over.
+            const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+            const personChanged = !sameName(previous.firstName, contact.firstName) || !sameName(previous.lastName, contact.lastName);
+            updatedGuardians[editingGuardianIndex] = merged.type !== 'Contact 1' && personChanged
+                ? requestPickupApproval(merged)
+                : merged;
+            setEditingGuardianIndex(null);
+        } else {
+            updatedGuardians.push(contact.type === 'Contact 1' ? contact : requestPickupApproval(contact));
+            setIsAddingGuardian(false);
+        }
+        commitGuardians(updatedGuardians);
+    };
+
+    /** Lead records that the primary guardian has approved a pending pickup contact. */
+    const handleRecordApproval = (index: number) => {
+        const updatedGuardians = [...(editedStudent.guardians || [])];
+        updatedGuardians[index] = {
+            ...updatedGuardians[index],
+            authStatus: 'approved',
+            authorizedBy: primaryGuardian ? `${primaryGuardian.firstName} ${primaryGuardian.lastName}` : 'EDP Lead (no primary contact on file)',
+            authDate: new Date().toLocaleDateString(),
+            authRecordedBy: currentStaff.name,
+        };
+        setConfirmApprovalIndex(null);
+        commitGuardians(updatedGuardians);
+        showToast(`Pickup approval recorded for ${updatedGuardians[index].firstName}`, 'success');
+    };
+
     const handleDeleteGuardian = () => {
         if (editingGuardianIndex === null) return;
         const updatedGuardians = [...(editedStudent.guardians || [])];
         updatedGuardians.splice(editingGuardianIndex, 1);
-        const updatedStudent = {
-            ...editedStudent,
-            guardians: updatedGuardians,
-            contactLastUpdated: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setEditedStudent(updatedStudent);
         setEditingGuardianIndex(null);
-        onSave(updatedStudent);
+        commitGuardians(updatedGuardians);
     };
     const [showCheckOutConfirm, setShowCheckOutConfirm] = useState(false);
     const alarmPlayedRef = useRef(false);
@@ -243,11 +279,25 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
         setIsEditingBehavior(true);
     };
 
-    const handleLocalCheckOut = () => {
+    const handleLocalCheckOut = async () => {
         const now = new Date();
         const timeStr = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
         const activeGuardian = student.guardians?.find(g => g.type === checkoutBy) || student.guardians?.[0];
+        if (activeGuardian && !isPickupApproved(activeGuardian)) {
+            showToast(`${activeGuardian.firstName} is not approved for pickup yet`, 'error');
+            return;
+        }
+        setShowCheckOutConfirm(false);
+        const staffName = currentStaff ? `${currentStaff.name} (${currentStaff.organization})` : 'Staff';
+        const releasedTo = activeGuardian ? `${activeGuardian.type}: ${activeGuardian.firstName} ${activeGuardian.lastName}` : undefined;
+
+        // The app writes the check-out (the database can refuse it, e.g. if the
+        // child was already checked out elsewhere); the roster shown here follows
+        // the app's student record. Pickup texts go out only once it went ahead.
+        const done = await onCheckOut(student.id, timeStr, staffName, releasedTo);
+        if (!done) return;
+
         const activePhone = activeGuardian?.phone || '619-549-0572';
         const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
@@ -272,15 +322,6 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                 });
             }
         }
-
-        const pendingUpdate = program === 'sunrise'
-            ? { sunriseStatus: 'pending_parent' as AttendanceStatus }
-            : { sunsetStatus: 'pending_parent' as AttendanceStatus };
-
-        setEditedStudent(prev => ({ ...prev, ...pendingUpdate, smsSentTime: timeStr }));
-        setShowCheckOutConfirm(false);
-        const staffName = currentStaff ? `${currentStaff.name} (${currentStaff.organization})` : 'Staff';
-        onCheckOut(student.id, timeStr, staffName);
     };
 
     const currentStatus = program === 'sunrise' ? editedStudent.sunriseStatus : editedStudent.sunsetStatus;
@@ -323,7 +364,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)' }}>
-                        {student.yearbookPhotoUrl ? (
+                        {STUDENT_PHOTOS_ENABLED && student.yearbookPhotoUrl ? (
                             <img src={student.yearbookPhotoUrl} alt={student.firstName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-hover)', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: '800' }}>
@@ -419,7 +460,9 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                     <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px' }}>Checkout By:</label>
                                                     <select title="Select Guardian" value={checkoutBy} onChange={(e) => setCheckoutBy(e.target.value as any)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}>
                                                         {student.guardians?.map(g => (
-                                                            <option key={g.type} value={g.type}>{g.type}: {g.firstName} {g.lastName}</option>
+                                                            <option key={g.type} value={g.type} disabled={!isPickupApproved(g)}>
+                                                                {g.type}: {g.firstName} {g.lastName}{isPickupApproved(g) ? '' : ' — awaiting approval'}
+                                                            </option>
                                                         ))}
                                                         {(!student.guardians || student.guardians.length === 0) && <option value="Primary">Primary (Unknown)</option>}
                                                     </select>
@@ -849,10 +892,35 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                                         )}
                                                     </div>
 
-                                                    {guardian.authorizedBy && (
+                                                    {guardian.authStatus !== 'pending' && guardian.authorizedBy && (
                                                         <div style={{ marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 8px', backgroundColor: '#ecfdf5', borderRadius: '4px', border: '1px solid #10b981', color: '#047857', fontSize: '11px', fontWeight: '700' }}>
                                                             <span className="material-icons-round" style={{ fontSize: '14px' }}>verified_user</span>
-                                                            Authorized by {guardian.authorizedBy} ({guardian.authDate})
+                                                            Authorized by {guardian.authorizedBy} ({guardian.authDate}){guardian.authRecordedBy && ` · recorded by ${guardian.authRecordedBy}`}
+                                                        </div>
+                                                    )}
+
+                                                    {guardian.authStatus === 'pending' && (
+                                                        <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#fffbeb', border: '1px solid #f59e0b', color: '#92400e', fontSize: '12px' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '800' }}>
+                                                                <span className="material-icons-round" style={{ fontSize: '16px' }}>hourglass_top</span>
+                                                                Awaiting approval{primaryGuardian ? ` from ${primaryGuardian.firstName} ${primaryGuardian.lastName}` : ''} · not allowed at pickup yet
+                                                            </div>
+                                                            <div style={{ marginTop: '2px' }}>Request sent {guardian.authRequestedAt}</div>
+                                                            {isLead && (confirmApprovalIndex === idx ? (
+                                                                <div style={{ marginTop: '10px' }}>
+                                                                    <div style={{ fontWeight: '600', marginBottom: '8px' }}>
+                                                                        Only record this after {primaryGuardian ? primaryGuardian.firstName : 'the primary guardian'} has told you directly — by phone, in person, or by replying to the text — that {guardian.firstName} may pick up {editedStudent.firstName}.
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                                        <button onClick={() => setConfirmApprovalIndex(null)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #f59e0b', background: 'transparent', color: '#92400e', fontWeight: '700', cursor: 'pointer' }}>Cancel</button>
+                                                                        <button onClick={() => handleRecordApproval(idx)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', backgroundColor: '#047857', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Record approval</button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <button onClick={() => setConfirmApprovalIndex(idx)} style={{ marginTop: '8px', padding: '6px 10px', borderRadius: '8px', border: '1px solid #f59e0b', background: 'transparent', color: '#92400e', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+                                                                    Record approval…
+                                                                </button>
+                                                            ))}
                                                         </div>
                                                     )}
                                                 </div>

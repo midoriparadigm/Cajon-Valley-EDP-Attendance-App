@@ -7,7 +7,11 @@ export default defineConfig(({ mode }) => {
     return {
       server: {
         port: 3000,
-        host: '0.0.0.0',
+        // Listen on this machine only. The dev server can read project files and
+        // has had file-disclosure advisories, so it should not be reachable by
+        // everyone on a school or office network. To test from a phone on the
+        // same network, opt in explicitly: `npm run dev -- --host`.
+        host: 'localhost',
       },
       plugins: [react()],
       define: {

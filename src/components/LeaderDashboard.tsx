@@ -1,8 +1,10 @@
 // src/components/LeaderDashboard.tsx
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import type { Student, Staff, ParentReport, BiometricLog, ProgramType } from '../types';
-import { GRADES } from '../constants';
+import { GRADES, STUDENT_PHOTOS_ENABLED } from '../constants';
 import RosterManager from './RosterManager';
+import DailyRecordView from './DailyRecordView';
+import { recordEvents } from '../services/auditLog';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface LeaderDashboardProps {
@@ -47,7 +49,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
         paddingTop: '80px'
     };
 
-    const [activeSection, setActiveSection] = useState<'roster' | 'permissions' | 'batch' | 'blocking' | 'reports' | 'biometric' | null>(null);
+    const [activeSection, setActiveSection] = useState<'roster' | 'records' | 'permissions' | 'batch' | 'blocking' | 'reports' | 'biometric' | null>(null);
     const [localStaff, setLocalStaff] = useState<Staff[]>(staffList);
     const [sunriseBatchTime, setSunriseBatchTime] = useState(defaultBatchTime || '08:00');
     const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 768);
@@ -93,11 +95,12 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
 
     const menuOptions = [
         { id: 'roster', label: 'Roster Management', icon: 'groups', color: '#3b82f6', bg: '#dbeafe' },
+        { id: 'records', label: 'Daily Records', icon: 'history', color: '#0f766e', bg: '#ccfbf1' },
         { id: 'reports', label: `Parent Reports (${parentReports.length})`, icon: 'assignment', color: '#f59e0b', bg: '#fef3c7' },
         { id: 'permissions', label: 'Staff Permissions', icon: 'admin_panel_settings', color: '#8b5cf6', bg: '#f3e8ff' },
         { id: 'blocking', label: 'Student Access', icon: 'block', color: '#ef4444', bg: '#fee2e2' },
         { id: 'batch', label: 'Batch Operations', icon: 'checklist_rtl', color: '#10b981', bg: '#d1fae5' },
-        { id: 'biometric', label: 'Photo Review', icon: 'face', color: '#6366f1', bg: '#e0e7ff' },
+        ...(STUDENT_PHOTOS_ENABLED ? [{ id: 'biometric', label: 'Photo Review', icon: 'face', color: '#6366f1', bg: '#e0e7ff' }] : []),
     ];
 
     useEffect(() => {
@@ -519,7 +522,14 @@ Requirements:
         if (onUpdateReport) onUpdateReport(report);
         setInlineDraftMode(false);
         showToast('Report sent!', 'success');
-    }, [selectedReportStudentId, parentReports, onDeleteReport, onUpdateReport, draftMessage, draftMethod, draftReportTypes, user.id, showToast]);
+        recordEvents([{
+            studentId: selectedReportStudentId,
+            studentName: report.studentName,
+            type: 'parent_report_sent',
+            staffName: `${user.name} (${user.organization})`,
+            detail: `${draftReportTypes.join(' + ') || report.type} · marked sent by ${draftMethod === 'both' ? 'email + text' : draftMethod} — delivery not connected`,
+        }]);
+    }, [selectedReportStudentId, parentReports, onDeleteReport, onUpdateReport, draftMessage, draftMethod, draftReportTypes, user.id, user.name, user.organization, showToast]);
 
     const handleDiscardDraft = useCallback(() => {
         setInlineDraftMode(false);
@@ -593,7 +603,8 @@ Requirements:
                         </button>
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '0' }}>
-                        {activeSection === 'roster' && <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}><RosterManager onImport={onImport} onAdd={onAddStudent} showToast={showToast} darkMode={darkMode} /></div>}
+                        {activeSection === 'roster' && <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}><RosterManager onImport={onImport} onAdd={onAddStudent} showToast={showToast} existingStudents={students} darkMode={darkMode} /></div>}
+                        {activeSection === 'records' && <DailyRecordView students={students} />}
                         {activeSection === 'permissions' && (
                             <div style={{ padding: '20px' }}>
                                 <div style={{ maxWidth: '800px', margin: '0 auto' }}>

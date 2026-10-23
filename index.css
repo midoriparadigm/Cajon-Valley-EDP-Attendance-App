@@ -293,8 +293,12 @@ button {
   max-width: 300px;
 }
 
-/* Target smartphones in landscape — triggers on any phone-width screen (excludes tablets/desktop) */
-@media screen and (max-width: 950px) and (orientation: landscape) {
+/* Target smartphones in landscape only. A width test (the old max-width: 950px)
+   also caught Chromebooks and desktops whenever the browser window was snapped to
+   half the screen or display scaling was raised — hiding the app behind "Please
+   Rotate Device" on hardware that cannot rotate. Phones in landscape are short
+   and touch-first; laptops and tablets are not. */
+@media screen and (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
   .landscape-overlay {
     display: flex;
   }

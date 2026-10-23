@@ -1,12 +1,22 @@
-version: '3.8'
-
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      # Vite inlines VITE_* values into the static bundle at BUILD time, so these
+      # must be passed as build args — runtime `environment:` entries are too late
+      # and would leave the bundle with empty strings.
+      # Values come from the shell / a local .env file next to this compose file.
+      args:
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        - VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY}
+        - VITE_GAS_WEBHOOK_URL=${VITE_GAS_WEBHOOK_URL}
+        - VITE_GAS_AUTH_TOKEN=${VITE_GAS_AUTH_TOKEN}
+    # nginx.conf listens on 8080 and the image runs as the non-root `nginx` user,
+    # which cannot bind privileged ports — so the container port is 8080, not 80.
     ports:
-      - "8080:80"
+      - "8080:8080"
     restart: unless-stopped
     environment:
       - NODE_ENV=production
@@ -18,8 +28,10 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+    # The dev server must listen on 0.0.0.0 inside the container, so publish it
+    # on the host's loopback only — not to every machine on the network.
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     environment:
       - NODE_ENV=development
