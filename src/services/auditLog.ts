@@ -5,7 +5,7 @@
 // second event, not a deletion of the first.
 //
 // Storage:
-//   • Always kept in memory for this session, so the Daily Records view works
+//   • Always kept in memory for this session, so the Program Log and student summaries work
 //     even with the built-in sample roster.
 //   • When Supabase is configured AND the student is a real database row (see
 //     dbStudents.ts), the event is also inserted into public.attendance_events.
@@ -29,7 +29,9 @@ export type AuditEventType =
     | 'checkout_requested'
     | 'checked_out'
     | 'behavior_submitted'
+    | 'we_care_submitted'
     | 'head_injury_started'
+    | 'head_injury_check'
     | 'parent_report_sent';
 
 export const AUDIT_EVENT_LABELS: Record<AuditEventType, string> = {
@@ -38,7 +40,9 @@ export const AUDIT_EVENT_LABELS: Record<AuditEventType, string> = {
     checkout_requested: 'Pickup started',
     checked_out: 'Checked out',
     behavior_submitted: 'Behavior ticket submitted',
+    we_care_submitted: 'We Care report submitted',
     head_injury_started: 'Head injury report started',
+    head_injury_check: 'Head injury check recorded',
     parent_report_sent: 'Parent report approved',
 };
 
@@ -54,6 +58,8 @@ export interface AuditEvent {
     /** Shared by every event produced by one group action (e.g. a group check-in). */
     batchId?: string;
     detail?: string;
+    /** Full text of a parent letter, on parent_report_sent events only. */
+    body?: string;
     /** True once the database has accepted the event. */
     persisted: boolean;
     /**
@@ -100,6 +106,8 @@ interface AttendanceEventRow {
     staff_name: string;
     batch_id: string | null;
     detail: string | null;
+    /** Added by migration 20261026000000; absent from rows read before it is applied. */
+    body?: string | null;
 }
 
 const toRow = (e: AuditEvent): AttendanceEventRow => ({
@@ -112,6 +120,9 @@ const toRow = (e: AuditEvent): AttendanceEventRow => ({
     staff_name: e.staffName,
     batch_id: e.batchId ?? null,
     detail: e.detail ?? null,
+    // Only letters send the key, so every other event still saves on a
+    // database where the body column has not been added yet.
+    ...(e.body !== undefined ? { body: e.body } : {}),
 });
 
 const fromRow = (r: AttendanceEventRow): AuditEvent => ({
@@ -124,6 +135,7 @@ const fromRow = (r: AttendanceEventRow): AuditEvent => ({
     staffName: r.staff_name,
     batchId: r.batch_id ?? undefined,
     detail: r.detail ?? undefined,
+    body: r.body ?? undefined,
     persisted: true,
     localOnly: false,
 });
@@ -207,7 +219,9 @@ export const fetchRemoteDayEvents = async (isoDate: string, studentId?: string):
         for (let page = 0; page < MAX_PAGES; page++) {
             let query = supabase
                 .from('attendance_events')
-                .select('id, student_id, student_name, event_type, program, occurred_at, staff_name, batch_id, detail')
+                // '*' rather than a column list, so reads keep working whether or
+                // not the body column (migration 20261026000000) exists yet.
+                .select('*')
                 .gte('occurred_at', start.toISOString())
                 .lt('occurred_at', end.toISOString())
                 // id breaks ties so pages never overlap or skip rows with equal timestamps.

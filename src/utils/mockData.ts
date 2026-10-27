@@ -119,3 +119,8 @@ export const GENERATE_MOCK_STUDENTS = (): Student[] => {
 };
 
 export const INITIAL_STUDENTS: Student[] = GENERATE_MOCK_STUDENTS();
+
+const SAMPLE_STUDENT_IDS = new Set(INITIAL_STUDENTS.map(s => s.id));
+
+/** True only for the built-in sample roster, not students added or imported this session. */
+export const isSampleStudent = (id: string): boolean => SAMPLE_STUDENT_IDS.has(id);

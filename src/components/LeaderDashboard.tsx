@@ -3,7 +3,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import type { Student, Staff, ParentReport, BiometricLog, ProgramType } from '../types';
 import { GRADES, STUDENT_PHOTOS_ENABLED } from '../constants';
 import RosterManager from './RosterManager';
-import DailyRecordView from './DailyRecordView';
+import ProgramLogView from './ProgramLogView';
 import { recordEvents } from '../services/auditLog';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -95,7 +95,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
 
     const menuOptions = [
         { id: 'roster', label: 'Roster Management', icon: 'groups', color: '#3b82f6', bg: '#dbeafe' },
-        { id: 'records', label: 'Daily Records', icon: 'history', color: '#0f766e', bg: '#ccfbf1' },
+        { id: 'records', label: 'Program Log', icon: 'history', color: '#0f766e', bg: '#ccfbf1' },
         { id: 'reports', label: `Parent Reports (${parentReports.length})`, icon: 'assignment', color: '#f59e0b', bg: '#fef3c7' },
         { id: 'permissions', label: 'Staff Permissions', icon: 'admin_panel_settings', color: '#8b5cf6', bg: '#f3e8ff' },
         { id: 'blocking', label: 'Student Access', icon: 'block', color: '#ef4444', bg: '#fee2e2' },
@@ -146,6 +146,12 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
         } catch (err) {
             console.error('Failed to toggle staff admin tasks:', err);
         }
+    };
+
+    const toggleStaffViewAllReports = (staffId: string) => {
+        const updated = localStaff.map(s => s.id === staffId ? { ...s, canViewAllReports: !s.canViewAllReports } : s);
+        setLocalStaff(updated);
+        onUpdateStaff(updated);
     };
 
     const toggleStaffCheckOut = (staffId: string) => {
@@ -528,7 +534,11 @@ Requirements:
             type: 'parent_report_sent',
             staffName: `${user.name} (${user.organization})`,
             detail: `${draftReportTypes.join(' + ') || report.type} · marked sent by ${draftMethod === 'both' ? 'email + text' : draftMethod} — delivery not connected`,
-        }]);
+            // The letter as sent, so it can be read later from the student page and Program Log.
+            body: draftMessage,
+        }]).then(result => {
+            if (result.failed > 0) showToast('Report marked sent, but the Program Log entry failed to save', 'warning');
+        });
     }, [selectedReportStudentId, parentReports, onDeleteReport, onUpdateReport, draftMessage, draftMethod, draftReportTypes, user.id, user.name, user.organization, showToast]);
 
     const handleDiscardDraft = useCallback(() => {
@@ -604,7 +614,7 @@ Requirements:
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '0' }}>
                         {activeSection === 'roster' && <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}><RosterManager onImport={onImport} onAdd={onAddStudent} showToast={showToast} existingStudents={students} darkMode={darkMode} /></div>}
-                        {activeSection === 'records' && <DailyRecordView students={students} />}
+                        {activeSection === 'records' && <ProgramLogView students={students} />}
                         {activeSection === 'permissions' && (
                             <div style={{ padding: '20px' }}>
                                 <div style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -645,6 +655,13 @@ Requirements:
                                                                 <span style={{ fontSize: '13px', fontWeight: '600' }}>Can Check-In</span>
                                                                 <button title="Toggle Check-In Permission" onClick={() => toggleStaffCheckIn(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canCheckIn ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
                                                                     <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canCheckIn ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
+                                                                </button>
+                                                            </div>
+                                                            {/* Staff always see summaries of reports they filed; this adds everyone else's. */}
+                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '180px' }}>
+                                                                <span style={{ fontSize: '13px', fontWeight: '600' }}>See All Reports</span>
+                                                                <button title="Toggle seeing report summaries filed by other staff" aria-pressed={!!staff.canViewAllReports} onClick={() => toggleStaffViewAllReports(staff.id)} style={{ width: '48px', height: '28px', borderRadius: '14px', backgroundColor: staff.canViewAllReports ? 'var(--color-toggle-active)' : 'var(--bg-input)', position: 'relative', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'white', position: 'absolute', top: '2px', left: staff.canViewAllReports ? '22px' : '2px', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }} />
                                                                 </button>
                                                             </div>
                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
