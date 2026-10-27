@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase, mapDbToStudent, isSupabaseConfigured, runDbWrite, resolveStaffProfile, signOutAndForget } from './supabaseClient';
-import type { Student, Staff, ParentReport, BiometricLog, ProgramType, AttendanceStatus } from './types';
+import type { Student, Staff, ParentReport, BiometricLog, ProgramType, AttendanceStatus, HeadInjuryLog } from './types';
 import { GRADES, STUDENT_PHOTOS_ENABLED, UNDO_WINDOW_MS } from './constants';
 import { INITIAL_STAFF, INITIAL_STUDENTS } from './utils/mockData';
 import { sendSmsMock } from './utils/sms';
@@ -21,6 +21,14 @@ import GroupCheckInBar from './components/GroupCheckInBar';
 import UndoBar from './components/UndoBar';
 
 const statusFor = (s: Student, p: ProgramType): AttendanceStatus => (p === 'sunrise' ? s.sunriseStatus : s.sunsetStatus);
+
+/** "15-minute check · 2 symptoms noted" — for the event log. */
+const headInjuryCheckDetail = (log: HeadInjuryLog): string => {
+    const stage = log.stage === '0min' ? 'Initial check' : log.stage === '15min' ? '15-minute check' : '30-minute check';
+    const symptoms = Object.values(log.symptoms || {}).filter(Boolean).length;
+    return `${stage} · ${symptoms === 0 ? 'no symptoms noted' : `${symptoms} symptom${symptoms === 1 ? '' : 's'} noted`}`;
+};
+
 const fullName = (s: Student) => `${s.firstName} ${s.lastName}`;
 
 /**
@@ -271,7 +279,7 @@ const App = () => {
                     if (rows === null) {
                         showToast(`Batch checkout could not reach the database — ${dbIds.length} students are still checked in`, 'error');
                     } else if (audit.failed > 0) {
-                        showToast(`Batch checkout done for ${done.length}, but the Daily Record entries failed to save`, 'warning');
+                        showToast(`Batch checkout done for ${done.length}, but the Program Log entries failed to save`, 'warning');
                     } else {
                         showToast(`Batch checkout executed at ${scheduled} · ${done.length} students`, 'success');
                     }
@@ -349,7 +357,7 @@ const App = () => {
      * board shows the check-in at once; for database students it is then kept or
      * rolled back by that answer. A child checked in on another device meanwhile,
      * or blocked since, is rolled back and reported, and only confirmed
-     * check-ins are written to the Daily Record.
+     * check-ins are written to the Program Log.
      */
     const checkInStudents = async (requestedIds: string[]) => {
         if (!canCheckIn()) {
@@ -411,7 +419,7 @@ const App = () => {
         } else if (rejected.size > 0) {
             showToast(`${rejected.size} not checked in — already checked in on another device, or blocked`, 'warning');
         } else if (audit.failed > 0) {
-            showToast('Checked in, but the Daily Record entry failed to save', 'warning');
+            showToast('Checked in, but the Program Log entry failed to save', 'warning');
         } else if (skipped > 0) {
             showToast(`${skipped} not checked in (already in or blocked)`, 'warning');
         }
@@ -462,7 +470,7 @@ const App = () => {
         } else if (kept.length > 0) {
             showToast(`${kept.length} could not be undone — changed on another device`, 'warning');
         } else if (audit.failed > 0) {
-            showToast('Undone, but the Daily Record entry failed to save', 'warning');
+            showToast('Undone, but the Program Log entry failed to save', 'warning');
         } else {
             showToast(reverted.length === 1 ? `Check-in undone for ${reverted[0].firstName}` : `Check-in undone for ${reverted.length} students`, 'info');
         }
@@ -589,7 +597,7 @@ const App = () => {
         }
         if (student) {
             const audit = await recordEvents([{ studentId, studentName: fullName(student), type: 'check_in', program, staffName, occurredAt: now.toISOString(), detail: photo ? 'Photo captured at check-in' : undefined }]);
-            if (audit.failed > 0) showToast('Checked in, but the Daily Record entry failed to save', 'warning');
+            if (audit.failed > 0) showToast('Checked in, but the Program Log entry failed to save', 'warning');
         }
 
         if (student) {
@@ -657,7 +665,7 @@ const App = () => {
                 studentId, studentName: fullName(student), type: 'checked_out', program: p, staffName,
                 detail: `Released to ${releasedTo || 'guardian'} · confirmed by staff at pickup (guardian texts not connected)`,
             }]);
-            if (audit.failed > 0) showToast('Checked out, but the Daily Record entry failed to save', 'warning');
+            if (audit.failed > 0) showToast('Checked out, but the Program Log entry failed to save', 'warning');
             return true;
         }
 
@@ -694,6 +702,11 @@ const App = () => {
                 has_snack: updatedStudent.hasSnack,
                 behavior: updatedStudent.behavior,
                 behavior_issues: updatedStudent.behaviorIssues,
+                // These columns existed (and were read back) but were never
+                // written, so after a reload a ticket lost its time, staff and notes.
+                behavior_timestamp: updatedStudent.behaviorTimestamp ?? null,
+                behavior_staff: updatedStudent.behaviorStaff ?? null,
+                behavior_description: updatedStudent.behaviorDescription ?? null,
                 head_injury: updatedStudent.headInjury,
                 head_injury_logs: updatedStudent.headInjuryLogs,
             };
@@ -719,7 +732,31 @@ const App = () => {
             };
             setParentReports(prev => [...prev, headInjuryReport]);
             showToast('Head Injury draft created', 'info');
-            recordEvents([{ studentId: updatedStudent.id, studentName: fullName(updatedStudent), type: 'head_injury_started', program, staffName: currentStaffName() }]);
+            const first = updatedStudent.headInjuryLogs.find(l => l.stage === '0min');
+            recordEvents([{ studentId: updatedStudent.id, studentName: fullName(updatedStudent), type: 'head_injury_started', program, staffName: currentStaffName(), detail: first ? headInjuryCheckDetail(first) : undefined }]);
+        }
+
+        // Follow-up head-injury checks (the initial check is part of "started" above).
+        if (oldStudent && updatedStudent.headInjury) {
+            const before = new Set((oldStudent.headInjuryLogs || []).map(l => l.stage));
+            const added = updatedStudent.headInjuryLogs.filter(l => l.stage !== '0min' && !before.has(l.stage));
+            if (added.length > 0) {
+                recordEvents(added.map(l => ({
+                    studentId: updatedStudent.id, studentName: fullName(updatedStudent), type: 'head_injury_check' as const, program,
+                    staffName: currentStaffName(), detail: headInjuryCheckDetail(l),
+                })));
+            }
+        }
+
+        // We Care report submitted or edited (each save stamps a new weCareSubmittedAt).
+        if (oldStudent && updatedStudent.weCareSubmittedAt && updatedStudent.weCareSubmittedAt !== oldStudent.weCareSubmittedAt) {
+            const firstAid = updatedStudent.weCareFirstAid || [];
+            recordEvents([{
+                studentId: updatedStudent.id, studentName: fullName(updatedStudent), type: 'we_care_submitted', program,
+                staffName: currentStaffName(),
+                detail: [oldStudent.weCareSubmittedAt ? 'Edited' : '', updatedStudent.weCareActivity, firstAid.length > 0 ? `first aid: ${firstAid.join(', ')}` : '']
+                    .filter(Boolean).join(' · ') || undefined,
+            }]);
         }
 
         // Auto-create behavior report draft when ticket is SUBMITTED (not just when behavior selected)

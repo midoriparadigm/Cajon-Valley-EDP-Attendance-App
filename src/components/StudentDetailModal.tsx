@@ -10,6 +10,8 @@ import CollapsedBehaviorView from './CollapsedBehaviorView';
 import CollapsedWeCareView from './CollapsedWeCareView';
 import CollapsedHeadInjuryView from './CollapsedHeadInjuryView';
 import GuardianAddForm from './GuardianAddForm';
+import StudentSummary, { KindIcon, StatusChip, type SummarySection } from './StudentSummary';
+import { buildTodayEntries, tileBadge, isReportRestricted, nextHeadInjuryCheck, type SummaryKind, type SummaryViewer } from '../utils/recordSummary';
 
 /** A contact may be chosen at check-out unless their pickup approval is still pending. */
 const isPickupApproved = (g: GuardianContact) => g.type === 'Contact 1' || g.authStatus !== 'pending';
@@ -181,6 +183,9 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
 
         const updatedStudent = {
             ...editedStudent,
+            // Who submitted it: staff always see their own reports, and the
+            // Handling Staff chosen below can be someone else.
+            behaviorFiledBy: isFirstSubmission ? currentStaff.name : editedStudent.behaviorFiledBy,
             behaviorSubmittedAt: isFirstSubmission ? now : editedStudent.behaviorSubmittedAt,
             behaviorEditCount: isFirstSubmission ? 0 : (editedStudent.behaviorEditCount || 0) + 1,
             behaviorLastEditedAt: now
@@ -193,8 +198,17 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
         handleSectionSave(updatedStudent);
     };
 
+    /**
+     * A submitted ticket. One read back from the database has no submission
+     * time on this device (only the saved record has a ticket); it used to open
+     * to a blank screen.
+     */
+    const isSavedTicket = (s: Student) => s.behavior !== 'none' && (!!s.behaviorSubmittedAt || student.behavior !== 'none');
+
     const canEditBehaviorTicket = (student: Student): boolean => {
-        if (!student.behaviorSubmittedAt) return true; // Not submitted yet
+        // Not submitted yet — or saved before this page loaded, when the 10-minute
+        // edit window can't be checked (and an edit would count as a new submission): view only.
+        if (!student.behaviorSubmittedAt) return !isSavedTicket(student);
 
         const now = Date.now();
         const tenMinutesInMs = 10 * 60 * 1000;
@@ -327,26 +341,51 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
     const currentStatus = program === 'sunrise' ? editedStudent.sunriseStatus : editedStudent.sunsetStatus;
     const isPresent = currentStatus === 'present';
 
-    const HeadInjuryIcon = ({ size = 28, color = 'currentColor' }: { size?: number; color?: string }) => (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2C8.5 2 6 4.5 6 7.5C6 8.5 6 10 6 11C5 11.5 4 12.5 4 14C4 16 5.5 17 6 17L6.5 21C6.5 21.5 7 22 7.5 22H12" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            <path d="M12 2C13.5 2 15 2.8 16 4C17 5.2 17.5 6.5 17.5 7.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" fill="none" />
-            <circle cx="16.5" cy="6" r="2.5" fill={color} opacity="0.3" stroke={color} strokeWidth="1.2" />
-            <line x1="16" y1="1.5" x2="15.5" y2="3" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="18.5" y1="2.5" x2="17.5" y2="3.8" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="20" y1="5" x2="18.5" y2="5.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-            <circle cx="9" cy="10" r="0.8" fill={color} />
-            <path d="M8 14C8 14 9 15 10.5 14" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
-        </svg>
-    );
-
-    const studentMenuOptions = [
-        { id: 'attendance', label: 'Attendance Record', icon: 'schedule', color: '#3b82f6', bg: '#dbeafe' },
-        { id: 'behavior', label: 'Green Card Behavior Ticket', icon: 'warning', color: '#16a34a', bg: '#dcfce7' },
-        { id: 'wecare', label: 'We Care Report', icon: 'medication', color: '#ec4899', bg: '#fce7f3' },
-        { id: 'injury', label: 'Head Injury Report', icon: 'head_injury_custom', color: '#ef4444', bg: '#fee2e2' },
-        ...(isLead ? [{ id: 'guardians', label: 'Guardian Contacts', icon: 'contact_phone', color: '#6366f1', bg: '#e0e7ff' }] : []),
+    const studentMenuOptions: { id: SummarySection & SummaryKind; label: string }[] = [
+        { id: 'attendance', label: 'Attendance Record' },
+        { id: 'behavior', label: 'Green Card Behavior Ticket' },
+        { id: 'wecare', label: 'We Care Report' },
+        { id: 'injury', label: 'Head Injury Report' },
+        ...(isLead ? [{ id: 'guardians' as const, label: 'Guardian Contacts' }] : []),
     ];
+
+    // Who sees which reports: see src/utils/recordSummary.ts. Permission
+    // changes made in Staff Permissions live in staffList.
+    const viewer = useMemo<SummaryViewer>(() => ({
+        name: currentStaff.name,
+        isLead,
+        canViewAllReports: !!(staffList.find(s => s.id === currentStaff.id) ?? currentStaff).canViewAllReports,
+    }), [currentStaff, isLead, staffList]);
+
+    /** A report on the saved record that this staff member didn't file and may not open. */
+    const isRestricted = (id: SummarySection | null) =>
+        (id === 'behavior' || id === 'wecare' || id === 'injury') && isReportRestricted(student, viewer, id);
+
+    const isDisabledByCheckout = (id: SummarySection) =>
+        (currentStatus === 'checked_out' || currentStatus === 'pending_parent') && ['behavior', 'wecare', 'injury'].includes(id);
+
+    const openSection = (id: SummarySection) => {
+        if (isDisabledByCheckout(id)) return;
+        setActiveSection(id);
+        if (isRestricted(id)) return; // shows the locked notice, never the report or a new form
+        // Auto-trigger ticket/report creation flow for behavior and wecare sections
+        if (id === 'behavior' && editedStudent.behavior === 'none') {
+            startNewTicket();
+        }
+        if (id === 'wecare' && !editedStudent.weCareTimestamp) {
+            setShowWeCareOptions(true);
+            setIsEditingWeCare(true);
+        }
+    };
+
+    // Tile badges follow the saved record (the student prop), not unsaved edits in progress.
+    const todayEntries = useMemo(
+        () => buildTodayEntries(student, { program, viewer, parentReports, dayEvents: [] }),
+        [student, program, viewer, parentReports],
+    );
+    const activeOption = studentMenuOptions.find(o => o.id === activeSection);
+    const lockedSection = isRestricted(activeSection);
+    const nextCheck = lockedSection && activeSection === 'injury' ? nextHeadInjuryCheck(student) : null;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: 'var(--bg-app)' }}>
@@ -396,28 +435,31 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
             {!activeSection && (
                 <div style={{ flex: 1, overflowY: 'auto', padding: '24px', paddingBottom: '100px' }}>
                     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                        <StudentSummary
+                            student={student}
+                            program={program}
+                            viewer={viewer}
+                            parentReports={parentReports}
+                            canOpen={id => !isDisabledByCheckout(id)}
+                            onOpen={openSection}
+                        />
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
                             {studentMenuOptions.map(option => {
-                                const isDisabledByCheckout = (currentStatus === 'checked_out' || currentStatus === 'pending_parent') && ['behavior', 'wecare', 'injury'].includes(option.id);
+                                const disabled = isDisabledByCheckout(option.id);
+                                const badge = tileBadge(todayEntries, option.id);
                                 return (
-                                    <button key={option.id} onClick={() => {
-                                        if (isDisabledByCheckout) return;
-                                        setActiveSection(option.id as any);
-                                        // Auto-trigger ticket/report creation flow for behavior and wecare sections
-                                        if (option.id === 'behavior' && editedStudent.behavior === 'none') {
-                                            startNewTicket();
-                                        }
-                                        if (option.id === 'wecare' && !editedStudent.weCareTimestamp) {
-                                            setShowWeCareOptions(true);
-                                            setIsEditingWeCare(true);
-                                        }
-                                    }} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '24px', borderRadius: '16px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-subtle)', cursor: isDisabledByCheckout ? 'not-allowed' : 'pointer', textAlign: 'left', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.1s, box-shadow 0.1s', opacity: isDisabledByCheckout ? 0.4 : 1, filter: isDisabledByCheckout ? 'grayscale(1)' : 'none' }} onMouseEnter={(e) => { if (!isDisabledByCheckout) e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                                        <div style={{ width: '56px', height: '56px', borderRadius: '12px', backgroundColor: option.bg, color: option.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                            {option.icon === 'head_injury_custom' ? <HeadInjuryIcon size={28} color={option.color} /> : <span className="material-icons-round" style={{ fontSize: '28px' }}>{option.icon}</span>}
-                                        </div>
+                                    <button key={option.id} onClick={() => openSection(option.id)} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '24px', borderRadius: '16px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-subtle)', cursor: disabled ? 'not-allowed' : 'pointer', textAlign: 'left', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.1s, box-shadow 0.1s', opacity: disabled ? 0.4 : 1, filter: disabled ? 'grayscale(1)' : 'none' }} onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+                                        <KindIcon kind={option.id} size={28} box={56} />
                                         <div>
                                             <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>{option.label}</div>
-                                            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{isDisabledByCheckout ? 'Student checked out' : 'Tap to open'}</div>
+                                            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                                                {disabled ? 'Student checked out' : isRestricted(option.id) ? (
+                                                    <StatusChip tone="neutral">
+                                                        <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '12px', verticalAlign: '-2px', marginRight: '3px' }}>lock</span>
+                                                        Filed by another staff member
+                                                    </StatusChip>
+                                                ) : badge ? <StatusChip tone={badge.tone}>{badge.badge}</StatusChip> : 'Tap to open'}
+                                            </div>
                                         </div>
                                     </button>
                                 );
@@ -432,10 +474,8 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
                     <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ padding: '8px', borderRadius: '8px', backgroundColor: studentMenuOptions.find(o => o.id === activeSection)?.bg, color: studentMenuOptions.find(o => o.id === activeSection)?.color }}>
-                                {studentMenuOptions.find(o => o.id === activeSection)?.icon === 'head_injury_custom' ? <HeadInjuryIcon size={24} color={studentMenuOptions.find(o => o.id === activeSection)?.color} /> : <span className="material-icons-round">{studentMenuOptions.find(o => o.id === activeSection)?.icon}</span>}
-                            </div>
-                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>{studentMenuOptions.find(o => o.id === activeSection)?.label}</h3>
+                            {activeOption && <KindIcon kind={activeOption.id} size={24} box={40} />}
+                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)' }}>{activeOption?.label}</h3>
                         </div>
                         <button onClick={() => setActiveSection(null)} style={{ background: 'var(--bg-hover)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-main)' }}>
                             <span className="material-icons-round">arrow_back</span>
@@ -443,6 +483,24 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '20px', paddingBottom: '16px' }}>
                         <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                            {lockedSection && (
+                                <section style={{ backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', padding: '32px 24px', textAlign: 'center', maxWidth: '560px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+                                    <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '40px', color: 'var(--text-muted)' }}>lock</span>
+                                    <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-main)', marginTop: '8px' }}>
+                                        {activeSection === 'behavior' ? 'Green Card' : activeSection === 'wecare' ? 'We Care report' : 'Head injury report'} filed by another staff member
+                                    </div>
+                                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '6px', lineHeight: 1.5 }}>
+                                        Only the EDP Lead, the staff member who filed it, and staff the Lead has given "See All Reports" can open it.
+                                    </div>
+                                    {nextCheck && (
+                                        // Safety: say that checks are due, without showing the report itself.
+                                        <div role="status" style={{ marginTop: '16px', padding: '10px 12px', borderRadius: '10px', backgroundColor: 'var(--color-danger-bg)', color: '#b91c1c', fontSize: '13px', fontWeight: 700 }}>
+                                            Head-injury checks are still in progress{nextCheck.due ? ` — next check due ${nextCheck.due}` : ''}. Let the Lead know if you are with {student.firstName}.
+                                        </div>
+                                    )}
+                                </section>
+                            )}
 
                             {activeSection === 'attendance' && (
                                 <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
@@ -525,10 +583,10 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                 </section>
                             )}
 
-                            {activeSection === 'behavior' && (
+                            {activeSection === 'behavior' && !lockedSection && (
                                 <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
                                     <div style={{ padding: '12px', backgroundColor: 'var(--bg-app)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
-                                        {editedStudent.behavior !== 'none' && !isEditingBehavior && editedStudent.behaviorSubmittedAt && (
+                                        {editedStudent.behavior !== 'none' && !isEditingBehavior && isSavedTicket(editedStudent) && (
                                             <div style={{ marginBottom: '16px' }}>
                                                 <CollapsedBehaviorView
                                                     student={editedStudent}
@@ -699,7 +757,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                 </section>
                             )}
 
-                            {activeSection === 'wecare' && (
+                            {activeSection === 'wecare' && !lockedSection && (
                                 <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)', marginBottom: '16px' }}>
                                     <div style={{ padding: '16px' }}>
                                         {(filedReportType === 'wecare' || (!isEditingWeCare && editedStudent.weCareTimestamp)) ? (
@@ -803,7 +861,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                 </section>
                             )}
 
-                            {activeSection === 'injury' && (
+                            {activeSection === 'injury' && !lockedSection && (
                                 <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
                                     <div style={{ padding: '16px' }}>
                                         {isHeadInjuryMonitoring() && timeLeft > 0 ? (

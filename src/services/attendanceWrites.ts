@@ -2,7 +2,7 @@
 //
 // Each write states the condition the row must still meet, and returns the
 // rows the database actually changed. Callers keep only those changes on
-// screen and in the Daily Record — so two devices acting on the same child,
+// screen and in the Program Log — so two devices acting on the same child,
 // or a stale copy of the roster, can never record something twice or undo
 // somebody else's action.
 //

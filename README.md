@@ -44,17 +44,22 @@ without them, the image still starts and runs in sample-data mode.
   Each migration is idempotent.
 
 `attendance_events` (first migration) is the permanent record behind **Leader
-Dashboard → Daily Records**: one row per check-in, undone check-in, pickup,
-check-out, behavior ticket, head-injury report and approved parent report. It
-is append-only — no update or delete through the API, a trigger blocks them even
-for the service role, and students with history cannot be deleted. Inserts must
-carry the signed-in user's id as `recorded_by`.
+Dashboard → Program Log** and the history on each student page: one row per
+check-in, undone check-in, pickup, check-out, behavior ticket, We Care report,
+head-injury report and follow-up check, and approved parent report (with the
+letter's text). It is append-only — no update or delete through the API, a
+trigger blocks them even for the service role, and students with history cannot
+be deleted. Inserts must carry the signed-in user's id as `recorded_by`. The
+second migration (`20261026000000_report_history.sql`) adds the We Care /
+follow-up-check event types, the letter text column and the staff "See All
+Reports" permission.
 
 Known gaps, not yet fixed (they need further migrations):
 - `recorded_at` defaults to the database clock but a client can supply its own,
   so event times are not yet tamper-proof.
 - Access rules check that someone is signed in, not that they are on the
-  `staff` table — any account can read the roster and write events.
+  `staff` table — any account can read the roster and write events. That
+  includes parent-letter text, which the app shows to the Lead only.
 - An attendance change and its event are two separate requests: the app logs an
   event only after the database confirms the change, but if the event write
   then fails, the change stands without its log entry (the app warns).
@@ -77,7 +82,27 @@ Known gaps, not yet fixed (they need further migrations):
 - **Logout** removes the session and all loaded student data from the device,
   even if Supabase can't be reached at that moment.
 - Students added or imported in the app are **not saved to the database yet**;
-  they last for the session and are marked "not saved" in the Daily Record.
+  they last for the session and are marked "not saved" in the Program Log.
+
+## Student page and Program Log
+
+- **Student page:** a summary card above the tiles lists what happened today —
+  attendance, Green Card, We Care and head-injury reports — each with its tile's
+  icon; tapping a line opens that tile, and each tile shows its status. Staff see
+  attendance plus the reports they filed themselves; **Staff Permissions → See
+  All Reports** lets the Lead show them everyone's. The same rule applies to the
+  Green Card, We Care and Head Injury tiles: someone else's report opens to a
+  locked notice (for a head injury still being checked, it also says when the
+  next check is due). Parent letters (awaiting
+  review / sent, with the letter text) and pending pickup approvals are
+  Lead-only, as is the date picker for earlier days.
+- **Program Log** (Leader Dashboard): the whole program's day in order, with
+  totals (checked in / out / still here, incidents, letters sent), grade and type
+  filters, and CSV export.
+- In sample-data mode, earlier weekdays are filled with made-up, repeatable
+  history (labelled "Sample data") so these views can be demonstrated.
+- Staff Permissions changes are kept for the session only; they are not saved
+  to the `staff` table yet.
 
 ## Pilot configuration
 
@@ -86,4 +111,4 @@ Known gaps, not yet fixed (they need further migrations):
 | `VITE_ENABLE_STUDENT_PHOTOS` | off | Camera capture, the simulated face-verification step, avatars and Photo Review. Leave off for the SDCOE pilot ("No student photos. No facial recognition."). |
 
 SMS (arrival / pickup texts) is simulated in this build — no messages are sent.
-The Daily Record says so on every pickup entry.
+The Program Log says so on every pickup entry.

@@ -122,6 +122,8 @@ export interface Staff {
     canCheckOut?: boolean;
     canHir?: boolean;
     canWeCare?: boolean;
+    /** May see summaries of reports filed by other staff (they always see their own). Set by the Lead. */
+    canViewAllReports?: boolean;
     hasPasskey?: boolean;
 }
 
@@ -161,6 +163,7 @@ export interface Student {
     behaviorDescription?: string;
     behaviorTimestamp?: string;
     behaviorStaff?: string;
+    behaviorFiledBy?: string;            // Staff member who submitted the ticket (Handling Staff can be someone else)
     behaviorSubmittedAt?: number;        // Unix timestamp of original submission
     behaviorEditCount?: number;          // Number of times edited (max 1)
     behaviorLastEditedAt?: number;       // Unix timestamp of last edit

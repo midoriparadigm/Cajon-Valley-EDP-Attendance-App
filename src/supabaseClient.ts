@@ -237,6 +237,8 @@ export const mapDbToStaff = (row: any): Staff => ({
     canCheckOut: row.can_check_out ?? true,
     canHir: row.can_hir ?? true,
     canWeCare: row.can_we_care ?? true,
+    // Column added by migration 20261026000000; absent (so false) before it is applied.
+    canViewAllReports: row.can_view_all_reports ?? false,
     hasPasskey: row.has_passkey ?? false,
 });
 

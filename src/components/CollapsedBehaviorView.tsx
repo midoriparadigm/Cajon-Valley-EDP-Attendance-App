@@ -65,7 +65,10 @@ const CollapsedBehaviorView = ({ student, onClick, canEdit = true, editTimeRemai
                 </div>
 
                 <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: `1px solid ${style.border}40`, fontSize: '11px', color: style.text, opacity: 0.9 }}>
-                    Submitted by <span style={{ fontWeight: '700' }}>{student.behaviorStaff || 'Unknown Staff'}</span> on {student.behaviorSubmittedAt ? new Date(student.behaviorSubmittedAt).toLocaleDateString() : 'Unknown Date'} at {student.behaviorSubmittedAt ? new Date(student.behaviorSubmittedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}
+                    Submitted by <span style={{ fontWeight: '700' }}>{student.behaviorStaff || 'Unknown Staff'}</span> {student.behaviorSubmittedAt
+                        ? <> on {new Date(student.behaviorSubmittedAt).toLocaleDateString()} at {new Date(student.behaviorSubmittedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</>
+                        // A ticket read back from the database has only its saved stamp.
+                        : student.behaviorTimestamp ? ` · ${student.behaviorTimestamp}` : ' · date unknown'}
                 </div>
 
                 {editTimeRemaining && canEdit && (
