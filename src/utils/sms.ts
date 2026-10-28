@@ -13,10 +13,11 @@ export const sendSmsMock = async (
 
     if (templateType === 'pickup_notification') {
         const { guardian_name, school_name, time, date, student_names } = data;
-        message = `The following student(s) has/have been picked up by ${guardian_name} from ${school_name} at ${time} on ${date}: ${student_names}`;
+        // Sent at each check-out, which is always one student.
+        message = `${student_names} was picked up by ${guardian_name} from ${school_name} at ${time} on ${date}.`;
     } else if (templateType === 'auth_request') {
         const { guardian_name, role_type, student_names } = data;
-        message = `Do you authorize ${guardian_name} to be the ${role_type} Guardian who is allowed to pickup ${student_names}?`;
+        message = `Do you authorize ${guardian_name} to be the ${role_type} Guardian who is allowed to pick up ${student_names}?`;
     } else if (templateType === 'checkin_notification') {
         const { student_name, student_names, time, program, staff_name } = data;
         message = program
