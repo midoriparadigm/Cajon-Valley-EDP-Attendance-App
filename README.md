@@ -66,16 +66,20 @@ Known gaps, not yet fixed (they need further migrations):
 
 ## Checking students in
 
-- **One student:** tap the card. An **Undo** bar stays up for 8 seconds; the
-  guardian's arrival text is held until it closes, so an undone mis-tap never
-  notifies a family.
+- **One student:** tap the card. The guardian's arrival text goes out once the
+  check-in is confirmed.
 - **A group:** tap **Select group**, tap each student (or **Select all shown**
   after filtering by grade), then **Check in N**. Everyone gets the same
   timestamp.
+- **Undo:** a check-in is final for staff. A Lead sees an **Undo** button on a
+  checked-in student's card and confirms before it is reverted. The arrival text
+  can't be recalled, so the primary contact gets a short correction text; both
+  the check-in and the undo stay in the Program Log.
 - The database has the last word: a check-in only applies to students it
   confirms are still absent and not blocked, so two devices can't both check in
   the same child. Anyone it refuses — or everyone, if it can't be reached — is
-  rolled back on screen with a warning. Nothing is logged for a refused check-in.
+  rolled back on screen with a warning. Nothing is logged, and no text is sent,
+  for a refused check-in.
 - **Check-out:** for students in the database, the staff member's confirmation
   of who is picking up completes the check-out and records who they were
   released to. The guardian-text confirmation is only simulated, for sample data.
@@ -110,5 +114,5 @@ Known gaps, not yet fixed (they need further migrations):
 |---|---|---|
 | `VITE_ENABLE_STUDENT_PHOTOS` | off | Camera capture, the simulated face-verification step, avatars and Photo Review. Leave off for the SDCOE pilot ("No student photos. No facial recognition."). |
 
-SMS (arrival / pickup texts) is simulated in this build — no messages are sent.
+SMS (arrival / correction / pickup texts) is simulated in this build — no messages are sent.
 The Program Log says so on every pickup entry.

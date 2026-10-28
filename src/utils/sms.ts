@@ -6,7 +6,7 @@
  */
 export const sendSmsMock = async (
     phone: string,
-    templateType: 'pickup_notification' | 'auth_request' | 'checkin_notification',
+    templateType: 'pickup_notification' | 'auth_request' | 'checkin_notification' | 'checkin_correction',
     data: any
 ): Promise<{ success: boolean; mock: boolean; message: string }> => {
     let message = "";
@@ -22,6 +22,10 @@ export const sendSmsMock = async (
         message = program
             ? `[${program}] ${student_name || student_names} has arrived and is checked in at ${time}.`
             : `${student_names} has been checked in by ${staff_name} at ${time}.`;
+    } else if (templateType === 'checkin_correction') {
+        // Sent when a Lead undoes a check-in whose arrival text already went out.
+        const { student_name, time, program } = data;
+        message = `[${program}] Please disregard our earlier text: ${student_name}'s ${time} check-in was entered by mistake and has been removed.`;
     }
 
     // Dev-only log — redacted to avoid PII (phone/message) appearing in production console
