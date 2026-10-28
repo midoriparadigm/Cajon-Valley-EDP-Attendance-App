@@ -58,6 +58,14 @@ const S = {
     dan: { name: 'Daniel Johnson', grade: '3', program: 'ELO-P', id: '1045', c1: 'Michael Johnson (Father)' },
 };
 
+// Roster order, as in the app (src/App.tsx): grade (TK, K, then 1 to 5), then first name, then last name.
+const GRADES = ['TK', 'K', '1', '2', '3', '4', '5'];
+const rosterOrder = (a, b) => {
+    const [firstA, lastA] = S[a].name.split(' '), [firstB, lastB] = S[b].name.split(' ');
+    return GRADES.indexOf(S[a].grade) - GRADES.indexOf(S[b].grade) || firstA.localeCompare(firstB) || lastA.localeCompare(lastB);
+};
+const byRoster = keys => [...keys].sort(rosterOrder);
+
 // California Department of Education's recommended early release reasons.
 const EARLY_REASONS = {
     1: 'School athletics and team sports', 2: 'Off-site enrichment', 3: 'Family emergency', 4: 'Medical appointment',
@@ -83,13 +91,13 @@ const sunriseGroup = 'G-0714';
 const sunsetGroup = 'G-1447';
 const EVENTS = [
     ev('7:10 AM', 'sunrise', 'ava', 'Checked in', '', STAFF.vt),
-    ...['liam', 'noor', 'mateo', 'sofia'].map(k => ev('7:14 AM', 'sunrise', k, 'Checked in', `Group of 4 (${sunriseGroup})`, STAFF.vt, { group: sunriseGroup })),
+    ...byRoster(['liam', 'noor', 'mateo', 'sofia']).map(k => ev('7:14 AM', 'sunrise', k, 'Checked in', `Group of 4 (${sunriseGroup})`, STAFF.vt, { group: sunriseGroup })),
     ev('7:31 AM', 'sunrise', 'omarK', 'Checked in', '', STAFF.vt),
     ev('7:32 AM', 'sunrise', 'omarK', 'Check-in undone (correction)', 'Wrong student selected. Correction text sent to the family.', STAFF.vt),
     ev('7:32 AM', 'sunrise', 'omarH', 'Checked in', '', STAFF.vt),
-    ...['ava', 'liam', 'noor', 'mateo', 'sofia', 'omarH'].map(k => ev('8:00 AM', 'sunrise', k, 'Checked out', 'Batch, to school day', STAFF.vt, { location: SCHEDULED })),
+    ...byRoster(['ava', 'liam', 'noor', 'mateo', 'sofia', 'omarH']).map(k => ev('8:00 AM', 'sunrise', k, 'Checked out', 'Batch, to school day', STAFF.vt, { location: SCHEDULED })),
 
-    ...['liam', 'noor', 'mateo', 'omarH', 'omarK', 'emma'].map(k => ev('2:47 PM', 'sunset', k, 'Checked in', `Group of 6 (${sunsetGroup})`, STAFF.cm, { group: sunsetGroup })),
+    ...byRoster(['liam', 'noor', 'mateo', 'omarH', 'omarK', 'emma']).map(k => ev('2:47 PM', 'sunset', k, 'Checked in', `Group of 6 (${sunsetGroup})`, STAFF.cm, { group: sunsetGroup })),
     ev('2:51 PM', 'sunset', 'ava', 'Checked in', '', STAFF.do),
     ev('2:53 PM', 'sunset', 'sofia', 'Checked in', '', STAFF.do),
     ev('2:58 PM', 'sunset', 'dan', 'Checked in', '', STAFF.do),
@@ -459,13 +467,14 @@ const drivePath = parts => parts.map(esc).join(' / ');
 
 // ── Site Daily Report: every student, one day ──────────────────────────────
 const siteReport = () => {
-    const ctx = newContext(REPORTS.map(r => r.key));
+    const reports = [...REPORTS].sort((a, b) => rosterOrder(a.student, b.student));
+    const letters = [...LETTERS].sort((a, b) => rosterOrder(a.student, b.student));
+    const ctx = newContext(reports.map(r => r.key));
     const count = (session, pred) => EVENTS.filter(e => (!session || e.session === session) && pred(e)).length;
     const uniq = (session, pred) => new Set(EVENTS.filter(e => (!session || e.session === session) && pred(e)).map(e => e.student)).size;
     const attended = session => new Set(Object.keys(S).filter(k => sessionDay(k, session).checkIn));
     const sunriseIn = attended('sunrise'), sunsetIn = attended('sunset');
     const dayIn = new Set([...sunriseIn, ...sunsetIn]);
-    const byLastName = Object.keys(S).sort((a, b) => S[a].name.split(' ').pop().localeCompare(S[b].name.split(' ').pop()));
     const sheetCell = (d, side) => (side === 'in' ? d.checkIn?.time ?? 'Absent' : d.checkOut?.time ?? 'N/A');
     const fingerprint = fingerprintOf(EVENTS);
 
@@ -516,11 +525,11 @@ const siteReport = () => {
 </table>
 
 <h2>Incident Reports</h2>
-${REPORTS.map(r => reportBox(ctx, r)).join('\n')}
+${reports.map(r => reportBox(ctx, r)).join('\n')}
 
 <h2>Parent Communication</h2>
 <p>Each letter appears exactly as it was sent, after Lead review. Routine texts (arrival and pickup) are listed in each student's daily report.</p>
-${LETTERS.map(l => letterBox(ctx, l)).join('\n')}
+${letters.map(l => letterBox(ctx, l)).join('\n')}
 
 <h2>Pickup Contacts and Corrections</h2>
 <table>
@@ -564,22 +573,22 @@ ${leadReview}
 
 <section class="wide">
 <h2>Attendance Sheet</h2>
-<p>One row per student, in last-name order. This replaces the paper sign-in and sign-out sheet.</p>
+<p>One row per student, by grade (TK, K, then 1 to 5) and then by first name, the same order as the app's roster. This replaces the paper sign-in and sign-out sheet.</p>
 <table class="sheet">
   ${caption(ctx, 'Sign-in and sign-out times by student')}
-  <colgroup><col class="c-student"><col class="c-id"><col class="c-grade"><col class="c-prog"><col class="c-time"><col class="c-time"><col class="c-time"><col class="c-time"><col></colgroup>
-  <thead><tr><th scope="col">Student</th><th scope="col">Student ID</th><th scope="col">Grade</th><th scope="col">Program</th><th scope="col">Sunrise In</th><th scope="col">Sunrise Out</th><th scope="col">Sunset In</th><th scope="col">Sunset Out</th><th scope="col">Released To (Sunset)</th></tr></thead>
+  <colgroup><col class="c-grade"><col class="c-student"><col class="c-id"><col class="c-prog"><col class="c-time"><col class="c-time"><col class="c-time"><col class="c-time"><col></colgroup>
+  <thead><tr><th scope="col">Grade</th><th scope="col">Student</th><th scope="col">Student ID</th><th scope="col">Program</th><th scope="col">Sunrise In</th><th scope="col">Sunrise Out</th><th scope="col">Sunset In</th><th scope="col">Sunset Out</th><th scope="col">Released To (Sunset)</th></tr></thead>
   <tbody>
-${byLastName.map(k => {
+${byRoster(Object.keys(S)).map(k => {
         const rise = sessionDay(k, 'sunrise'), set = sessionDay(k, 'sunset');
         const released = set.releasedTo ? `${set.releasedTo}${set.checkOut.reason ? `. Early release, reason ${set.checkOut.reason}.` : ''}` : 'N/A';
-        return `    <tr><td>${nameCell(k)}</td><td>${esc(S[k].id)}</td><td>${esc(S[k].grade)}</td><td class="nw">${esc(S[k].program)}</td><td>${sheetCell(rise, 'in')}</td><td>${sheetCell(rise, 'out')}</td><td>${sheetCell(set, 'in')}</td><td>${sheetCell(set, 'out')}</td><td>${keepNames(esc(released))}</td></tr>`;
+        return `    <tr><td>${esc(S[k].grade)}</td><td>${nameCell(k)}</td><td>${esc(S[k].id)}</td><td class="nw">${esc(S[k].program)}</td><td>${sheetCell(rise, 'in')}</td><td>${sheetCell(rise, 'out')}</td><td>${sheetCell(set, 'in')}</td><td>${sheetCell(set, 'out')}</td><td>${keepNames(esc(released))}</td></tr>`;
     }).join('\n')}
   </tbody>
 </table>
 
 <h2 class="page-break">Activity Log</h2>
-<p class="intro">The complete record: every action, in the order it happened. Each row is a permanent entry; an undone check-in appears as its own row rather than erasing the first.</p>
+<p class="intro">The complete record: every action, in the order it happened, so this log stays in time order. Students checked in or out together are listed by grade, then first name. Each row is a permanent entry; an undone check-in appears as its own row rather than erasing the first.</p>
 <h3>Sunrise Session (${SESSIONS.sunrise.hours})</h3>
 ${logTable(ctx, EVENTS.filter(e => e.session === 'sunrise'), 'Sunrise activity')}
 <h3 class="page-break">Sunset Session (${SESSIONS.sunset.hours})</h3>
