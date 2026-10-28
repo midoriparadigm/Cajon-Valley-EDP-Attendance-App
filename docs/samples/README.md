@@ -38,4 +38,6 @@ node docs/samples/make-record-samples.mjs
 Layout follows the CDE PDF Standards (https://www.cde.ca.gov/re/di/ws/pdf.asp):
 Letter size, tagged PDF, a single H1 and ordered headings in Title Case, Arial
 12 pt or larger, simple tables with one header row that repeats on each page,
-no blank cells, black on white, document title and language set, no author name.
+no blank cells, black on white, document title, description and language set, no author
+name. Chrome can't set the description (the PDF's Subject field), so the script appends it
+after printing without touching the accessibility tags Chrome wrote.
