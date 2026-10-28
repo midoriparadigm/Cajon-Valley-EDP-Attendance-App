@@ -7,7 +7,7 @@
 // All data below is made up for demonstration.
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -342,10 +342,11 @@ const reportBox = (ctx, r) => `
 </section>`;
 
 const letterBox = (ctx, l) => {
-    const about = REPORTS.find(r => r.key === l.key).short;
+    const report = REPORTS.find(r => r.key === l.key);
+    const about = report.short;
     return `
 <section class="box" aria-labelledby="l-${l.key}">
-  <h3 id="l-${l.key}">Letter ${ctx.letterN[l.key]}: ${esc(S[l.student].name)}, ${esc(about)}</h3>
+  <h3 id="l-${l.key}">Letter ${ctx.letterN[l.key]}: ${esc(S[l.student].name)}, ${esc(report.title)}</h3>
   ${fields([
         !ctx.perStudent && ['Student', studentLine(l.student)],
         !ctx.perStudent && ['Regarding', `${esc(about)} (Report ${ctx.reportN[l.key]})`],
@@ -369,8 +370,8 @@ const style = footer => `<style>
   @page {
     size: Letter;
     margin: 0.6in 0.6in 0.75in;
-    @bottom-left { content: ${cssString(footer)}; font: 10pt Arial, Helvetica, sans-serif; color: #000; }
-    @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 10pt Arial, Helvetica, sans-serif; color: #000; }
+    @bottom-left { content: ${cssString(footer)}; font: 12pt Arial, Helvetica, sans-serif; color: #000; }
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 12pt Arial, Helvetica, sans-serif; color: #000; }
   }
   html { font-family: Arial, "Liberation Sans", Helvetica, sans-serif; font-size: 12pt; color: #000; background: #fff; }
   body { margin: 0; line-height: 1.3; }
@@ -595,12 +596,11 @@ ${logTable(ctx, EVENTS.filter(e => e.session === 'sunrise'), 'Sunrise activity')
 ${logTable(ctx, EVENTS.filter(e => e.session === 'sunset'), 'Sunset activity')}
 </section>
 `;
-    return page({
-        title: `EDP Daily Report - ${SITE} - ${DAY_SHORT}`,
-        description: 'Locked daily attendance and incident record for the Extended Day Program (EDP): check-ins, check-outs, Green Card, We Care and head injury reports, and parent letters. Sample data.',
-        footer: `EDP Daily Report · ${SITE} · ${DAY_SHORT}`,
-        body,
-    });
+    const description = `Locked daily attendance and incident record for the Extended Day Program (EDP) at ${SITE} on ${DAY_SHORT}: check-ins, check-outs, Green Card, We Care and head injury reports, and parent letters. Sample data.`;
+    return {
+        description,
+        html: page({ title: `EDP Daily Report - ${SITE} - ${DAY_SHORT}`, description, footer: `EDP Daily Report · ${SITE} · ${DAY_SHORT}`, body }),
+    };
 };
 
 // ── Student Daily Report: one student, one day ─────────────────────────────
@@ -741,17 +741,38 @@ ${fields(terms)}
     ])}
 </section>
 `;
-    return page({
-        title: `EDP Student Daily Report - ${s.name} - ${grade} - ${DAY_SHORT}`,
-        description: `Locked Extended Day Program (EDP) record for ${s.name}, ${grade}, ${s.program}, at ${SITE} on ${DAY_SHORT}: attendance, incident reports and messages to the family. Sample data.`,
-        footer: `EDP Student Daily Report · ${s.name} · ${grade} · ${DAY_SHORT}`,
-        body,
-    });
+    const description = `Locked Extended Day Program (EDP) record for ${s.name}, ${grade}, ${s.program}, at ${SITE} on ${DAY_SHORT}: attendance, incident reports and messages to the family. Sample data.`;
+    return {
+        description,
+        html: page({ title: `EDP Student Daily Report - ${s.name} - ${grade} - ${DAY_SHORT}`, description, footer: `${s.name} · ${grade} · ${DAY_SHORT}`, body }),
+    };
 };
 
 // ── Print ───────────────────────────────────────────────────────────────────
+// Chrome can't fill in the PDF's Subject (Acrobat's "Description"), which the CDE PDF Standards
+// ask for. It goes in as an incremental update: new bytes appended after Chrome's, so the
+// accessibility tags Chrome wrote are left exactly as they were.
+const pdfString = t => (/^[\x20-\x7e]*$/.test(t)
+    ? `(${t.replace(/[\\()]/g, c => `\\${c}`)})`
+    : `<FEFF${Buffer.from(t, 'utf16le').swap16().toString('hex').toUpperCase()}>`);
+const addSubject = (file, subject) => {
+    const pdf = readFileSync(file);
+    const text = pdf.toString('latin1');
+    const trailer = text.slice(text.lastIndexOf('trailer'));
+    const info = trailer.match(/\/Info (\d+) 0 R/)[1];
+    const root = trailer.match(/\/Root (\d+ \d+ R)/)[1];
+    const size = trailer.match(/\/Size (\d+)/)[1];
+    const prev = text.match(/startxref\s+(\d+)\s+%%EOF\s*$/)[1];
+    const dict = text.match(new RegExp(`\\n${info} 0 obj\\s*<<([\\s\\S]*?)>>\\s*endobj`))[1];
+    const obj = `${info} 0 obj\n<<${dict}\n/Subject ${pdfString(subject)}>>\nendobj\n`;
+    const objAt = pdf.length + 1;
+    const xrefAt = objAt + Buffer.byteLength(obj, 'latin1');
+    const update = `\n${obj}xref\n${info} 1\n${String(objAt).padStart(10, '0')} 00000 n \ntrailer\n<</Size ${size}\n/Root ${root}\n/Info ${info} 0 R\n/Prev ${prev}>>\nstartxref\n${xrefAt}\n%%EOF\n`;
+    writeFileSync(file, Buffer.concat([pdf, Buffer.from(update, 'latin1')]));
+};
+
 const work = mkdtempSync(join(tmpdir(), 'edp-records-'));
-const print = (html, parts) => {
+const print = ({ html, description }, parts) => {
     const pdf = join(OUT, ...parts);
     const src = join(work, `${parts.at(-1)}.html`);
     writeFileSync(src, html);
@@ -761,6 +782,7 @@ const print = (html, parts) => {
         '--no-pdf-header-footer', '--generate-pdf-document-outline', '--export-tagged-pdf',
         `--print-to-pdf=${pdf}`, pathToFileURL(src).href,
     ], { stdio: 'ignore' });
+    addSubject(pdf, description);
     console.log(`  ${relative(OUT, pdf)}`);
 };
 
