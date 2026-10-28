@@ -66,11 +66,12 @@ Known gaps, not yet fixed (they need further migrations):
 
 ## Checking students in
 
-- **One student:** tap the card. The guardian's arrival text goes out once the
-  check-in is confirmed.
+- **One student:** tap the card, then **Confirm** (the arrow button next to it
+  cancels; so does Esc). A quick double-tap doesn't count as Confirm. The
+  guardian's arrival text goes out once the database confirms the check-in.
 - **A group:** tap **Select group**, tap each student (or **Select all shown**
-  after filtering by grade), then **Check in N**. Everyone gets the same
-  timestamp.
+  after filtering by grade), then **Check in N** and confirm in the pop-out,
+  which lists everyone selected. Everyone gets the same timestamp.
 - **Undo:** a check-in is final for staff. A Lead sees an **Undo** button on a
   checked-in student's card and confirms before it is reverted. The arrival text
   can't be recalled, so the primary contact gets a short correction text; both

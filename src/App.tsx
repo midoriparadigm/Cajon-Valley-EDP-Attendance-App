@@ -18,6 +18,7 @@ import ConfirmationModal from './components/ConfirmationModal';
 import LeaderDashboard from './components/LeaderDashboard';
 import ParentReportModal from './components/ParentReportModal';
 import GroupCheckInBar from './components/GroupCheckInBar';
+import ConfirmDialog, { DOUBLE_TAP_GUARD_MS } from './components/ConfirmDialog';
 
 const statusFor = (s: Student, p: ProgramType): AttendanceStatus => (p === 'sunrise' ? s.sunriseStatus : s.sunsetStatus);
 
@@ -105,6 +106,11 @@ const App = () => {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
     /** Student whose check-in a Lead is about to undo (the "Are you sure?" dialog). */
     const [undoConfirmId, setUndoConfirmId] = useState<string | null>(null);
+    /** Card whose "Tap to check in" was tapped: it now shows Confirm and cancel. */
+    const [armedId, setArmedId] = useState<string | null>(null);
+    const armedAtRef = useRef(0);
+    /** The group check-in "Check in N students?" pop-out. */
+    const [groupConfirmOpen, setGroupConfirmOpen] = useState(false);
 
     // Latest values for timers and async callbacks, which would otherwise close
     // over the render they were created in.
@@ -436,6 +442,7 @@ const App = () => {
     const exitGroupMode = () => {
         setIsGroupMode(false);
         setSelectedIds(new Set());
+        setGroupConfirmOpen(false);
     };
 
     const toggleGroupMode = () => {
@@ -461,13 +468,37 @@ const App = () => {
         });
     };
 
-    // Esc leaves group mode on Chromebooks/desktops.
+    // Esc leaves group mode on Chromebooks/desktops (or, with the pop-out open, just closes that).
     useEffect(() => {
-        if (!isGroupMode) return;
+        if (!isGroupMode || groupConfirmOpen) return;
         const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') exitGroupMode(); };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [isGroupMode]);
+    }, [isGroupMode, groupConfirmOpen]);
+
+    // An armed card goes back to "Tap to check in" on Esc, or when the list,
+    // program or mode changes underneath it.
+    useEffect(() => { setArmedId(null); }, [program, searchQuery, selectedGrade, rosterStatusFilter, isGroupMode]);
+    useEffect(() => {
+        if (!armedId) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setArmedId(null); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [armedId]);
+
+    /** First tap on "Tap to check in": show Confirm and cancel instead. */
+    const armCheckIn = (id: string) => {
+        if (armedId === id) return; // a tap on the card itself never confirms
+        armedAtRef.current = Date.now();
+        setArmedId(id);
+    };
+
+    /** Confirm on an armed card. A tap right after arming is a double-tap, not a decision. */
+    const confirmCheckIn = (id: string) => {
+        if (Date.now() - armedAtRef.current < DOUBLE_TAP_GUARD_MS) return;
+        setArmedId(null);
+        checkInStudents([id]);
+    };
 
     const eligibleVisible = useMemo(
         () => filteredStudents.filter(s => statusFor(s, program) === 'absent' && !s.isCheckInBlocked),
@@ -475,10 +506,11 @@ const App = () => {
     );
     const allVisibleSelected = eligibleVisible.length > 0 && eligibleVisible.every(s => selectedIds.has(s.id));
     // Someone else may check a selected student in meanwhile — count only who is still eligible.
-    const selectedEligibleCount = useMemo(
-        () => students.filter(s => selectedIds.has(s.id) && statusFor(s, program) === 'absent' && !s.isCheckInBlocked).length,
+    const selectedEligible = useMemo(
+        () => students.filter(s => selectedIds.has(s.id) && statusFor(s, program) === 'absent' && !s.isCheckInBlocked),
         [students, selectedIds, program],
     );
+    const selectedEligibleCount = selectedEligible.length;
     const toggleSelectAllVisible = () => setSelectedIds(prev => {
         const next = new Set(prev);
         if (allVisibleSelected) eligibleVisible.forEach(s => next.delete(s.id));
@@ -488,7 +520,8 @@ const App = () => {
 
     /**
      * Tap on a roster card (`intent: 'tap'`) or its ⋮ button (`'details'`).
-     * In group mode a tap selects; otherwise a tap checks an absent student in.
+     * In group mode a tap selects; otherwise a tap on an absent student shows
+     * Confirm / cancel on their card, and only Confirm checks them in.
      * ⋮ always opens the student's details and never checks anyone in.
      */
     const handleStudentAction = (student: Student, intent: 'tap' | 'details' = 'tap') => {
@@ -512,7 +545,7 @@ const App = () => {
         if (STUDENT_PHOTOS_ENABLED) {
             setShowConfirmId(student.id);
         } else {
-            checkInStudents([student.id]);
+            armCheckIn(student.id);
         }
     };
 
@@ -766,6 +799,8 @@ const App = () => {
     const handleLogout = () => {
         exitGroupMode();
         setUndoConfirmId(null);
+        setArmedId(null);
+        setGroupConfirmOpen(false);
         sessionGenRef.current += 1; // late timers from this session must not touch the next one
         // Without a real sign-out the Supabase session survived "Logout" and the
         // previous staff member was signed straight back in, on this page or after
@@ -922,6 +957,28 @@ const App = () => {
                                                 </span>
                                             ) : student.isCheckInBlocked ? (
                                                 <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--color-danger)', textTransform: 'uppercase' }}>Blocked</span>
+                                            ) : armedId === student.id ? (
+                                                // The first tap only armed the card; checking in takes Confirm.
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <button
+                                                        title="Cancel"
+                                                        aria-label={`Cancel check-in for ${fullName(student)}`}
+                                                        onClick={e => { e.stopPropagation(); setArmedId(null); }}
+                                                        onKeyDown={e => e.stopPropagation()}
+                                                        style={{ width: '36px', height: '36px', padding: 0, borderRadius: '50%', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+                                                    >
+                                                        <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '20px' }}>undo</span>
+                                                    </button>
+                                                    <button
+                                                        autoFocus
+                                                        aria-label={`Confirm check-in for ${fullName(student)}`}
+                                                        onClick={e => { e.stopPropagation(); confirmCheckIn(student.id); }}
+                                                        onKeyDown={e => e.stopPropagation()}
+                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '8px 14px', borderRadius: '999px', border: 'none', backgroundColor: 'var(--color-success)', color: 'white', fontSize: '13px', fontWeight: '800', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                    >
+                                                        <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '16px' }}>check</span> Confirm
+                                                    </button>
+                                                </div>
                                             ) : (
                                                 <span style={{ padding: '6px 12px', borderRadius: '999px', border: '1px dashed var(--text-muted)', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap' }}>
                                                     Tap to check in
@@ -933,7 +990,7 @@ const App = () => {
                                                 {isPresent && isLeadView && !isGroupMode && (
                                                     <button
                                                         aria-label={`Undo check-in for ${fullName(student)}`}
-                                                        onClick={e => { e.stopPropagation(); setUndoConfirmId(student.id); }}
+                                                        onClick={e => { e.stopPropagation(); setArmedId(null); setUndoConfirmId(student.id); }}
                                                         onKeyDown={e => e.stopPropagation()}
                                                         style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '4px', padding: '4px 10px', borderRadius: '999px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}
                                                     >
@@ -1004,28 +1061,45 @@ const App = () => {
                     allVisibleSelected={allVisibleSelected}
                     onToggleSelectAll={toggleSelectAllVisible}
                     onCancel={exitGroupMode}
-                    onConfirm={() => checkInStudents([...selectedIds])}
+                    onConfirm={() => setGroupConfirmOpen(true)}
                 />
             )}
 
-            {undoStudent && createPortal(
-                <div role="dialog" aria-modal="true" aria-labelledby="undo-checkin-title" onClick={() => setUndoConfirmId(null)} onKeyDown={e => { if (e.key === 'Escape') setUndoConfirmId(null); }} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000 }}>
-                    <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--bg-card)', borderRadius: '24px', padding: '24px', width: '90%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-                        <h3 id="undo-checkin-title" style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Undo check-in?</h3>
-                        <p style={{ margin: '0 0 8px 0', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                            Are you sure you want to undo {undoStudent.firstName} {undoStudent.lastName}'s check-in
-                            ({program === 'sunrise' ? undoStudent.sunriseTime : undoStudent.sunsetTime} by {(program === 'sunrise' ? undoStudent.sunriseStaff : undoStudent.sunsetStaff) || 'staff'})?
-                        </p>
-                        <p style={{ margin: '0 0 24px 0', color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.5' }}>
-                            The family's arrival text has already been sent, so they'll get a short correction text. The undo is recorded in the Program Log.
-                        </p>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <button autoFocus onClick={() => setUndoConfirmId(null)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                            <button onClick={() => undoCheckIn(undoStudent.id)} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: 'var(--color-danger)', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>Undo check-in</button>
-                        </div>
+            {undoStudent && (
+                <ConfirmDialog
+                    title="Undo check-in?"
+                    confirmLabel="Undo check-in"
+                    confirmColor="var(--color-danger)"
+                    onCancel={() => setUndoConfirmId(null)}
+                    onConfirm={() => undoCheckIn(undoStudent.id)}
+                >
+                    <p style={{ margin: '0 0 8px 0', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                        Are you sure you want to undo {undoStudent.firstName} {undoStudent.lastName}'s check-in
+                        ({program === 'sunrise' ? undoStudent.sunriseTime : undoStudent.sunsetTime} by {(program === 'sunrise' ? undoStudent.sunriseStaff : undoStudent.sunsetStaff) || 'staff'})?
+                    </p>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.5' }}>
+                        The family's arrival text has already been sent, so they'll get a short correction text. The undo is recorded in the Program Log.
+                    </p>
+                </ConfirmDialog>
+            )}
+
+            {groupConfirmOpen && isGroupMode && selectedEligibleCount > 0 && (
+                <ConfirmDialog
+                    title={`Check in ${selectedEligibleCount} student${selectedEligibleCount === 1 ? '' : 's'}?`}
+                    confirmLabel={`Check in ${selectedEligibleCount}`}
+                    confirmColor="var(--color-success)"
+                    onCancel={() => setGroupConfirmOpen(false)}
+                    onConfirm={() => { setGroupConfirmOpen(false); checkInStudents(selectedEligible.map(s => s.id)); }}
+                >
+                    <p style={{ margin: '0 0 12px 0', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                        {program === 'sunrise' ? 'Sunrise' : 'Sunset'} · everyone gets the same check-in time, and each family gets an arrival text.
+                    </p>
+                    <div style={{ maxHeight: '180px', overflowY: 'auto', textAlign: 'left', padding: '10px 12px', borderRadius: '12px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-subtle)', fontSize: '14px', lineHeight: 1.6, color: 'var(--text-main)' }}>
+                        {selectedEligible.map(s => (
+                            <div key={s.id}>{s.firstName} {s.lastName} <span style={{ color: 'var(--text-secondary)' }}>· {s.grade}</span></div>
+                        ))}
                     </div>
-                </div>,
-                document.body
+                </ConfirmDialog>
             )}
 
             {toast && <Toast message={toast.msg} type={toast.type} bottomOffset={isGroupMode ? 120 : 40} />}
