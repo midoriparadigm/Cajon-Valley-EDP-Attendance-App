@@ -13,9 +13,6 @@ export const GRADES = ['TK', 'K', '1', '2', '3', '4', '5'];
  */
 export const STUDENT_PHOTOS_ENABLED = import.meta.env.VITE_ENABLE_STUDENT_PHOTOS === 'true';
 
-/** How long the "Undo" bar stays up after a check-in. */
-export const UNDO_WINDOW_MS = 8000;
-
 // Behavior Checklists based on Tiered District Safety Plan
 export const BEHAVIOR_CHECKLISTS = {
     green: [

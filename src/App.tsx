@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase, mapDbToStudent, isSupabaseConfigured, runDbWrite, resolveStaffProfile, signOutAndForget } from './supabaseClient';
 import type { Student, Staff, ParentReport, BiometricLog, ProgramType, AttendanceStatus, HeadInjuryLog } from './types';
-import { GRADES, STUDENT_PHOTOS_ENABLED, UNDO_WINDOW_MS } from './constants';
+import { GRADES, STUDENT_PHOTOS_ENABLED } from './constants';
 import { INITIAL_STAFF, INITIAL_STUDENTS } from './utils/mockData';
 import { sendSmsMock } from './utils/sms';
 import { MockDatabase, PasskeyService } from './utils/mock';
@@ -18,7 +18,6 @@ import ConfirmationModal from './components/ConfirmationModal';
 import LeaderDashboard from './components/LeaderDashboard';
 import ParentReportModal from './components/ParentReportModal';
 import GroupCheckInBar from './components/GroupCheckInBar';
-import UndoBar from './components/UndoBar';
 
 const statusFor = (s: Student, p: ProgramType): AttendanceStatus => (p === 'sunrise' ? s.sunriseStatus : s.sunsetStatus);
 
@@ -30,28 +29,6 @@ const headInjuryCheckDetail = (log: HeadInjuryLog): string => {
 };
 
 const fullName = (s: Student) => `${s.firstName} ${s.lastName}`;
-
-/**
- * A quick or group check-in that can still be undone. Guardian arrival texts
- * are held until the undo window closes, so an undone mis-tap never tells a
- * family their child arrived.
- */
-interface PendingCheckIn {
-    /** Identifies this check-in, so a late database answer only edits its own undo bar. */
-    token: string;
-    ids: string[];
-    program: ProgramType;
-    /** YYYY-MM-DD the check-in belongs to. */
-    date: string;
-    time: string;
-    staffName: string;
-    batchId?: string;
-    message: string;
-}
-
-const checkInMessage = (checkedIn: Student[], time: string) => checkedIn.length === 1
-    ? `${checkedIn[0].firstName} ${checkedIn[0].lastName.charAt(0)}. checked in · ${time}`
-    : `${checkedIn.length} students checked in · ${time}`;
 
 /** The roster fields a check-in sets, for one program. */
 const withCheckIn = (s: Student, p: ProgramType, time: string, staffName: string): Student => ({
@@ -79,18 +56,26 @@ const showsCheckIn = (s: Student, p: ProgramType, time: string, staffName: strin
     && (p === 'sunrise' ? s.sunriseTime : s.sunsetTime) === time
     && (p === 'sunrise' ? s.sunriseStaff : s.sunsetStaff) === staffName;
 
-/** Sends arrival texts for students from `pending` who are still checked in. */
-const sendArrivalTexts = (pending: PendingCheckIn, roster: Student[]) => {
-    const ids = new Set(pending.ids);
-    const programLabel = pending.program === 'sunrise' ? 'Sunrise' : 'Sunset';
-    roster
-        .filter(s => ids.has(s.id) && statusFor(s, pending.program) === 'present')
-        .forEach(s => {
-            const contact1 = s.guardians.find(g => g.type === 'Contact 1');
-            if (contact1?.phone) {
-                sendSmsMock(contact1.phone, 'checkin_notification', { student_name: s.firstName, time: pending.time, staff_name: pending.staffName, program: programLabel });
-            }
-        });
+/** Sends arrival texts to the primary contact of each student checked in (simulated SMS). */
+const sendArrivalTexts = (checkedIn: Student[], program: ProgramType, time: string, staffName: string) => {
+    const programLabel = program === 'sunrise' ? 'Sunrise' : 'Sunset';
+    checkedIn.forEach(s => {
+        const contact1 = s.guardians.find(g => g.type === 'Contact 1');
+        if (contact1?.phone) {
+            sendSmsMock(contact1.phone, 'checkin_notification', { student_name: s.firstName, time, staff_name: staffName, program: programLabel });
+        }
+    });
+};
+
+/**
+ * Tells the primary contact that an arrival text went out by mistake (simulated
+ * SMS) — the arrival text itself can't be recalled. False if there's no number.
+ */
+const sendCorrectionText = (s: Student, program: ProgramType, time: string): boolean => {
+    const contact1 = s.guardians.find(g => g.type === 'Contact 1');
+    if (!contact1?.phone) return false;
+    sendSmsMock(contact1.phone, 'checkin_correction', { student_name: s.firstName, time, program: program === 'sunrise' ? 'Sunrise' : 'Sunset' });
+    return true;
 };
 
 const App = () => {
@@ -118,14 +103,13 @@ const App = () => {
     const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
     const [isGroupMode, setIsGroupMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
-    const [pendingCheckIn, setPendingCheckIn] = useState<PendingCheckIn | null>(null);
+    /** Student whose check-in a Lead is about to undo (the "Are you sure?" dialog). */
+    const [undoConfirmId, setUndoConfirmId] = useState<string | null>(null);
 
     // Latest values for timers and async callbacks, which would otherwise close
     // over the render they were created in.
     const studentsRef = useRef(students);
     studentsRef.current = students;
-    const pendingRef = useRef(pendingCheckIn);
-    pendingRef.current = pendingCheckIn;
     const checkInWriteRef = useRef<Promise<unknown> | null>(null);
     // Bumped on logout; delayed work (e.g. the sample check-out timer) checks it before writing.
     const sessionGenRef = useRef(0);
@@ -334,20 +318,8 @@ const App = () => {
         return true;
     };
 
-    /** Sends the held arrival texts and closes the undo window. */
-    const settlePendingCheckIn = () => {
-        const pending = pendingRef.current;
-        if (!pending) return;
-        pendingRef.current = null;
-        sendArrivalTexts(pending, studentsRef.current);
-        setPendingCheckIn(null);
-    };
-
-    useEffect(() => {
-        if (!pendingCheckIn) return;
-        const timer = setTimeout(settlePendingCheckIn, UNDO_WINDOW_MS);
-        return () => clearTimeout(timer);
-    }, [pendingCheckIn]);
+    /** Lead (or admin) with Lead mode on — the same test the student page uses. */
+    const isLeadView = !!user && (user.role === 'Lead' || !!user.canAdminTasks) && isLeadMode;
 
     /**
      * Checks in one student (a quick tap) or a whole group in one action.
@@ -357,7 +329,8 @@ const App = () => {
      * board shows the check-in at once; for database students it is then kept or
      * rolled back by that answer. A child checked in on another device meanwhile,
      * or blocked since, is rolled back and reported, and only confirmed
-     * check-ins are written to the Program Log.
+     * check-ins are written to the Program Log and get an arrival text.
+     * A check-in is final for staff; only a Lead can undo one (undoCheckIn).
      */
     const checkInStudents = async (requestedIds: string[]) => {
         if (!canCheckIn()) {
@@ -373,39 +346,31 @@ const App = () => {
             return;
         }
 
-        settlePendingCheckIn(); // a new check-in closes the previous undo window
-
         const now = new Date();
         const day = localDateIso(now);
         const time = formatClockTime(now);
         const staffName = currentStaffName();
         const isGroup = eligible.length > 1;
         const batchId = isGroup ? uuidv4() : undefined;
-        const token = uuidv4();
         const ids = new Set(eligible.map(s => s.id));
 
         setStudents(prev => prev.map(s => ids.has(s.id) && statusFor(s, p) === 'absent' ? withCheckIn(s, p, time, staffName) : s));
-        setPendingCheckIn({ token, ids: [...ids], program: p, date: day, time, staffName, batchId, message: checkInMessage(eligible, time) });
         setSelectedIds(new Set());
         setIsGroupMode(false);
         setSearchQuery('');
 
         const dbIds = eligible.filter(s => isDbStudent(s.id)).map(s => s.id);
         const write = persistCheckIn(dbIds, p, time, staffName, day);
-        checkInWriteRef.current = write; // an Undo must not overtake this write
+        checkInWriteRef.current = write; // a Lead's undo must not overtake this write
         const { applied, complete } = await write;
 
         const rejected = new Set(dbIds.filter(id => !applied.has(id)));
         if (rejected.size > 0) {
             setStudents(prev => prev.map(s => rejected.has(s.id) && showsCheckIn(s, p, time, staffName) ? withoutCheckIn(s, p) : s));
-            setPendingCheckIn(cur => {
-                if (!cur || cur.token !== token) return cur;
-                const left = eligible.filter(s => cur.ids.includes(s.id) && !rejected.has(s.id));
-                return left.length > 0 ? { ...cur, ids: left.map(s => s.id), message: checkInMessage(left, time) } : null;
-            });
         }
 
         const confirmed = eligible.filter(s => !rejected.has(s.id));
+        sendArrivalTexts(confirmed, p, time, staffName);
         const audit = await recordEvents(confirmed.map(s => ({
             studentId: s.id, studentName: fullName(s), type: 'check_in', program: p, staffName,
             occurredAt: now.toISOString(), batchId,
@@ -426,54 +391,46 @@ const App = () => {
     };
 
     /**
-     * Reverts the most recent quick/group check-in while its undo window is open.
-     * A database student is reverted only if their row still carries exactly this
-     * check-in (same day, time and staff) — never a child another device has since
-     * checked out. The undo is itself recorded; the original check-in stays on file.
+     * A Lead reverses one check-in from the roster card, after confirming.
+     * A database student is reverted only if their row still carries exactly
+     * this check-in (same day, time and staff), so a child checked out or checked
+     * in again elsewhere meanwhile is left alone. The undo is itself recorded;
+     * the original check-in stays on file. The arrival text has already gone
+     * out, so the family gets a correction text.
      */
-    const undoCheckIn = async () => {
-        const pending = pendingRef.current;
-        if (!pending) return;
-        pendingRef.current = null;
-        setPendingCheckIn(null); // held arrival texts are dropped, never sent
+    const undoCheckIn = async (studentId: string) => {
+        setUndoConfirmId(null);
+        if (!isLeadView) return;
+        const p = program;
+        const student = studentsRef.current.find(s => s.id === studentId);
+        if (!student || statusFor(student, p) !== 'present') return;
+        const time = (p === 'sunrise' ? student.sunriseTime : student.sunsetTime) ?? '';
+        const staffName = (p === 'sunrise' ? student.sunriseStaff : student.sunsetStaff) ?? '';
 
-        const { program: p, time, staffName, date: day } = pending;
-        const ids = new Set(pending.ids);
-        const candidates = studentsRef.current.filter(s => ids.has(s.id) && showsCheckIn(s, p, time, staffName));
-        if (candidates.length === 0) return;
-
-        const dbIds = candidates.filter(s => isDbStudent(s.id)).map(s => s.id);
-        let rows: { id: string }[] | null = [];
-        if (dbIds.length > 0) {
-            // Two separate requests can arrive out of order; let the check-in land
-            // first so the revert is the last write, not the one that gets undone.
+        if (isDbStudent(studentId)) {
+            // Two separate requests can arrive out of order; let a check-in still
+            // in flight land first so the revert is the last write.
             await checkInWriteRef.current;
-            rows = await persistUndoCheckIn(dbIds, p, time, staffName, day);
+            const rows = await persistUndoCheckIn([studentId], p, time, staffName, localDateIso());
+            if (rows === null) {
+                showToast(`Undo couldn't reach the database — ${student.firstName} is still checked in`, 'error');
+                return;
+            }
+            if (rows.length === 0) {
+                showToast(`Not undone — ${student.firstName}'s check-in was changed on another device`, 'warning');
+                return;
+            }
         }
-        const revertedInDb = new Set((rows ?? []).map(r => r.id));
-        const reverted = candidates.filter(s => !isDbStudent(s.id) || revertedInDb.has(s.id));
-        const revertedIds = new Set(reverted.map(s => s.id));
-        const kept = candidates.filter(s => !revertedIds.has(s.id));
 
-        setStudents(prev => prev.map(s => revertedIds.has(s.id) && showsCheckIn(s, p, time, staffName) ? withoutCheckIn(s, p) : s));
-        // A check-in that could not be undone stands, so that family still gets the arrival text.
-        if (kept.length > 0) sendArrivalTexts({ ...pending, ids: kept.map(s => s.id) }, studentsRef.current);
-
-        const audit = await recordEvents(reverted.map(s => ({
-            studentId: s.id, studentName: fullName(s), type: 'check_in_undone', program: p,
-            staffName: currentStaffName(), batchId: pending.batchId,
-            detail: `Reverses the ${time} check-in (undone within ${UNDO_WINDOW_MS / 1000}s)`,
-        })));
-
-        if (rows === null) {
-            showToast(`Undo couldn't reach the database — ${kept.length} still checked in`, 'error');
-        } else if (kept.length > 0) {
-            showToast(`${kept.length} could not be undone — changed on another device`, 'warning');
-        } else if (audit.failed > 0) {
-            showToast('Undone, but the Program Log entry failed to save', 'warning');
-        } else {
-            showToast(reverted.length === 1 ? `Check-in undone for ${reverted[0].firstName}` : `Check-in undone for ${reverted.length} students`, 'info');
-        }
+        setStudents(prev => prev.map(s => s.id === studentId && showsCheckIn(s, p, time, staffName) ? withoutCheckIn(s, p) : s));
+        const texted = sendCorrectionText(student, p, time);
+        const audit = await recordEvents([{
+            studentId, studentName: fullName(student), type: 'check_in_undone', program: p,
+            staffName: currentStaffName(),
+            detail: `Reverses the ${time} check-in by ${staffName} · undone by the Lead · ${texted ? 'correction text to family (guardian texts not connected)' : 'no family phone on file for a correction text'}`,
+        }]);
+        if (audit.failed > 0) showToast('Undone, but the Program Log entry failed to save', 'warning');
+        else showToast(`Check-in undone for ${student.firstName} · ${texted ? 'correction text sent to family' : 'no family phone on file'}`, 'info');
     };
 
     const exitGroupMode = () => {
@@ -565,7 +522,6 @@ const App = () => {
         const timeString = formatClockTime(now);
         const staffName = currentStaffName();
 
-        settlePendingCheckIn();
         setStudents(prev => prev.map(s => {
             if (s.id === studentId) {
                 const update = program === 'sunrise'
@@ -808,8 +764,8 @@ const App = () => {
     };
 
     const handleLogout = () => {
-        settlePendingCheckIn();
         exitGroupMode();
+        setUndoConfirmId(null);
         sessionGenRef.current += 1; // late timers from this session must not touch the next one
         // Without a real sign-out the Supabase session survived "Logout" and the
         // previous staff member was signed straight back in, on this page or after
@@ -845,6 +801,8 @@ const App = () => {
 
     const activeStudent = students.find(s => s.id === activeStudentId);
     const confirmStudent = students.find(s => s.id === showConfirmId);
+    // Closes by itself if the child is checked out (or the check-in undone) elsewhere meanwhile.
+    const undoStudent = isLeadView ? students.find(s => s.id === undoConfirmId && statusFor(s, program) === 'present') : undefined;
 
     return (
         <>
@@ -971,6 +929,17 @@ const App = () => {
                                             )
                                         ) : (
                                             <div style={{ textAlign: 'right' }}>
+                                                {/* Check-ins are final for staff. A Lead's Undo sits where the check-in button was, and asks first. */}
+                                                {isPresent && isLeadView && !isGroupMode && (
+                                                    <button
+                                                        aria-label={`Undo check-in for ${fullName(student)}`}
+                                                        onClick={e => { e.stopPropagation(); setUndoConfirmId(student.id); }}
+                                                        onKeyDown={e => e.stopPropagation()}
+                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '4px', padding: '4px 10px', borderRadius: '999px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                    >
+                                                        <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '15px' }}>undo</span> Undo
+                                                    </button>
+                                                )}
                                                 <div style={{ fontSize: '12px', fontWeight: '700', color: status === 'checked_out' ? '#9ca3af' : status === 'pending_parent' ? '#8b5cf6' : '#10b981', textTransform: 'uppercase' }}>
                                                     {status === 'checked_out' ? 'CHECKED-OUT' : status === 'pending_parent' ? 'WAITING' : 'CHECKED-IN'}
                                                 </div>
@@ -1039,11 +1008,27 @@ const App = () => {
                 />
             )}
 
-            {pendingCheckIn && !isGroupMode && !showLeaderDashboard && (
-                <UndoBar message={pendingCheckIn.message} onUndo={undoCheckIn} />
+            {undoStudent && createPortal(
+                <div role="dialog" aria-modal="true" aria-labelledby="undo-checkin-title" onClick={() => setUndoConfirmId(null)} onKeyDown={e => { if (e.key === 'Escape') setUndoConfirmId(null); }} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000 }}>
+                    <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--bg-card)', borderRadius: '24px', padding: '24px', width: '90%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+                        <h3 id="undo-checkin-title" style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>Undo check-in?</h3>
+                        <p style={{ margin: '0 0 8px 0', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                            Are you sure you want to undo {undoStudent.firstName} {undoStudent.lastName}'s check-in
+                            ({program === 'sunrise' ? undoStudent.sunriseTime : undoStudent.sunsetTime} by {(program === 'sunrise' ? undoStudent.sunriseStaff : undoStudent.sunsetStaff) || 'staff'})?
+                        </p>
+                        <p style={{ margin: '0 0 24px 0', color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.5' }}>
+                            The family's arrival text has already been sent, so they'll get a short correction text. The undo is recorded in the Program Log.
+                        </p>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button autoFocus onClick={() => setUndoConfirmId(null)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                            <button onClick={() => undoCheckIn(undoStudent.id)} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: 'var(--color-danger)', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>Undo check-in</button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
 
-            {toast && <Toast message={toast.msg} type={toast.type} bottomOffset={isGroupMode || pendingCheckIn ? 120 : 40} />}
+            {toast && <Toast message={toast.msg} type={toast.type} bottomOffset={isGroupMode ? 120 : 40} />}
         </>
     );
 };
