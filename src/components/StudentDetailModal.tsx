@@ -16,6 +16,8 @@ import { buildTodayEntries, tileBadge, isReportRestricted, nextHeadInjuryCheck, 
 /** A contact may be chosen at check-out unless their pickup approval is still pending. */
 const isPickupApproved = (g: GuardianContact) => g.type === 'Contact 1' || g.authStatus !== 'pending';
 import WeCareReportForm from './WeCareReportForm';
+import StudentReleaseForms from './StudentReleaseForms';
+import { useReleaseForms } from '../services/releaseForms';
 
 interface StudentDetailModalProps {
     student: Student;
@@ -46,7 +48,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
     const [filedReportType, setFiledReportType] = useState<'behavior' | 'wecare' | null>(null);
     const [isEditingWeCare, setIsEditingWeCare] = useState(false);
     const [isEditingBehavior, setIsEditingBehavior] = useState(false);
-    const [activeSection, setActiveSection] = useState<'attendance' | 'behavior' | 'wecare' | 'injury' | 'guardians' | null>(null);
+    const [activeSection, setActiveSection] = useState<'attendance' | 'behavior' | 'wecare' | 'injury' | 'guardians' | 'release' | null>(null);
 
     // Guardian Management V2 State
     const [editingGuardianIndex, setEditingGuardianIndex] = useState<number | null>(null);
@@ -346,6 +348,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
         { id: 'behavior', label: 'Green Card Behavior Ticket' },
         { id: 'wecare', label: 'We Care Report' },
         { id: 'injury', label: 'Head Injury Report' },
+        { id: 'release', label: 'Early Release Form' },
         ...(isLead ? [{ id: 'guardians' as const, label: 'Guardian Contacts' }] : []),
     ];
 
@@ -379,9 +382,10 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
     };
 
     // Tile badges follow the saved record (the student prop), not unsaved edits in progress.
+    const releaseForms = useReleaseForms();
     const todayEntries = useMemo(
-        () => buildTodayEntries(student, { program, viewer, parentReports, dayEvents: [] }),
-        [student, program, viewer, parentReports],
+        () => buildTodayEntries(student, { program, viewer, parentReports, dayEvents: [], releaseForms }),
+        [student, program, viewer, parentReports, releaseForms],
     );
     const activeOption = studentMenuOptions.find(o => o.id === activeSection);
     const lockedSection = isRestricted(activeSection);
@@ -889,6 +893,10 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
 
                                     </div>
                                 </section>
+                            )}
+
+                            {activeSection === 'release' && (
+                                <StudentReleaseForms student={student} canAct={isLead} staffName={currentStaff.name} showToast={(m, t) => showToast?.(m, t)} />
                             )}
 
                             {activeSection === 'guardians' && isLead && (

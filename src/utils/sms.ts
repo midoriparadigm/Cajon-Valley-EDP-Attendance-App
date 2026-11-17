@@ -6,7 +6,7 @@
  */
 export const sendSmsMock = async (
     phone: string,
-    templateType: 'pickup_notification' | 'auth_request' | 'checkin_notification' | 'checkin_correction',
+    templateType: 'pickup_notification' | 'auth_request' | 'checkin_notification' | 'checkin_correction' | 'release_form_link',
     data: any
 ): Promise<{ success: boolean; mock: boolean; message: string }> => {
     let message = "";
@@ -27,6 +27,10 @@ export const sendSmsMock = async (
         // Sent when a Lead undoes a check-in whose arrival text already went out.
         const { student_name, time, program } = data;
         message = `[${program}] Please disregard our earlier text: ${student_name}'s ${time} check-in was entered by mistake and has been removed.`;
+    } else if (templateType === 'release_form_link') {
+        // The guardian's single-use link to the Early Release Form (services/releaseForms.ts).
+        const { student_name, cycle, url, expires } = data;
+        message = `[EDP] Please review and sign ${student_name}'s Early Release Form for ${cycle}: ${url} This link works once and expires ${expires}.`;
     }
 
     // Dev-only log — redacted to avoid PII (phone/message) appearing in production console
@@ -38,5 +42,23 @@ export const sendSmsMock = async (
     // Simulate async network delay
     return new Promise((resolve) => {
         setTimeout(() => resolve({ success: true, mock: true, message }), 500);
+    });
+};
+
+/**
+ * Mock email, for the same reason as sendSmsMock: no mail provider is
+ * connected yet, so nothing leaves the device.
+ */
+export const sendEmailMock = async (
+    to: string,
+    subject: string,
+    body: string
+): Promise<{ success: boolean; mock: boolean; message: string }> => {
+    if (import.meta.env.DEV) {
+        console.log(`[Email Mock] subject=${subject} | to=***REDACTED***`);
+    }
+    void to;
+    return new Promise((resolve) => {
+        setTimeout(() => resolve({ success: true, mock: true, message: body }), 500);
     });
 };

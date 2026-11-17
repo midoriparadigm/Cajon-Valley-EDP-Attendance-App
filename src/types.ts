@@ -249,3 +249,105 @@ export interface ParentReport {
     editLogs?: string[];
     staffId: string;               // Track who filed it
 }
+
+// =============================================================================
+// EARLY RELEASE FORMS (the electronic version of the district's paper form)
+// =============================================================================
+// Everything here is insert-only, like attendance events: nothing is edited
+// after it is signed. A changed date range is a new row that supersedes the
+// old one; a corrected form is a new form that supersedes the old one.
+
+export type ReleaseWeekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri';
+export type ReleaseLanguage = 'en' | 'es';
+export type ReleaseChannel = 'sms' | 'email' | 'in_app' | 'paper';
+
+/** One date range, as in the paper form's table. */
+export interface ReleaseRow {
+    id: string;
+    formId: string;
+    /** YYYY-MM-DD */
+    dateFrom: string;
+    dateTo: string;
+    /** 1–8: the form's numbered reasons (RELEASE_REASONS). */
+    reasonCode: number;
+    /** Release time per weekday as "HH:MM" (24-hour). A day with no time has no early release. */
+    times: Partial<Record<ReleaseWeekday, string>>;
+    /** The row this one replaces. */
+    supersedes?: string;
+    createdAt: string;
+}
+
+export interface ReleaseSignature {
+    id: string;
+    formId: string;
+    /** Set: signs or initials that date range. Unset: signs the agreement. */
+    rowId?: string;
+    role: 'guardian' | 'staff';
+    signerName: string;
+    kind: 'typed' | 'drawn' | 'initials' | 'paper';
+    /** The typed name or initials; for a drawn signature, its strokes as SVG path data. */
+    signature: string;
+    /** Agreed to sign electronically. */
+    consented: boolean;
+    /** How the signer got the form: a texted or emailed link, in the app (staff), or on paper. */
+    channel: ReleaseChannel;
+    /** The phone number or email the link went to. */
+    sentTo?: string;
+    /** The language the form was shown in. */
+    language?: ReleaseLanguage;
+    linkId?: string;
+    /** Paper forms: the date written next to the signature. */
+    paperSignedOn?: string;
+    /** ISO timestamp. For database forms this is the server's clock. */
+    signedAt: string;
+}
+
+/** A single-use link sent to the guardian. */
+export interface ReleaseLink {
+    id: string;
+    formId: string;
+    channel: 'sms' | 'email';
+    sentTo: string;
+    sentBy: string;
+    sentAt: string;
+    expiresAt: string;
+    /** Device-only forms keep the token here; the database stores only a hash of it. */
+    token?: string;
+}
+
+/** The paper form's "For Site Use Only" box, kept per date range. */
+export interface ReleaseEntry {
+    id: string;
+    rowId: string;
+    enteredBy: string;
+    enteredAt: string;
+}
+
+/** One form per student per program cycle. */
+export interface ReleaseForm {
+    id: string;
+    studentId: string;
+    /** As printed on the form when it was started. */
+    studentName: string;
+    grade: string;
+    siteName: string;
+    /** e.g. "2026-27 Trimester 2", "Winter Camp 2026" */
+    cycle: string;
+    /** As printed, e.g. "Mon. 1:00-6:00 pm & Tue.-Fri. 2:00 pm-6:00 pm" */
+    programHours: string;
+    /** The revision of the form text shown, e.g. "Rev. 02/05/2026". */
+    formVersion: string;
+    /** The form this one replaces. */
+    supersedes?: string;
+    createdBy: string;
+    createdAt: string;
+    rows: ReleaseRow[];
+    signatures: ReleaseSignature[];
+    links: ReleaseLink[];
+    entries: ReleaseEntry[];
+    /**
+     * Kept on this device only: sample or session-only students, no database
+     * configured, or the forms tables not set up yet (see supabase/migrations).
+     */
+    localOnly: boolean;
+}

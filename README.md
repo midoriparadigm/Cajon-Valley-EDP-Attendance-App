@@ -52,7 +52,8 @@ trigger blocks them even for the service role, and students with history cannot
 be deleted. Inserts must carry the signed-in user's id as `recorded_by`. The
 second migration (`20261026000000_report_history.sql`) adds the We Care /
 follow-up-check event types, the letter text column and the staff "See All
-Reports" permission.
+Reports" permission. The third (`20261116000000_early_release_forms.sql`) adds
+the Early Release Form tables and the two functions a guardian's link uses.
 
 Known gaps, not yet fixed (they need further migrations):
 - `recorded_at` defaults to the database clock but a client can supply its own,
@@ -109,11 +110,59 @@ Known gaps, not yet fixed (they need further migrations):
 - Staff Permissions changes are kept for the session only; they are not saved
   to the `staff` table yet.
 
+## Early Release Forms
+
+The electronic version of the district's paper *Elementary School Early Release
+Form* (Rev. 02/05/2026), under **Leader Dashboard → Early Release Forms**:
+
+1. **Send.** Set the school, program cycle and program hours once, pick students
+   (or **Select all without a form**) and send. Contact 1 gets a single-use link
+   by text, or by email if there is no phone number.
+2. **Parent signs on their phone.** The link opens the form itself — no account,
+   no login — in English or Spanish. The parent says whether their child needs
+   early release, adds each date range (reason 1–8 and a release time per
+   weekday), ticks the box agreeing to sign electronically, and types or draws
+   their signature. One sitting signs every date range and the agreement.
+3. **A Lead countersigns** in the app, which approves and locks the form.
+4. **Cityspan.** Each signed date range waits on the list until someone marks it
+   as entered into Cityspan (who and when is recorded). **To enter** / **All
+   signed** export the same list as CSV, so nothing is retyped from paper.
+
+Every step is time stamped automatically and listed under **Record** on the
+form. Nothing is edited afterwards: a new link lets the family add a date range
+or change one (the old one stays, marked as replaced), and a corrected form
+replaces the old one without removing it. A form signed on paper can be recorded
+so the list is complete. Each student page has an **Early Release Form** tile;
+when a signed date range covers today, the page shows the approved release time
+to everyone, and a Sunset check-out is logged with the reason.
+
+Where forms are kept:
+
+- **Students in the database, after the third migration is applied:** in
+  Supabase. The tables are append-only, every time is the database clock, and a
+  guardian can reach a form only through two functions that take the token from
+  their link (only a hash of the token is stored). A link works once, expires
+  after 14 days, and stops working when a newer one is sent.
+- **Sample data, students added this session, or before the migration:** on the
+  staff device only, until logout — the screen says so. The parent's side is
+  then opened from the form (**Open the parent's view**).
+
+Not done yet:
+
+- Texts and emails are simulated, so the link is not actually delivered. For a
+  demo, open the parent's view from the form, or copy the link to a phone.
+- Entering into Cityspan is still by hand (or from the CSV). Sending form data
+  straight to Cityspan needs SDCOE's go-ahead and an import path.
+- The Spanish wording is a working translation, and the consent sentence is
+  ours; the district should review both. Two lines of the paper form say "ASES
+  Summer program" on a school-year form and are reproduced as printed.
+- Release times are not checked against the program hours.
+
 ## Pilot configuration
 
 | Variable | Default | Notes |
 |---|---|---|
 | `VITE_ENABLE_STUDENT_PHOTOS` | off | Camera capture, the simulated face-verification step, avatars and Photo Review. Leave off for the SDCOE pilot ("No student photos. No facial recognition."). |
 
-SMS (arrival / correction / pickup texts) is simulated in this build — no messages are sent.
+SMS (arrival / correction / pickup texts, and Early Release Form links by text or email) is simulated in this build — no messages are sent.
 The Program Log says so on every pickup entry.

@@ -11,6 +11,7 @@ import {
     type SummaryEntry, type SummaryKind, type SummaryTone, type SummaryViewer,
 } from '../utils/recordSummary';
 import { useDayEvents } from '../services/useDayEvents';
+import { useReleaseForms } from '../services/releaseForms';
 import { localDateIso } from '../utils/helpers';
 import HeadInjuryIcon from './HeadInjuryIcon';
 
@@ -38,9 +39,9 @@ export const StatusChip = ({ tone, children }: { tone: SummaryTone; children: Re
 );
 
 /** Student-page sections a summary line can open. */
-export type SummarySection = 'attendance' | 'behavior' | 'wecare' | 'injury' | 'guardians';
+export type SummarySection = 'attendance' | 'behavior' | 'wecare' | 'injury' | 'guardians' | 'release';
 const SECTION_FOR: Partial<Record<SummaryKind, SummarySection>> = {
-    attendance: 'attendance', behavior: 'behavior', wecare: 'wecare', injury: 'injury', guardians: 'guardians',
+    attendance: 'attendance', behavior: 'behavior', wecare: 'wecare', injury: 'injury', guardians: 'guardians', release: 'release',
 };
 
 interface StudentSummaryProps {
@@ -101,12 +102,13 @@ const StudentSummary = ({ student, program, viewer, parentReports, canOpen, onOp
     // Only the Lead reads the database here: today it supplies sent letters
     // (Lead-only), and only the Lead can pick an earlier day.
     const day = useDayEvents(date, student.id, roster, viewer.isLead);
+    const releaseForms = useReleaseForms();
 
     const entries = useMemo(
         () => (isToday
-            ? buildTodayEntries(student, { program, viewer, parentReports, dayEvents: day.events })
+            ? buildTodayEntries(student, { program, viewer, parentReports, dayEvents: day.events, releaseForms })
             : buildHistoryEntries(day.events, viewer)),
-        [isToday, student, program, viewer, parentReports, day.events],
+        [isToday, student, program, viewer, parentReports, day.events, releaseForms],
     );
 
     if (!viewer.isLead && entries.length === 0) return null;

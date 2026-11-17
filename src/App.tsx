@@ -11,6 +11,8 @@ import { playAlarm, uuidv4, formatClockTime, localDateIso } from './utils/helper
 import { recordEvents, clearSessionEvents } from './services/auditLog';
 import { setDbStudents, addDbStudent, removeDbStudent, isDbStudent, clearDbStudents } from './services/dbStudents';
 import { persistCheckIn, persistUndoCheckIn, persistCheckOut, persistBatchCheckOut } from './services/attendanceWrites';
+import { loadReleaseForms, clearReleaseForms, getReleaseForms } from './services/releaseForms';
+import { releaseOn, formatReleaseTime, reasonLabel } from './utils/releaseForms';
 import Toast from './components/Toast';
 import StaffLogin from './components/StaffLogin';
 import StudentDetailModal from './components/StudentDetailModal';
@@ -139,6 +141,8 @@ const App = () => {
                     setDbStudents(data.map((row: { id: string }) => row.id));
                     setStudents(data.map(mapDbToStudent));
                 }
+                // After the roster, so forms know which students are database rows.
+                if (!cancelled) void loadReleaseForms();
             } catch (err) {
                 console.error('Fetch failed:', err);
             }
@@ -634,6 +638,9 @@ const App = () => {
         const student = studentsRef.current.find(s => s.id === studentId);
         if (!student) return false;
         const staffName = checkOutBy || currentStaffName();
+        // A Sunset pickup covered by a signed Early Release Form is logged with its reason and approved time.
+        const release = p === 'sunset' ? releaseOn(getReleaseForms(), studentId) : null;
+        const releaseNote = release ? ` · early release form on file (reason ${reasonLabel(release.row.reasonCode)}, approved from ${formatReleaseTime(release.time)})` : '';
 
         if (isDbStudent(studentId)) {
             const time = formatClockTime();
@@ -652,7 +659,7 @@ const App = () => {
                 : s));
             const audit = await recordEvents([{
                 studentId, studentName: fullName(student), type: 'checked_out', program: p, staffName,
-                detail: `Released to ${releasedTo || 'guardian'} · confirmed by staff at pickup (guardian texts not connected)`,
+                detail: `Released to ${releasedTo || 'guardian'} · confirmed by staff at pickup (guardian texts not connected)${releaseNote}`,
             }]);
             if (audit.failed > 0) showToast('Checked out, but the Program Log entry failed to save', 'warning');
             return true;
@@ -662,7 +669,7 @@ const App = () => {
         setStudents(prev => prev.map(s => s.id === studentId
             ? { ...s, ...(p === 'sunrise' ? { sunriseStatus: 'pending_parent' as AttendanceStatus } : { sunsetStatus: 'pending_parent' as AttendanceStatus }), smsSentTime: smsTime, lastCheckOutBy: staffName }
             : s));
-        recordEvents([{ studentId, studentName: fullName(student), type: 'checkout_requested', program: p, staffName, detail: `Pickup by ${releasedTo || 'guardian'} · guardian text simulated (sample data)` }]);
+        recordEvents([{ studentId, studentName: fullName(student), type: 'checkout_requested', program: p, staffName, detail: `Pickup by ${releasedTo || 'guardian'} · guardian text simulated (sample data)${releaseNote}` }]);
         const gen = sessionGenRef.current;
         setTimeout(() => {
             if (sessionGenRef.current !== gen) return; // logged out meanwhile
@@ -824,6 +831,7 @@ const App = () => {
         setSelectedGrade(null);
         clearDbStudents();
         clearSessionEvents();
+        clearReleaseForms();
         setUser(null);
     };
 
