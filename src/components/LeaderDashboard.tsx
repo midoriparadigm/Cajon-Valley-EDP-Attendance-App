@@ -4,6 +4,7 @@ import type { Student, Staff, ParentReport, BiometricLog, ProgramType } from '..
 import { GRADES, STUDENT_PHOTOS_ENABLED } from '../constants';
 import RosterManager from './RosterManager';
 import ProgramLogView from './ProgramLogView';
+import ReleaseFormsView from './ReleaseFormsView';
 import { recordEvents } from '../services/auditLog';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -49,7 +50,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
         paddingTop: '80px'
     };
 
-    const [activeSection, setActiveSection] = useState<'roster' | 'records' | 'permissions' | 'batch' | 'blocking' | 'reports' | 'biometric' | null>(null);
+    const [activeSection, setActiveSection] = useState<'roster' | 'records' | 'release' | 'permissions' | 'batch' | 'blocking' | 'reports' | 'biometric' | null>(null);
     const [localStaff, setLocalStaff] = useState<Staff[]>(staffList);
     const [sunriseBatchTime, setSunriseBatchTime] = useState(defaultBatchTime || '08:00');
     const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 768);
@@ -96,6 +97,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
     const menuOptions = [
         { id: 'roster', label: 'Roster Management', icon: 'groups', color: '#3b82f6', bg: '#dbeafe' },
         { id: 'records', label: 'Program Log', icon: 'history', color: '#0f766e', bg: '#ccfbf1' },
+        { id: 'release', label: 'Early Release Forms', icon: 'assignment_turned_in', color: '#0e7490', bg: '#cffafe' },
         { id: 'reports', label: `Parent Reports (${parentReports.length})`, icon: 'assignment', color: '#f59e0b', bg: '#fef3c7' },
         { id: 'permissions', label: 'Staff Permissions', icon: 'admin_panel_settings', color: '#8b5cf6', bg: '#f3e8ff' },
         { id: 'blocking', label: 'Student Access', icon: 'block', color: '#ef4444', bg: '#fee2e2' },
@@ -615,6 +617,7 @@ Requirements:
                     <div style={{ flex: 1, overflowY: 'auto', padding: '0' }}>
                         {activeSection === 'roster' && <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}><RosterManager onImport={onImport} onAdd={onAddStudent} showToast={showToast} existingStudents={students} darkMode={darkMode} /></div>}
                         {activeSection === 'records' && <ProgramLogView students={students} />}
+                        {activeSection === 'release' && <ReleaseFormsView students={students} staffName={user.name} showToast={showToast} />}
                         {activeSection === 'permissions' && (
                             <div style={{ padding: '20px' }}>
                                 <div style={{ maxWidth: '800px', margin: '0 auto' }}>

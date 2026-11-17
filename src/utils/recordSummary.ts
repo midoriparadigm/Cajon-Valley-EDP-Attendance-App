@@ -12,11 +12,12 @@
 //     decides who can open those tiles on the student page (isReportRestricted).
 //   • Parent letters and pending pickup approvals: the Lead only.
 
-import type { Student, ParentReport, ProgramType } from '../types';
+import type { Student, ParentReport, ProgramType, ReleaseForm } from '../types';
 import type { AuditEvent, AuditEventType } from '../services/auditLog';
 import { formatClockTime } from './helpers';
+import { activeRows, agreementSignature, currentForms, formStatus, formatReleaseTime, reasonLabel, releaseOn } from './releaseForms';
 
-export type SummaryKind = 'attendance' | 'behavior' | 'wecare' | 'injury' | 'guardians' | 'letter';
+export type SummaryKind = 'attendance' | 'behavior' | 'wecare' | 'injury' | 'guardians' | 'letter' | 'release';
 export type SummaryTone = 'success' | 'info' | 'warning' | 'danger' | 'neutral';
 
 /** Icon and colors per kind: the same badge as the matching tile on the student page. */
@@ -27,6 +28,7 @@ export const KIND_STYLES: Record<SummaryKind, { icon: string; color: string; bg:
     injury: { icon: 'head_injury_custom', color: '#ef4444', bg: '#fee2e2' },
     guardians: { icon: 'contact_phone', color: '#6366f1', bg: '#e0e7ff' },
     letter: { icon: 'mail', color: '#d97706', bg: '#fef3c7' },
+    release: { icon: 'assignment_turned_in', color: '#0e7490', bg: '#cffafe' },
 };
 
 export interface SummaryEntry {
@@ -94,6 +96,8 @@ export interface TodayContext {
     parentReports: ParentReport[];
     /** This student's events for today (session + database), for sent letters. */
     dayEvents: readonly AuditEvent[];
+    /** Early Release Forms known to this device (services/releaseForms.ts). */
+    releaseForms?: readonly ReleaseForm[];
     now?: Date;
 }
 
@@ -155,6 +159,38 @@ const injuryToday = (s: Student): SummaryEntry => {
     };
 };
 
+/**
+ * The Early Release Form line: today's approved release time if there is one
+ * (everyone at the door needs it), otherwise where the newest form stands.
+ */
+const releaseToday = (s: Student, forms: readonly ReleaseForm[], now: Date): SummaryEntry | null => {
+    const today = releaseOn(forms, s.id, now);
+    if (today) {
+        const signer = agreementSignature(today.form, 'guardian')?.signerName;
+        return {
+            id: 'release', kind: 'release', tone: 'info',
+            title: `Early release today · ${formatReleaseTime(today.time)}`,
+            detail: join(`Reason ${reasonLabel(today.row.reasonCode)}`, signer && `form signed by ${signer}`),
+            badge: `Leaves ${formatReleaseTime(today.time)} today`,
+        };
+    }
+    const mine = currentForms(forms).filter(f => f.studentId === s.id);
+    const form = mine.reduce<ReleaseForm | undefined>((best, f) => (!best || f.createdAt >= best.createdAt ? f : best), undefined);
+    if (!form) return null;
+    const status = formStatus(form, now);
+    const n = activeRows(form).length;
+    switch (status) {
+        case 'signed':
+            return { id: 'release', kind: 'release', tone: 'neutral', title: 'Early Release Form on file', detail: join(form.cycle, n === 0 ? 'full program, no early release' : plural(n, 'date range')), badge: 'Signed · on file' };
+        case 'to_countersign':
+            return { id: 'release', kind: 'release', tone: 'warning', title: 'Early Release Form · needs staff signature', detail: join(form.cycle, 'signed by the family'), badge: 'Needs staff signature' };
+        case 'waiting':
+            return { id: 'release', kind: 'release', tone: 'info', title: 'Early Release Form · waiting for parent', detail: form.cycle, badge: 'Waiting for parent' };
+        default:
+            return { id: 'release', kind: 'release', tone: 'neutral', title: 'Early Release Form · not signed', detail: join(form.cycle, status === 'expired' ? 'the link expired' : 'not sent yet'), badge: status === 'expired' ? 'Link expired' : 'Not sent' };
+    }
+};
+
 // ── Report access (summary lines, tile badges and the tiles themselves) ─────
 
 export type ReportKind = 'behavior' | 'wecare' | 'injury';
@@ -199,6 +235,9 @@ export const buildTodayEntries = (s: Student, ctx: TodayContext): SummaryEntry[]
         const e = attendanceToday(s, p, p === program);
         if (e) entries.push(e);
     });
+
+    const release = releaseToday(s, ctx.releaseForms ?? [], now);
+    if (release) entries.push(release);
 
     const behaviorBy = reportFiledBy(s, 'behavior');
     if (behaviorBy && canSeeReport(viewer, behaviorBy)) {
