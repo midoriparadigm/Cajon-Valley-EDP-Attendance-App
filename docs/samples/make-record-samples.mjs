@@ -66,10 +66,10 @@ const rosterOrder = (a, b) => {
 };
 const byRoster = keys => [...keys].sort(rosterOrder);
 
-// California Department of Education's recommended early release reasons.
+// The eight reasons on the district's Early Release Form (Rev. 02/05/2026), as the app records them.
 const EARLY_REASONS = {
-    1: 'School athletics and team sports', 2: 'Off-site enrichment', 3: 'Family emergency', 4: 'Medical appointment',
-    5: 'Transportation', 6: 'Child accident or injury', 7: 'Safety (darkness, weather)', 8: 'Other (reason stated)',
+    1: 'Parallel Program', 2: 'Family Emergencies', 3: 'Family Needs', 4: 'Medical Appointments',
+    5: 'Weather Conditions', 6: 'Medical Emergencies', 7: 'Other Conditions', 8: 'Transportation',
 };
 
 let geoN = 0;
@@ -107,7 +107,7 @@ const EVENTS = [
     ev('4:09 PM', 'sunset', 'sofia', 'Pickup contact added', 'Elena Yako (Grandmother) as Contact 2. Approval request texted to Maria Yako (Mother).', STAFF.vt),
     ev('4:12 PM', 'sunset', 'sofia', 'Pickup contact approved', 'Elena Yako (Grandmother, Contact 2). Approved by Maria Yako (Mother) by phone.', STAFF.vt),
     ev('4:20 PM', 'sunset', 'mateo', 'Head injury report started', 'Initial check: no symptoms.', STAFF.cm, { ref: { report: 'hi' } }),
-    ev('4:31 PM', 'sunset', 'sofia', 'Checked out (early release)', 'To Elena Yako (Grandmother). Reason 4: medical appointment.', STAFF.vt, { reason: 4 }),
+    ev('4:31 PM', 'sunset', 'sofia', 'Checked out (early release)', 'To Elena Yako (Grandmother). Reason 4: Medical Appointments.', STAFF.vt, { reason: 4 }),
     ev('4:35 PM', 'sunset', 'mateo', 'Head injury check', '15-minute check: mild headache.', STAFF.vt, { ref: { report: 'hi' } }),
     ev('4:50 PM', 'sunset', 'mateo', 'Head injury check', '30-minute check: no symptoms.', STAFF.vt, { ref: { report: 'hi' } }),
     ev('5:05 PM', 'sunset', 'mateo', 'Checked out', 'To Carmen Rodriguez (Mother)', STAFF.vt),
@@ -127,7 +127,7 @@ const TERMS = {
     batch: ['Batch check-out', 'The scheduled Sunrise check-out when school starts.'],
     group: ['Group ID', 'Shared by the students checked in together with one group check-in.'],
     location: ['Location', 'Where the staff device was for the entry: coordinates, "On site" if within 100 m of the school, and the accuracy the device reported. N/A means no device was involved.'],
-    early: ['Early release', `Leaving before the time set by the site's early release policy. Reason codes follow the California Department of Education's recommended list: ${Object.entries(EARLY_REASONS).map(([n, r]) => `${n} ${r}`).join('; ')}.`],
+    early: ['Early release', `Leaving before the time set by the site's early release policy. Reason codes are the ones on the district's Early Release Form: ${Object.entries(EARLY_REASONS).map(([n, r]) => `${n} ${r}`).join('; ')}.`],
     correction: ['Correction', 'An undone check-in. The original entry stays on file, and the family receives a correction text.'],
 };
 
