@@ -8,10 +8,10 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReleaseForm, ReleaseLink, Student } from '../types';
-import { RELEASE_FORM_TEXT } from '../utils/releaseFormText';
+import { RELEASE_FORM_TEXT, STAFF_CONSENT } from '../utils/releaseFormText';
 import {
     activeRows, agreementSignature, currentForms, describeTimes, formStatus, formTimeline, formatReleaseDate, formatSignedAt,
-    openLink, reasonLabel, rowEntry, rowSignature, rowsToEnter, type ReleaseStatus,
+    initialsOf, openLink, reasonLabel, rowEntry, rowSignature, rowsToEnter, type ReleaseStatus,
 } from '../utils/releaseForms';
 import {
     countersignReleaseForm, loadReleaseForms, logPaperReleaseForm, markReleaseRowsEntered, releaseLinkUrl, replaceReleaseForm,
@@ -21,6 +21,7 @@ import { localDateIso } from '../utils/helpers';
 import { GuardianReleaseFormForLink } from './GuardianReleaseForm';
 import { ReleaseRowsEditor, SignatureMark, draftProblem, draftToInput, type RowDraft } from './ReleaseFormParts';
 import ConfirmDialog from './ConfirmDialog';
+import ReleaseFormPrint from './ReleaseFormPrint';
 
 type ToastType = 'success' | 'info' | 'warning' | 'error';
 
@@ -51,9 +52,6 @@ export const ReleaseStatusChip = ({ status, label }: { status: ReleaseStatus; la
     );
 };
 
-/** "VT" from "Veronica Thomas (EDP)". */
-const initialsOf = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '').split(/\s+/).filter(Boolean).map(p => p[0]!.toUpperCase()).join('');
-
 const card: React.CSSProperties = { backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', padding: '16px', boxShadow: 'var(--shadow-sm)' };
 const heading: React.CSSProperties = { margin: '0 0 10px', fontSize: '12px', fontWeight: 800, letterSpacing: '0.6px', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 const button = (primary?: boolean): React.CSSProperties => ({
@@ -72,6 +70,7 @@ const ReleaseFormDetail = ({ form, student, canAct, staffName, showToast }: Rele
     const [sentToken, setSentToken] = useState<{ linkId: string; token: string } | null>(null);
     const [previewToken, setPreviewToken] = useState<string | null>(null);
     const [confirmReplace, setConfirmReplace] = useState(false);
+    const [printing, setPrinting] = useState(false);
 
     // Countersign
     const [initials, setInitials] = useState(() => initialsOf(staffName));
@@ -174,11 +173,14 @@ const ReleaseFormDetail = ({ form, student, canAct, staffName, showToast }: Rele
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {/* The form's header */}
             <section style={card}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
                     <ReleaseStatusChip status={status} />
-                    <span style={{ ...small, fontWeight: 700, color: form.localOnly ? '#92400e' : 'var(--text-secondary)' }}>
+                    <span style={{ ...small, flex: '1 1 140px', fontWeight: 700, color: form.localOnly ? '#92400e' : 'var(--text-secondary)' }}>
                         {!isCurrent ? 'Replaced by a newer form · kept for the record' : form.localOnly ? 'On this device only · not saved' : 'Saved to the database'}
                     </span>
+                    <button type="button" onClick={() => setPrinting(true)} title={status === 'signed' ? 'Print the signed form, or save it as a PDF' : 'Print a copy marked as not approved'} style={{ ...button(), padding: '8px 12px', fontSize: '13px' }}>
+                        <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '18px' }}>print</span>Print
+                    </button>
                 </div>
                 <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 14px', fontSize: '14px' }}>
                     {facts.map(([label, value]) => (
@@ -214,7 +216,7 @@ const ReleaseFormDetail = ({ form, student, canAct, staffName, showToast }: Rele
                     </label>
                     <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', marginBottom: '14px' }}>
                         <input type="checkbox" checked={staffConsent} onChange={e => setStaffConsent(e.target.checked)} style={{ width: '20px', height: '20px', marginTop: '1px', flexShrink: 0 }} />
-                        <span style={{ fontSize: '14px', lineHeight: 1.5, color: 'var(--text-main)' }}>I have reviewed this request and sign it electronically. The date and time are recorded automatically.</span>
+                        <span style={{ fontSize: '14px', lineHeight: 1.5, color: 'var(--text-main)' }}>{STAFF_CONSENT}</span>
                     </label>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <button type="button" onClick={countersign} disabled={busy || !staffConsent || !initials.trim()} style={{ ...button(true), backgroundColor: 'var(--color-success)', opacity: busy || !staffConsent || !initials.trim() ? 0.5 : 1 }}>
@@ -406,6 +408,8 @@ const ReleaseFormDetail = ({ form, student, canAct, staffName, showToast }: Rele
                     </p>
                 </ConfirmDialog>
             )}
+
+            {printing && <ReleaseFormPrint forms={[form]} onClose={() => setPrinting(false)} />}
 
             {previewToken && createPortal(
                 <div role="dialog" aria-modal="true" aria-label="The parent's view" style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(15,23,42,0.75)', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 'env(safe-area-inset-top)' }}>

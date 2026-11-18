@@ -14,6 +14,7 @@ import { useDayEvents } from '../services/useDayEvents';
 import { useReleaseForms } from '../services/releaseForms';
 import { localDateIso } from '../utils/helpers';
 import HeadInjuryIcon from './HeadInjuryIcon';
+import DailyReportPrint from './DailyReportPrint';
 
 export const KindIcon = ({ kind, size = 20, box = 36 }: { kind: SummaryKind; size?: number; box?: number }) => {
     const s = KIND_STYLES[kind];
@@ -111,6 +112,10 @@ const StudentSummary = ({ student, program, viewer, parentReports, canOpen, onOp
         [isToday, student, program, viewer, parentReports, day.events, releaseForms],
     );
 
+    // Hooks above this line: the card returns early below.
+    const [printing, setPrinting] = useState(false);
+    const canPrint = day.events.length > 0 && !day.loading && !day.error;
+
     if (!viewer.isLead && entries.length === 0) return null;
 
     const isSample = !isToday && day.events.length > 0 && day.events.every(e => e.localOnly);
@@ -137,8 +142,17 @@ const StudentSummary = ({ student, program, viewer, parentReports, canOpen, onOp
                     {isSample && <StatusChip tone="warning">Sample data</StatusChip>}
                 </div>
                 {viewer.isLead && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         {!isToday && <button type="button" onClick={() => { setPickedDate(null); setOpenLetterId(null); }} style={chipButton}>Back to today</button>}
+                        <button
+                            type="button"
+                            onClick={() => setPrinting(true)}
+                            disabled={!canPrint}
+                            title={canPrint ? `Print ${student.firstName}'s Student Daily Report for this day` : day.events.length === 0 ? 'Nothing recorded for this day' : 'Available once the full record has loaded'}
+                            style={{ ...chipButton, display: 'inline-flex', alignItems: 'center', gap: '4px', opacity: canPrint ? 1 : 0.5, cursor: canPrint ? 'pointer' : 'default' }}
+                        >
+                            <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '16px' }}>print</span>Print
+                        </button>
                         <input
                             type="date"
                             aria-label="Show another day"
@@ -175,6 +189,17 @@ const StudentSummary = ({ student, program, viewer, parentReports, canOpen, onOp
                         <SummaryRow key={entry.id} entry={entry} expanded={openLetterId === entry.id} onActivate={activate(entry)} />
                     ))}
                 </ul>
+            )}
+
+            {printing && (
+                <DailyReportPrint
+                    date={date}
+                    events={day.events}
+                    students={roster}
+                    student={student}
+                    incomplete={day.truncated ? 'This day has more entries than the app can load at once, so this report is incomplete.' : undefined}
+                    onClose={() => setPrinting(false)}
+                />
             )}
         </section>
     );

@@ -94,6 +94,14 @@ export const formatSignedAt = (iso: string): string =>
 
 export const reasonLabel = (code: number): string => `${code}. ${RELEASE_REASONS[code] ?? 'Unknown reason'}`;
 
+/** "VT" from "Veronica Thomas (EDP)". */
+export const initialsOf = (name: string): string =>
+    name.replace(/\s*\([^)]*\)\s*$/, '').split(/\s+/).filter(Boolean).map(p => p[0]!.toUpperCase()).join('');
+
+/** The date that goes next to a signature, "11/06/2026": the date written on paper, or the day it was signed. */
+export const signatureDate = (s: Pick<ReleaseSignature, 'signedAt' | 'paperSignedOn'>): string =>
+    formatReleaseDate(s.paperSignedOn ?? localDateIso(new Date(s.signedAt)));
+
 const SHORT_DAY: Record<ReleaseWeekday, string> = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri' };
 
 /** "1:15 PM, Mon–Fri" when every day matches; otherwise each day with its time. */
@@ -210,8 +218,36 @@ const groupBy = <T>(items: T[], key: (item: T) => string): T[][] => {
 };
 
 const ranges = (n: number) => `${n} date range${n === 1 ? '' : 's'}`;
-const LANGUAGE_NAME: Record<string, string> = { en: 'English', es: 'Spanish' };
+export const LANGUAGE_NAME: Record<string, string> = { en: 'English', es: 'Spanish' };
 const VIA: Record<ReleaseSignature['channel'], string> = { sms: 'from the texted link', email: 'from the emailed link', in_app: 'in the app', paper: 'on paper' };
+
+/** One person signing in one sitting: the date ranges and/or the agreement, all with the same time. */
+export interface ReleaseSitting {
+    /** The agreement signature if there is one, else the first date range's. */
+    signature: ReleaseSignature;
+    rowCount: number;
+    agreement: boolean;
+    /** "3 date ranges and the agreement" */
+    what: string;
+}
+
+/** Every signing sitting on a form, oldest first. */
+export const signingSittings = (form: ReleaseForm): ReleaseSitting[] =>
+    groupBy(form.signatures, s => `${s.role}|${s.signedAt}|${s.signerName}`)
+        .map(group => {
+            const rowCount = group.filter(x => x.rowId).length;
+            const agreement = group.some(x => !x.rowId);
+            return {
+                signature: group.find(x => !x.rowId) ?? group[0],
+                rowCount, agreement,
+                what: [rowCount > 0 && ranges(rowCount), agreement && 'the agreement'].filter(Boolean).join(' and '),
+            };
+        })
+        .sort((a, b) => a.signature.signedAt.localeCompare(b.signature.signedAt));
+
+/** How a guardian's sitting was signed, e.g. "from the texted link · drawn signature · shown in English". */
+export const describeGuardianSitting = (s: ReleaseSignature): string =>
+    [VIA[s.channel], s.kind === 'drawn' ? 'drawn signature' : s.kind === 'typed' ? 'typed signature' : undefined, s.language && `shown in ${LANGUAGE_NAME[s.language] ?? s.language}`, s.paperSignedOn && `dated ${formatReleaseDate(s.paperSignedOn)}; recorded by staff`].filter(Boolean).join(' · ');
 
 /** Every step recorded for a form, oldest first: started, links sent, signatures, Cityspan entries. */
 export const formTimeline = (form: ReleaseForm): ReleaseTimelineItem[] => {
@@ -223,17 +259,9 @@ export const formTimeline = (form: ReleaseForm): ReleaseTimelineItem[] => {
             detail: `by ${l.sentBy} · works once · expires ${new Date(l.expiresAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}`,
         })),
         // One sitting produces several signatures with the same time: show it as one step.
-        ...groupBy(form.signatures, s => `${s.role}|${s.signedAt}|${s.signerName}`).map(group => {
-            const s = group[0];
-            const rowCount = group.filter(x => x.rowId).length;
-            const parts = [rowCount > 0 && ranges(rowCount), group.some(x => !x.rowId) && 'the agreement'].filter(Boolean).join(' and ');
-            return s.role === 'guardian'
-                ? {
-                    at: s.signedAt, icon: 'draw', title: `Signed by ${s.signerName} (parent/guardian)`,
-                    detail: [parts, VIA[s.channel], s.kind === 'drawn' ? 'drawn signature' : s.kind === 'typed' ? 'typed signature' : undefined, s.language && `shown in ${LANGUAGE_NAME[s.language] ?? s.language}`, s.paperSignedOn && `dated ${formatReleaseDate(s.paperSignedOn)}; recorded by staff`].filter(Boolean).join(' · '),
-                }
-                : { at: s.signedAt, icon: 'verified', title: `Countersigned by ${s.signerName}`, detail: parts };
-        }),
+        ...signingSittings(form).map(({ signature: s, what }) => (s.role === 'guardian'
+            ? { at: s.signedAt, icon: 'draw', title: `Signed by ${s.signerName} (parent/guardian)`, detail: [what, describeGuardianSitting(s)].filter(Boolean).join(' · ') }
+            : { at: s.signedAt, icon: 'verified', title: `Countersigned by ${s.signerName}`, detail: what })),
         ...groupBy(form.entries, e => `${e.enteredAt}|${e.enteredBy}`).map(group => ({
             at: group[0].enteredAt, icon: 'cloud_done', title: `Marked as entered into Cityspan by ${group[0].enteredBy}`, detail: ranges(group.length),
         })),

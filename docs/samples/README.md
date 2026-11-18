@@ -1,8 +1,11 @@
 # EDP Reports (samples)
 
 Samples of the locked audit-trail reports the app would save to the district's Google Drive
-(or other cloud storage). **All data in them is made up.** They are laid out in the same
-folders they would have in Drive:
+(or other cloud storage). **All data in them is made up.** The app already prints both
+reports from its own records (**Print daily report** in Leader Dashboard → Program Log, and
+**Print** on a student's page, Lead only), without the parts it does not record yet: device
+locations and the list of text messages. Saving them to Drive automatically is not built yet.
+The samples are laid out in the same folders they would have in Drive:
 
 ```
 Sample Elementary EDP/

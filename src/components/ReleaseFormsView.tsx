@@ -12,6 +12,7 @@ import { isSupabaseConfigured } from '../supabaseClient';
 import { serializeCsv } from '../utils/csv';
 import { localDateIso } from '../utils/helpers';
 import { DEFAULT_PROGRAM_HOURS } from '../utils/releaseFormText';
+import { SITE_SETUP_KEY } from '../utils/siteSetup';
 import {
     CITYSPAN_EXPORT_HEADER, activeRows, agreementSignature, cityspanExportRows, formFor, formStatus, formatSignedAt, latestLink, rowsToEnter,
 } from '../utils/releaseForms';
@@ -19,6 +20,7 @@ import {
     loadReleaseForms, sendReleaseLink, startReleaseForms, useReleaseForms, useReleaseStorage, type ReleaseSetup,
 } from '../services/releaseForms';
 import ReleaseFormDetail, { ReleaseStatusChip } from './ReleaseFormDetail';
+import ReleaseFormPrint from './ReleaseFormPrint';
 
 type ToastType = 'success' | 'info' | 'warning' | 'error';
 
@@ -48,7 +50,7 @@ const stageOf = (form: ReleaseForm | undefined): Stage => {
     return 'none';
 };
 
-const SETUP_KEY = 'edp-release-setup';
+const SETUP_KEY = SITE_SETUP_KEY;
 
 /** The cycles a site runs in a school year (three trimesters and three camps), plus this cycle's best guess. */
 const cycleOptions = (now: Date = new Date()): { options: string[]; current: string } => {
@@ -124,6 +126,12 @@ const ReleaseFormsView = ({ students, staffName, showToast }: ReleaseFormsViewPr
     const cycleForms = useMemo(() => forms.filter(f => f.cycle === setup.cycle), [forms, setup.cycle]);
     const toEnterCount = useMemo(() => cityspanExportRows(cycleForms, true).length, [cycleForms]);
     const signedCount = useMemo(() => cityspanExportRows(cycleForms, false).length, [cycleForms]);
+    /** Signed forms for the grade shown, in roster order: the binder copy. */
+    const signedForms = useMemo(
+        () => inGrade.map(s => byStudent.get(s.id)).filter((f): f is ReleaseForm => !!f && formStatus(f) === 'signed'),
+        [inGrade, byStudent],
+    );
+    const [printing, setPrinting] = useState(false);
 
     const setupReady = setup.siteName.trim() !== '' && setup.cycle.trim() !== '' && setup.programHours.trim() !== '';
 
@@ -261,7 +269,21 @@ const ReleaseFormsView = ({ students, staffName, showToast }: ReleaseFormsViewPr
                 <button type="button" onClick={() => exportCsv(false)} disabled={signedCount === 0} title="Every signed date range for this cycle" style={{ ...input, display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, cursor: signedCount === 0 ? 'default' : 'pointer', opacity: signedCount === 0 ? 0.5 : 1 }}>
                     <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '18px' }}>download</span>All signed ({signedCount})
                 </button>
+                <button type="button" onClick={() => setPrinting(true)} disabled={signedForms.length === 0} title={`Every signed form${grade === 'all' ? '' : ` in grade ${grade}`} for this cycle, to print or save as a PDF`} style={{ ...input, display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, cursor: signedForms.length === 0 ? 'default' : 'pointer', opacity: signedForms.length === 0 ? 0.5 : 1 }}>
+                    <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '18px' }}>print</span>Print signed ({signedForms.length})
+                </button>
             </div>
+
+            {printing && (
+                <ReleaseFormPrint
+                    forms={signedForms}
+                    cover={{
+                        title: 'Signed Early Release Forms',
+                        subtitle: [...new Set(signedForms.map(f => f.siteName)), setup.cycle, grade === 'all' ? 'All grades' : `Grade ${grade}`].join(' · '),
+                    }}
+                    onClose={() => setPrinting(false)}
+                />
+            )}
 
             {sendable.length > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', padding: '12px 14px', borderRadius: '12px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
