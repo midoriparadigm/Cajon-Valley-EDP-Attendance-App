@@ -16,6 +16,7 @@ import type { Student, ParentReport, ProgramType, ReleaseForm } from '../types';
 import type { AuditEvent, AuditEventType } from '../services/auditLog';
 import { formatClockTime } from './helpers';
 import { activeRows, agreementSignature, currentForms, formStatus, formatReleaseTime, reasonLabel, releaseOn } from './releaseForms';
+import { replaySessions } from './dailyRecord';
 
 export type SummaryKind = 'attendance' | 'behavior' | 'wecare' | 'injury' | 'guardians' | 'letter' | 'release';
 export type SummaryTone = 'success' | 'info' | 'warning' | 'danger' | 'neutral';
@@ -298,35 +299,16 @@ export const tileBadge = (entries: SummaryEntry[], kind: SummaryKind): SummaryEn
 
 // ── Past days (from the event log) ───────────────────────────────────────────
 
-interface Visit { checkIn?: AuditEvent; pickup?: AuditEvent; checkOut?: AuditEvent }
-
-/**
- * Replays one student-day of attendance events per program. An undone
- * check-in cancels the check-in before it; a later check-in starts a new visit.
- */
-const replayVisits = (events: readonly AuditEvent[]): Partial<Record<ProgramType, Visit>> => {
-    const visits: Partial<Record<ProgramType, Visit>> = {};
-    events.forEach(e => {
-        if (!e.program) return;
-        const v = visits[e.program] ?? (visits[e.program] = {});
-        if (e.type === 'check_in') { v.checkIn = e; v.pickup = undefined; v.checkOut = undefined; }
-        else if (e.type === 'check_in_undone') { v.checkIn = undefined; }
-        else if (e.type === 'checkout_requested') v.pickup = e;
-        else if (e.type === 'checked_out') v.checkOut = e;
-    });
-    return visits;
-};
-
 const at = (e: AuditEvent) => clock(Date.parse(e.occurredAt));
 
 /** One student's day rebuilt from events (oldest first). */
 export const buildHistoryEntries = (events: readonly AuditEvent[], viewer: SummaryViewer): SummaryEntry[] => {
     const entries: SummaryEntry[] = [];
 
-    const visits = replayVisits(events);
+    const visits = replaySessions(events);
     (['sunrise', 'sunset'] as const).forEach(p => {
         const v = visits[p];
-        if (!v || (!v.checkIn && !v.checkOut)) return;
+        if (!v.checkIn && !v.checkOut) return;
         const label = PROGRAM_LABEL[p];
         const id = `attendance-${p}`;
         if (v.checkIn && v.checkOut) {
@@ -386,7 +368,7 @@ export const dayTotals = (events: readonly AuditEvent[]): DayTotals => {
     let checkedIn = 0;
     let notCheckedOut = 0;
     byStudent.forEach(list => {
-        const visits = Object.values(replayVisits(list)).filter(v => v.checkIn);
+        const visits = Object.values(replaySessions(list)).filter(v => v.checkIn);
         if (visits.length === 0) return;
         checkedIn += 1;
         if (visits.some(v => !v.checkOut)) notCheckedOut += 1;

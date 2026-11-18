@@ -2,13 +2,15 @@
 //
 // One student's day lives on their student page (the summary card); this is
 // the whole program at once, with totals for the day.
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { Student } from '../types';
 import { GRADES } from '../constants';
 import { isSupabaseConfigured } from '../supabaseClient';
 import { serializeCsv } from '../utils/csv';
 import { formatClockTime, localDateIso } from '../utils/helpers';
 import { dayTotals } from '../utils/recordSummary';
+import { closesAt, openItems } from '../utils/dailyRecord';
+import DailyReportPrint from './DailyReportPrint';
 import { AUDIT_EVENT_LABELS, type AuditEventType } from '../services/auditLog';
 import { useDayEvents } from '../services/useDayEvents';
 
@@ -41,6 +43,18 @@ const ProgramLogView = ({ students }: ProgramLogViewProps) => {
         [day.events, grade, gradeOf],
     );
     const totals = useMemo(() => dayTotals(inGrade), [inGrade]);
+
+    // Today's open items turn into flags when a session closes, so look again every minute.
+    const [now, setNow] = useState(() => new Date());
+    useEffect(() => {
+        if (date !== today) return;
+        const timer = setInterval(() => setNow(new Date()), 60_000);
+        return () => clearInterval(timer);
+    }, [date, today]);
+    const open = useMemo(() => openItems(inGrade, students, date, now), [inGrade, students, date, now]);
+    const flagged = open.filter(i => i.overdue).length;
+    const attended = inGrade.some(e => e.type === 'check_in');
+    const [printing, setPrinting] = useState(false);
     const types = FILTERS.find(f => f.id === filter)?.types;
     const shown = types ? inGrade.filter(e => types.includes(e.type)) : inGrade;
 
@@ -59,9 +73,11 @@ const ProgramLogView = ({ students }: ProgramLogViewProps) => {
                     ? { label: 'Sample data · not saved', icon: 'science', fg: '#92400e', bg: 'var(--color-warning-bg)' }
                     : { label: `${localCount} not saved · session-only students`, icon: 'science', fg: '#92400e', bg: 'var(--color-warning-bg)' };
 
-    // Exporting while the database part is loading or failed would produce an
-    // incomplete file that looks complete.
-    const canExport = shown.length > 0 && !(isSupabaseConfigured && (day.loading || day.error));
+    // Exporting or printing while the database part is loading or failed would
+    // produce an incomplete record that looks complete.
+    const recordReady = !(isSupabaseConfigured && (day.loading || day.error));
+    const canExport = shown.length > 0 && recordReady;
+    const canPrint = inGrade.length > 0 && recordReady;
 
     const exportCsv = () => {
         const header = ['Date', 'Time', 'Student', 'Grade', 'Program', 'Action', 'Detail', 'Staff', 'Group ID', 'Letter text', 'Saved to database'];
@@ -121,7 +137,21 @@ const ProgramLogView = ({ students }: ProgramLogViewProps) => {
                 <button onClick={exportCsv} disabled={!canExport} title={canExport ? 'Download what is shown as CSV' : 'Available once the full record has loaded'} style={{ ...inputStyle, display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', cursor: canExport ? 'pointer' : 'default', opacity: canExport ? 1 : 0.5, marginLeft: 'auto' }}>
                     <span className="material-icons-round" style={{ fontSize: '18px' }}>download</span> CSV
                 </button>
+                <button onClick={() => setPrinting(true)} disabled={!canPrint} title={canPrint ? 'The Daily Report for this day: sign-in and sign-out sheet, open items, reports, letters and the full log' : 'Available once the full record has loaded'} style={{ ...inputStyle, display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', cursor: canPrint ? 'pointer' : 'default', opacity: canPrint ? 1 : 0.5 }}>
+                    <span className="material-icons-round" style={{ fontSize: '18px' }}>print</span> Print daily report
+                </button>
             </div>
+
+            {printing && (
+                <DailyReportPrint
+                    date={date}
+                    events={inGrade}
+                    students={students}
+                    scope={grade === 'all' ? 'All grades' : `Grade ${grade}`}
+                    incomplete={day.truncated ? 'This day has more entries than the app can load at once, so this report is incomplete.' : undefined}
+                    onClose={() => setPrinting(false)}
+                />
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: '8px' }}>
                 {stats.map(s => (
@@ -140,6 +170,38 @@ const ProgramLogView = ({ students }: ProgramLogViewProps) => {
             {day.truncated && (
                 <div role="status" style={{ padding: '12px 14px', borderRadius: '12px', backgroundColor: 'var(--color-warning-bg)', color: '#92400e', fontSize: '14px', fontWeight: '600' }}>
                     This day has more entries than can be loaded at once, so the list, totals and export are incomplete.
+                </div>
+            )}
+
+            {!statsPending && open.length > 0 && (
+                <section aria-labelledby="needs-attention" style={{ padding: '14px 16px', borderRadius: '14px', backgroundColor: 'var(--bg-card)', border: `1.5px solid ${flagged > 0 ? 'var(--color-danger)' : 'var(--border-subtle)'}` }}>
+                    <h3 id="needs-attention" style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 4px', fontSize: '15px', fontWeight: 800, color: flagged > 0 ? '#b91c1c' : 'var(--text-main)' }}>
+                        <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '20px' }}>{flagged > 0 ? 'flag' : 'schedule'}</span>
+                        {flagged > 0 ? `Needs attention · ${flagged}` : `Still open · ${open.length}`}
+                    </h3>
+                    <p style={{ margin: '0 0 8px', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                        A check-in with no check-out, a pickup never confirmed, or head injury checks not finished. Flagged once the session closes
+                        (Sunrise {closesAt('sunrise')}, Sunset {closesAt('sunset')}), so it can be fixed the same day.
+                    </p>
+                    <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {open.map(item => (
+                            <li key={item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '14px' }}>
+                                <span style={{ flexShrink: 0, marginTop: '1px', padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', backgroundColor: item.overdue ? 'var(--color-danger-bg)' : 'var(--bg-hover)', color: item.overdue ? '#b91c1c' : 'var(--text-secondary)' }}>
+                                    {item.overdue ? 'Flagged' : 'Open'}
+                                </span>
+                                <span style={{ minWidth: 0, color: 'var(--text-main)' }}>
+                                    <strong>{item.name}{item.grade ? ` (${item.grade})` : ''} · {item.title}</strong>
+                                    <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>{item.detail}</span>
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
+            {!statsPending && open.length === 0 && attended && (
+                <div role="status" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', borderRadius: '12px', backgroundColor: 'var(--color-success-bg)', color: '#047857', fontSize: '13px', fontWeight: 700 }}>
+                    <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '18px' }}>task_alt</span>
+                    Nothing missing: every check-in has a check-out, every pickup was confirmed, and every head injury check was recorded.
                 </div>
             )}
 

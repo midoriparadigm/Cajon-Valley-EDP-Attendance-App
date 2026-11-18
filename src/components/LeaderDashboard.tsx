@@ -6,6 +6,9 @@ import RosterManager from './RosterManager';
 import ProgramLogView from './ProgramLogView';
 import ReleaseFormsView from './ReleaseFormsView';
 import { recordEvents } from '../services/auditLog';
+import { useDayEvents } from '../services/useDayEvents';
+import { openItems } from '../utils/dailyRecord';
+import { localDateIso } from '../utils/helpers';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface LeaderDashboardProps {
@@ -34,6 +37,12 @@ interface LeaderDashboardProps {
 
 const LeaderDashboard = (props: LeaderDashboardProps) => {
     const { user, students, onClose, onImport, onAddStudent, onUpdateStaff, onUpdateStudent, staffList, parentReports, biometricLogs, isInline, onUpdateReport, onDeleteReport, onScheduleBatchCheckout, showToast, isBatchDefaultEnabled, setIsBatchDefaultEnabled, defaultBatchTime, setDefaultBatchTime, scheduledBatchCheckoutTime, darkMode } = props;
+
+    // Today's flagged items (a missing check-out, an unconfirmed pickup, unfinished head injury
+    // checks), shown on the Program Log tile so the Lead sees them the same day.
+    const todayIso = localDateIso();
+    const todayLog = useDayEvents(todayIso, undefined, students);
+    const flaggedToday = openItems(todayLog.events, students, todayIso).filter(i => i.overdue).length;
 
     const containerStyle: React.CSSProperties = {
         position: 'fixed',
@@ -592,7 +601,14 @@ Requirements:
                                 </div>
                                 <div>
                                     <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>{option.label}</div>
-                                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Tap to open</div>
+                                    {option.id === 'records' && flaggedToday > 0 ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 700, color: '#b91c1c' }}>
+                                            <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '16px' }}>flag</span>
+                                            {flaggedToday} need{flaggedToday === 1 ? 's' : ''} attention today
+                                        </div>
+                                    ) : (
+                                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Tap to open</div>
+                                    )}
                                 </div>
                             </button>
                         ))}

@@ -101,10 +101,27 @@ Known gaps, not yet fixed (they need further migrations):
   locked notice (for a head injury still being checked, it also says when the
   next check is due). Parent letters (awaiting
   review / sent, with the letter text) and pending pickup approvals are
-  Lead-only, as is the date picker for earlier days.
+  Lead-only, as is the date picker for earlier days. The Lead's **Print**
+  button on the card prints that student's **Student Daily Report** for the day
+  shown.
 - **Program Log** (Leader Dashboard): the whole program's day in order, with
   totals (checked in / out / still here, incidents, letters sent), grade and type
   filters, and CSV export.
+- **Needs attention:** the Program Log lists what is not finished — a check-in
+  with no check-out, a pickup that was never confirmed, head injury checks not
+  done. Items are flagged once their session closes (Sunrise 8:00 AM, Sunset
+  6:00 PM; head injury checks 35 minutes after the report starts) or for any
+  earlier day, and the Program Log tile on the Leader Dashboard shows how many
+  are flagged today, so they can be fixed the same day. The closing times are
+  fixed in `src/utils/dailyRecord.ts` for now; they are not yet a site setting.
+- **Print daily report** (Program Log) prints the **Daily Report** for the day
+  and grade shown, laid out like the samples in `docs/samples` (CDE PDF
+  Standards: Arial 12 pt, Title Case headings, simple tables with repeating
+  header rows): record details, needs attention, totals, the attendance sheet
+  (replacing the paper sign-in and sign-out sheet), incident reports, parent
+  letters as sent, the full activity log, a fingerprint of the entries and
+  signature lines for a Lead's review. "Save as PDF" in the print dialog keeps a
+  copy. The reports are not yet saved to Google Drive automatically.
 - In sample-data mode, earlier weekdays are filled with made-up, repeatable
   history (labelled "Sample data") so these views can be demonstrated.
 - Staff Permissions changes are kept for the session only; they are not saved
@@ -127,6 +144,15 @@ Form* (Rev. 02/05/2026), under **Leader Dashboard → Early Release Forms**:
 4. **Cityspan.** Each signed date range waits on the list until someone marks it
    as entered into Cityspan (who and when is recorded). **To enter** / **All
    signed** export the same list as CSV, so nothing is retyped from paper.
+5. **Print.** Every form has a **Print** button. It prints the district's paper
+   form filled in (date ranges, the parent's signature and the program leader's
+   initials, the agreement signed by both, the "For Site Use Only" Cityspan
+   line) on one page, followed by a **Signature Record** page: who signed, how
+   (texted or emailed link, in the app, on paper) and when, with every step in
+   order. **Print signed** on the list prints every signed form for the cycle
+   (or the grade shown) behind a cover page, in roster order. A form that is
+   not signed by both, or was replaced, prints with a box saying it is not an
+   approved form. "Save as PDF" in the print dialog keeps a copy.
 
 Every step is time stamped automatically and listed under **Record** on the
 form. Nothing is edited afterwards: a new link lets the family add a date range

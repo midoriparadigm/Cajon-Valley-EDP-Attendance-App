@@ -18,6 +18,9 @@ export const RELEASE_FORM_VERSION = 'Rev. 02/05/2026';
 /** Printed on the paper form; each site can change it when starting forms. */
 export const DEFAULT_PROGRAM_HOURS = 'Mon. 1:00-6:00 pm & Tue.-Fri. 2:00 pm-6:00 pm';
 
+/** What a Lead ticks before countersigning (shown in the app and on the printed record). */
+export const STAFF_CONSENT = 'I have reviewed this request and sign it electronically. The date and time are recorded automatically.';
+
 /** Days a link stays usable. */
 export const RELEASE_LINK_DAYS = 14;
 
