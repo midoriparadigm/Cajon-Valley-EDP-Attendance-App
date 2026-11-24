@@ -13,7 +13,8 @@ import { setDbStudents, addDbStudent, removeDbStudent, isDbStudent, clearDbStude
 import { persistCheckIn, persistUndoCheckIn, persistCheckOut, persistBatchCheckOut } from './services/attendanceWrites';
 import { loadReleaseForms, clearReleaseForms, getReleaseForms } from './services/releaseForms';
 import { releaseOn, formatReleaseTime, reasonLabel } from './utils/releaseForms';
-import Toast from './components/Toast';
+import Toast, { type ToastAction } from './components/Toast';
+import { pickupLetterNotice } from './utils/recordSummary';
 import StaffLogin from './components/StaffLogin';
 import StudentDetailModal from './components/StudentDetailModal';
 import ConfirmationModal from './components/ConfirmationModal';
@@ -92,7 +93,10 @@ const App = () => {
     const [showConfirmId, setShowConfirmId] = useState<string | null>(null);
     const [showLeaderDashboard, setShowLeaderDashboard] = useState(false);
     const [dashboardKey, setDashboardKey] = useState(0);
-    const [toast, setToast] = useState<{ msg: string, type: 'success' | 'info' | 'warning' | 'error' } | null>(null);
+    const [toast, setToast] = useState<{ msg: string, type: 'success' | 'info' | 'warning' | 'error', action?: ToastAction } | null>(null);
+    const toastTimer = useRef<number | undefined>(undefined);
+    /** Where the Leader Dashboard opens: its menu, or straight to one student's parent letter (from a check-out). */
+    const [dashboardOpenTo, setDashboardOpenTo] = useState<{ section: 'reports'; studentId: string; fromPickup: boolean } | null>(null);
     const [darkMode, setDarkMode] = useState(false);
     const [isDemoMode, setIsDemoMode] = useState(false);
     const [isLeadMode, setIsLeadMode] = useState(true);
@@ -283,9 +287,29 @@ const App = () => {
         return () => clearInterval(interval);
     }, [scheduledBatchCheckoutTime, program]);
 
-    const showToast = (msg: string, type: 'success' | 'info' | 'warning' | 'error') => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 3000);
+    /** A toast with an action button stays up longer (12 s) and can be closed. */
+    const showToast = (msg: string, type: 'success' | 'info' | 'warning' | 'error', options?: { action?: ToastAction; durationMs?: number }) => {
+        // A newer toast replaces the old one, so the old one's timer must not hide it early.
+        window.clearTimeout(toastTimer.current);
+        setToast({ msg, type, action: options?.action });
+        toastTimer.current = window.setTimeout(() => setToast(null), options?.durationMs ?? (options?.action ? 12_000 : 3000));
+    };
+
+    /** Leader Dashboard → Parent Reports, open on one student's letter. The student page stays open underneath. */
+    const openParentLetter = (studentId: string, fromPickup: boolean) => {
+        exitGroupMode();
+        setDashboardOpenTo({ section: 'reports', studentId, fromPickup });
+        setShowLeaderDashboard(true);
+        setDashboardKey(prev => prev + 1);
+    };
+
+    /** A check-out was started: if the family should hear about a report, say so, with a way to the letter. */
+    const handleCheckOutStart = (student: Student) => {
+        const notice = pickupLetterNotice(student, parentReports);
+        if (!notice) return;
+        showToast(notice.text, notice.unsent ? 'warning' : 'info', {
+            action: { label: notice.actionLabel, onClick: () => { setToast(null); openParentLetter(student.id, true); } },
+        });
     };
 
     const filteredStudents = useMemo(() => {
@@ -869,7 +893,7 @@ const App = () => {
                             <span className="material-icons-round" style={{ fontSize: '20px' }}>home</span>
                         </button>
                         {isLeadMode && (
-                            <button onClick={() => { exitGroupMode(); setShowLeaderDashboard(true); setDashboardKey(prev => prev + 1); }} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} title="Dashboard">
+                            <button onClick={() => { exitGroupMode(); setDashboardOpenTo(null); setShowLeaderDashboard(true); setDashboardKey(prev => prev + 1); }} style={{ padding: '6px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} title="Dashboard">
                                 <span className="material-icons-round" style={{ fontSize: '20px' }}>dashboard</span>
                             </button>
                         )}
@@ -1046,14 +1070,14 @@ const App = () => {
 
             {activeStudentId && activeStudent && createPortal(
                 <div style={{ position: 'fixed', top: '80px', left: 0, right: 0, bottom: 0, zIndex: 1000, backgroundColor: 'var(--bg-app)', overflowY: 'auto' }}>
-                    <StudentDetailModal student={activeStudent} onClose={() => setActiveStudentId(null)} onSave={handleSaveStudent} onCheckOut={handleCheckOut} currentStaff={user} program={program} isLeadMode={isLeadMode} darkMode={darkMode} onUpdateReport={(report) => setParentReports(prev => [...prev, report])} showToast={showToast} staffList={staffList} parentReports={parentReports} />
+                    <StudentDetailModal student={activeStudent} onClose={() => setActiveStudentId(null)} onSave={handleSaveStudent} onCheckOut={handleCheckOut} onCheckOutStart={handleCheckOutStart} onOpenParentLetter={id => openParentLetter(id, true)} currentStaff={user} program={program} isLeadMode={isLeadMode} darkMode={darkMode} onUpdateReport={(report) => setParentReports(prev => [...prev, report])} showToast={showToast} staffList={staffList} parentReports={parentReports} />
                 </div>,
                 document.body
             )}
 
             {showLeaderDashboard && createPortal(
                 <div key={dashboardKey} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'var(--bg-app)', zIndex: 2000 }}>
-                    <LeaderDashboard user={user} students={students} staffList={staffList} parentReports={parentReports} biometricLogs={biometricLogs} onClose={() => setShowLeaderDashboard(false)} onImport={(newStudents) => setStudents(prev => [...prev, ...newStudents])} onAddStudent={(newStudent) => setStudents(prev => [...prev, newStudent])} onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)} onUpdateStudent={handleSaveStudent} onUpdateReport={(updatedReport) => setParentReports(prev => prev.some(r => r.id === updatedReport.id) ? prev.map(r => r.id === updatedReport.id ? updatedReport : r) : [...prev, updatedReport])} onDeleteReport={(reportId) => setParentReports(prev => prev.filter(r => r.id !== reportId))} onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)} showToast={showToast} isBatchDefaultEnabled={isBatchDefaultEnabled} setIsBatchDefaultEnabled={setIsBatchDefaultEnabled} defaultBatchTime={defaultBatchTime} setDefaultBatchTime={setDefaultBatchTime} scheduledBatchCheckoutTime={scheduledBatchCheckoutTime} darkMode={darkMode} />
+                    <LeaderDashboard user={user} students={students} openTo={dashboardOpenTo ?? undefined} staffList={staffList} parentReports={parentReports} biometricLogs={biometricLogs} onClose={() => setShowLeaderDashboard(false)} onImport={(newStudents) => setStudents(prev => [...prev, ...newStudents])} onAddStudent={(newStudent) => setStudents(prev => [...prev, newStudent])} onUpdateStaff={(updatedStaff) => setStaffList(updatedStaff)} onUpdateStudent={handleSaveStudent} onUpdateReport={(updatedReport) => setParentReports(prev => prev.some(r => r.id === updatedReport.id) ? prev.map(r => r.id === updatedReport.id ? updatedReport : r) : [...prev, updatedReport])} onDeleteReport={(reportId) => setParentReports(prev => prev.filter(r => r.id !== reportId))} onScheduleBatchCheckout={(time) => setScheduledBatchCheckoutTime(time)} showToast={showToast} isBatchDefaultEnabled={isBatchDefaultEnabled} setIsBatchDefaultEnabled={setIsBatchDefaultEnabled} defaultBatchTime={defaultBatchTime} setDefaultBatchTime={setDefaultBatchTime} scheduledBatchCheckoutTime={scheduledBatchCheckoutTime} darkMode={darkMode} />
                 </div>,
                 document.body
             )}
@@ -1110,7 +1134,7 @@ const App = () => {
                 </ConfirmDialog>
             )}
 
-            {toast && <Toast message={toast.msg} type={toast.type} bottomOffset={isGroupMode ? 120 : 40} />}
+            {toast && <Toast message={toast.msg} type={toast.type} bottomOffset={isGroupMode ? 120 : 40} action={toast.action} onDismiss={toast.action ? () => { window.clearTimeout(toastTimer.current); setToast(null); } : undefined} />}
         </>
     );
 };
