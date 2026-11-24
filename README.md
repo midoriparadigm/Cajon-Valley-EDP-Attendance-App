@@ -85,6 +85,12 @@ Known gaps, not yet fixed (they need further migrations):
 - **Check-out:** for students in the database, the staff member's confirmation
   of who is picking up completes the check-out and records who they were
   released to. The guardian-text confirmation is only simulated, for sample data.
+- **Parent letter at pickup:** tapping **CHECK-OUT** for a student with a parent
+  letter that is still a draft, or was sent today, shows a toast (and the same
+  note in the check-out panel) with **Open letter**. It opens Leader Dashboard →
+  Parent Reports on that student's letter, so the Lead can talk with the family
+  face to face, then generate and send the letter by email and/or text. **Back to
+  check-out** returns to the check-out, still waiting to be confirmed.
 - **Logout** removes the session and all loaded student data from the device,
   even if Supabase can't be reached at that moment.
 - Students added or imported in the app are **not saved to the database yet**;

@@ -11,7 +11,7 @@ import CollapsedWeCareView from './CollapsedWeCareView';
 import CollapsedHeadInjuryView from './CollapsedHeadInjuryView';
 import GuardianAddForm from './GuardianAddForm';
 import StudentSummary, { KindIcon, StatusChip, type SummarySection } from './StudentSummary';
-import { buildTodayEntries, tileBadge, isReportRestricted, nextHeadInjuryCheck, type SummaryKind, type SummaryViewer } from '../utils/recordSummary';
+import { buildTodayEntries, tileBadge, isReportRestricted, nextHeadInjuryCheck, pickupLetterNotice, type SummaryKind, type SummaryViewer } from '../utils/recordSummary';
 
 /** A contact may be chosen at check-out unless their pickup approval is still pending. */
 const isPickupApproved = (g: GuardianContact) => g.type === 'Contact 1' || g.authStatus !== 'pending';
@@ -33,10 +33,14 @@ interface StudentDetailModalProps {
     showToast?: (m: string, t: any) => void;
     staffList: Staff[];
     parentReports: ParentReport[];
+    /** A check-out was started (CHECK-OUT tapped): the app shows a toast if the family should hear about a report. */
+    onCheckOutStart?: (s: Student) => void;
+    /** Opens Leader Dashboard → Parent Reports on this student's letter. */
+    onOpenParentLetter?: (studentId: string) => void;
 }
 
 const StudentDetailModal = (props: StudentDetailModalProps) => {
-    const { student, onClose, onSave, onCheckOut, currentStaff, program, isLeadMode, darkMode, onUpdateReport, showToast, staffList, parentReports } = props;
+    const { student, onClose, onSave, onCheckOut, currentStaff, program, isLeadMode, darkMode, onUpdateReport, showToast, staffList, parentReports, onCheckOutStart, onOpenParentLetter } = props;
 
     const [editedStudent, setEditedStudent] = useState({ ...student });
     const [timeLeft, setTimeLeft] = useState<number>(0);
@@ -137,6 +141,8 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
     const [showCheckOutConfirm, setShowCheckOutConfirm] = useState(false);
     const alarmPlayedRef = useRef(false);
     const isLead = (currentStaff.role === 'Lead' || currentStaff.canAdminTasks) && isLeadMode;
+    // A parent letter the family should hear about at pickup (shown in the check-out panel).
+    const pickupNotice = useMemo(() => pickupLetterNotice(student, parentReports || []), [student, parentReports]);
 
     useEffect(() => {
         setEditedStudent({ ...student });
@@ -510,7 +516,7 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                 <section style={{ backgroundColor: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
                                     <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                         {isPresent && !showCheckOutConfirm && isLead && (
-                                            <button onClick={() => setShowCheckOutConfirm(true)} style={{ width: '100%', backgroundColor: 'var(--color-sunset)', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '16px' }}>
+                                            <button onClick={() => { setShowCheckOutConfirm(true); onCheckOutStart?.(student); }} style={{ width: '100%', backgroundColor: 'var(--color-sunset)', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '16px' }}>
                                                 <span className="material-icons-round">logout</span> CHECK-OUT
                                             </button>
                                         )}
@@ -518,6 +524,17 @@ const StudentDetailModal = (props: StudentDetailModalProps) => {
                                         {showCheckOutConfirm && (
                                             <div style={{ backgroundColor: 'var(--bg-card)', padding: '16px', borderRadius: '12px', textAlign: 'center', border: '1px solid var(--border-subtle)', animation: 'slideUp 0.2s' }}>
                                                 <div style={{ marginBottom: '12px', fontWeight: '700', color: 'var(--text-main)' }}>Confirm Check-Out?</div>
+                                                {pickupNotice && (
+                                                    <div role="note" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '14px', padding: '10px 12px', borderRadius: '10px', textAlign: 'left', backgroundColor: pickupNotice.unsent ? 'var(--color-warning-bg)' : '#dbeafe', color: pickupNotice.unsent ? '#92400e' : '#1d4ed8' }}>
+                                                        <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '20px' }}>{pickupNotice.unsent ? 'mark_email_unread' : 'forum'}</span>
+                                                        <span style={{ flex: '1 1 180px', fontSize: '13px', fontWeight: 600, lineHeight: 1.4 }}>{pickupNotice.text}</span>
+                                                        {onOpenParentLetter && (
+                                                            <button type="button" onClick={() => onOpenParentLetter(student.id)} style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', backgroundColor: pickupNotice.unsent ? '#b45309' : '#1d4ed8', color: 'white', fontSize: '13px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                                                {pickupNotice.actionLabel}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 <div style={{ marginBottom: '16px', textAlign: 'left' }}>
                                                     <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '4px' }}>Checkout By:</label>
                                                     <select title="Select Guardian" value={checkoutBy} onChange={(e) => setCheckoutBy(e.target.value as any)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-app)', color: 'var(--text-main)' }}>

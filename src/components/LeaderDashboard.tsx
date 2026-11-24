@@ -33,10 +33,12 @@ interface LeaderDashboardProps {
     setDefaultBatchTime: (t: string) => void;
     scheduledBatchCheckoutTime: string | null;
     darkMode: boolean;
+    /** Open straight to one student's parent letter, e.g. from the toast when a check-out starts. */
+    openTo?: { section: 'reports'; studentId: string; fromPickup: boolean };
 }
 
 const LeaderDashboard = (props: LeaderDashboardProps) => {
-    const { user, students, onClose, onImport, onAddStudent, onUpdateStaff, onUpdateStudent, staffList, parentReports, biometricLogs, isInline, onUpdateReport, onDeleteReport, onScheduleBatchCheckout, showToast, isBatchDefaultEnabled, setIsBatchDefaultEnabled, defaultBatchTime, setDefaultBatchTime, scheduledBatchCheckoutTime, darkMode } = props;
+    const { user, students, onClose, onImport, onAddStudent, onUpdateStaff, onUpdateStudent, staffList, parentReports, biometricLogs, isInline, onUpdateReport, onDeleteReport, onScheduleBatchCheckout, showToast, isBatchDefaultEnabled, setIsBatchDefaultEnabled, defaultBatchTime, setDefaultBatchTime, scheduledBatchCheckoutTime, darkMode, openTo } = props;
 
     // Today's flagged items (a missing check-out, an unconfirmed pickup, unfinished head injury
     // checks), shown on the Program Log tile so the Lead sees them the same day.
@@ -59,7 +61,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
         paddingTop: '80px'
     };
 
-    const [activeSection, setActiveSection] = useState<'roster' | 'records' | 'release' | 'permissions' | 'batch' | 'blocking' | 'reports' | 'biometric' | null>(null);
+    const [activeSection, setActiveSection] = useState<'roster' | 'records' | 'release' | 'permissions' | 'batch' | 'blocking' | 'reports' | 'biometric' | null>(openTo?.section ?? null);
     const [localStaff, setLocalStaff] = useState<Staff[]>(staffList);
     const [sunriseBatchTime, setSunriseBatchTime] = useState(defaultBatchTime || '08:00');
     const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 768);
@@ -71,7 +73,7 @@ const LeaderDashboard = (props: LeaderDashboardProps) => {
     const [showScheduleConfirm, setShowScheduleConfirm] = useState(false);
     const [countdown, setCountdown] = useState<string>('00:00:00:00');
     const [selectedDraft, setSelectedDraft] = useState<ParentReport | null>(null);
-    const [selectedReportStudentId, setSelectedReportStudentId] = useState<string | null>(null);
+    const [selectedReportStudentId, setSelectedReportStudentId] = useState<string | null>(openTo?.studentId ?? null);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [selectedAccessGrade, setSelectedAccessGrade] = useState<string | null>(null);
 
@@ -927,6 +929,23 @@ Requirements:
                                                             <span className="material-icons-round">arrow_back</span>
                                                         </button>
                                                     </div>
+                                                    {openTo?.fromPickup && openTo.studentId === selectedReportStudentId && (() => {
+                                                        // Opened from this student's check-out: the parent or guardian is at the door.
+                                                        const unsent = parentReports.some(r => r.studentId === selectedReportStudentId && r.status === 'draft');
+                                                        return (
+                                                            <div role="note" style={{ margin: '16px 16px 0', padding: '12px 14px', borderRadius: '12px', backgroundColor: unsent ? 'var(--color-warning-bg)' : '#dbeafe', color: unsent ? '#92400e' : '#1d4ed8', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                                                <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '22px' }}>forum</span>
+                                                                <span style={{ flex: '1 1 220px', fontSize: '14px', fontWeight: 600, lineHeight: 1.45 }}>
+                                                                    {unsent
+                                                                        ? 'At pickup: talk with the family face to face, then send the letter below by email and/or text. The check-out is waiting on the student page.'
+                                                                        : "At pickup: today's letter was already sent. Mention it to the family face to face. The check-out is waiting on the student page."}
+                                                                </span>
+                                                                <button type="button" onClick={onClose} style={{ padding: '10px 14px', borderRadius: '10px', border: 'none', backgroundColor: unsent ? '#b45309' : '#1d4ed8', color: 'white', fontSize: '13px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                    <span className="material-icons-round" aria-hidden="true" style={{ fontSize: '18px' }}>logout</span>Back to check-out
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                     <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
                                                         {inlineDraftMode ? (
                                                             /* ===== INLINE DRAFT EDITOR (Fix 3, 4, 5, 6) ===== */

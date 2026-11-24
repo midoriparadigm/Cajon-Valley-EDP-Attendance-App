@@ -293,6 +293,34 @@ export const buildTodayEntries = (s: Student, ctx: TodayContext): SummaryEntry[]
     return entries;
 };
 
+// ── At pickup ────────────────────────────────────────────────────────────────
+
+const PICKUP_KIND: Record<ParentReport['type'], string> = { behavior: 'Green Card', wecare: 'We Care', injury: 'head injury' };
+
+export interface PickupLetterNotice {
+    /** A letter is still a draft: the family has not been sent it. */
+    unsent: boolean;
+    /** One line for the check-out toast and the check-out panel. */
+    text: string;
+    actionLabel: string;
+}
+
+/**
+ * What to bring up with the family at pickup: this student's parent letters
+ * that are still drafts (any day) or were sent today. Null when there are none.
+ * Shown when a check-out is started, so the Lead can talk with the parent or
+ * guardian face to face, then send the letter by email and/or text.
+ */
+export const pickupLetterNotice = (student: Pick<Student, 'id' | 'firstName'>, reports: readonly ParentReport[], now: Date = new Date()): PickupLetterNotice | null => {
+    const mine = reports.filter(r => r.studentId === student.id && (r.status === 'draft' || sameDay(new Date(r.createdAt), now)));
+    if (mine.length === 0) return null;
+    const unsent = mine.some(r => r.status === 'draft');
+    const kinds = [...new Set(mine.map(r => PICKUP_KIND[r.type] ?? r.type))].join(' + ');
+    return unsent
+        ? { unsent, text: `${student.firstName} has an unsent parent letter (${kinds}). Talk with the family at pickup.`, actionLabel: 'Open letter' }
+        : { unsent, text: `${student.firstName}'s parent letter (${kinds}) was sent today. Mention it to the family at pickup.`, actionLabel: 'View letter' };
+};
+
 /** The badge for a tile, if today's visible entries give it one. */
 export const tileBadge = (entries: SummaryEntry[], kind: SummaryKind): SummaryEntry | undefined =>
     entries.find(e => e.kind === kind && e.badge);
